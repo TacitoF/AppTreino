@@ -22,6 +22,7 @@ const REST_TIME_KEY = 'fitapp_rest_time';
 const R = {
   login:       '/api/login',
   registro:    '/api/registro',
+  resetSenha:  '/api/reset-senha',
   splits:      '/api/splits',
   serie:       '/api/treino/serie',
   serieNome:   '/api/treino/serie/nome',
@@ -351,15 +352,16 @@ const NumInput = memo(({ label, value, onChange, disabled }) => {
 
 // ─── TELA AUTH ────────────────────────────────────────────────────────────────
 function TelaAuth({ onLogin, mostrarToast }) {
-  const [modo, setModo]       = useState('login');
-  const [email, setEmail]     = useState('');
-  const [senha, setSenha]     = useState('');
-  const [nome, setNome]       = useState('');
-  const [peso, setPeso]       = useState('');
-  const [obj, setObj]         = useState('');
-  const [loading, setLoading] = useState(false);
+  const [modo, setModo]         = useState('login');
+  const [email, setEmail]       = useState('');
+  const [senha, setSenha]       = useState('');
+  const [senhaNova, setSenhaNova] = useState('');
+  const [nome, setNome]         = useState('');
+  const [peso, setPeso]         = useState('');
+  const [obj, setObj]           = useState('');
+  const [loading, setLoading]   = useState(false);
 
-  const limpar = () => { setEmail(''); setSenha(''); setNome(''); setPeso(''); setObj(''); };
+  const limpar = () => { setEmail(''); setSenha(''); setNome(''); setPeso(''); setObj(''); setSenhaNova(''); };
   const inp = "w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base placeholder-zinc-600";
 
   const login = async e => {
@@ -375,6 +377,20 @@ function TelaAuth({ onLogin, mostrarToast }) {
       if (err.status === 401) mostrarToast('Senha incorreta.', 'erro');
       else if (err.status === 404) mostrarToast('E-mail não encontrado.', 'erro');
       else mostrarToast('Não foi possível conectar.', 'erro');
+    } finally { setLoading(false); }
+  };
+
+  const resetSenha = async e => {
+    e.preventDefault();
+    if (!email || !senhaNova) { mostrarToast('Preencha e-mail e nova senha.', 'erro'); return; }
+    setLoading(true);
+    try {
+      await apiFetch(R.resetSenha, { method: 'POST', body: { email, senha_nova: senhaNova } });
+      mostrarToast('Senha redefinida! Faça login.', 'sucesso');
+      setModo('login'); limpar();
+    } catch (err) {
+      if (err.status === 404) mostrarToast('E-mail não encontrado.', 'erro');
+      else mostrarToast('Erro ao redefinir senha.', 'erro');
     } finally { setLoading(false); }
   };
 
@@ -401,9 +417,9 @@ function TelaAuth({ onLogin, mostrarToast }) {
           <p className="text-zinc-500 text-sm mt-1 font-medium">Seu diário de treino</p>
         </div>
         <div className="flex bg-zinc-900 border border-zinc-800 rounded-2xl p-1.5 mb-6">
-          {[['login','Entrar'],['cadastro','Criar conta']].map(([t,l]) => (
+          {[['login','Entrar'],['cadastro','Criar conta'],['reset','Esqueci']].map(([t,l]) => (
             <button key={t} onClick={() => { setModo(t); limpar(); }}
-              className={`btn flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${modo===t ? 'bg-[#c8f542] text-black' : 'text-zinc-500'}`}>
+              className={`btn flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all ${modo===t ? 'bg-[#c8f542] text-black' : 'text-zinc-500'}`}>
               {l}
             </button>
           ))}
@@ -416,7 +432,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
               {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
-        ) : (
+        ) : modo === 'cadastro' ? (
           <form onSubmit={cadastro} className="flex flex-col gap-3">
             <input type="text" placeholder="Nome completo" value={nome} onChange={e=>setNome(e.target.value)} className={inp}/>
             <input type="email" placeholder="E-mail" value={email} onChange={e=>setEmail(e.target.value)} className={inp} autoComplete="email"/>
@@ -434,7 +450,16 @@ function TelaAuth({ onLogin, mostrarToast }) {
               {loading ? 'Criando...' : 'Criar conta'}
             </button>
           </form>
-        )}
+        ) : modo === 'reset' ? (
+          <form onSubmit={resetSenha} className="flex flex-col gap-3">
+            <p className="text-zinc-500 text-sm text-center mb-1">Digite seu e-mail e escolha uma nova senha.</p>
+            <input type="email" placeholder="E-mail da conta" value={email} onChange={e=>setEmail(e.target.value)} className={inp} autoComplete="email"/>
+            <input type="password" placeholder="Nova senha" value={senhaNova} onChange={e=>setSenhaNova(e.target.value)} className={inp}/>
+            <button type="submit" disabled={loading} className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black text-base font-bold rounded-2xl mt-2 disabled:opacity-50">
+              {loading ? 'Salvando...' : 'Redefinir senha'}
+            </button>
+          </form>
+        ) : null}
       </div>
     </div>
   );
@@ -661,6 +686,18 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     setExercicios(e => [...e, { id:Date.now(), nome:'', nomeAnterior:'', series:[{id:1,reps:12,carga:0,enviada:false,id_banco:null}] }])
   , []);
 
+  const remEx = useCallback(async (exId) => {
+    const ex = exercicios.find(x => x.id === exId);
+    if (!ex) return;
+    // Remove do estado imediatamente
+    setExercicios(cur => cur.filter(x => x.id !== exId));
+    // Apaga do Sheets todas as séries já enviadas deste exercício
+    const enviadas = ex.series.filter(s => s.enviada && s.id_banco);
+    for (const s of enviadas) {
+      try { await apiFetch(`${R.serie}?id=${s.id_banco}`, { method: 'DELETE' }); } catch {}
+    }
+  }, [exercicios]);
+
   const updNome = useCallback((id, novoNome) => {
     // Atualiza o estado local imediatamente
     setExercicios(e => e.map(x => x.id===id ? {...x, nome:novoNome, nomePendente:novoNome} : x));
@@ -823,6 +860,12 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                     onBlur={() => confirmarNome(ex)}
                     placeholder="Nome do exercício"
                     className="flex-1 bg-transparent text-white font-bold text-lg outline-none placeholder-zinc-700 border-b border-transparent focus:border-zinc-700 pb-0.5"/>
+                  {exercicios.length > 1 && (
+                    <button onClick={() => remEx(ex.id)}
+                      className="btn w-9 h-9 rounded-xl flex items-center justify-center text-zinc-700 active:text-red-400 active:bg-zinc-800 flex-shrink-0 mt-0.5">
+                      <IconTrash/>
+                    </button>
+                  )}
                 </div>
                 {hist.length > 0 && (
                   <button onClick={() => setExp(m => ({...m,[ex.id]:!m[ex.id]}))}
