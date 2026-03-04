@@ -11,6 +11,7 @@
 //  8. alternarSerie: useRef para tempoConfig (fecha sobre o valor atual sem violar Rules of Hooks)
 //  9. BarraDescanso e ModalConfigDescanso com React.memo
 // 10. Cálculos de totalEnv/totalSer com useMemo na TelaTreino
+// 11. NOVOS SVGS CLEAN E MINIMALISTAS APLICADOS
 
 import React, {
   useState, useEffect, useRef, useCallback, useMemo, memo,
@@ -276,10 +277,6 @@ const Spinner = memo(() => (
 ));
 
 // ─── INPUT NUMÉRICO — memo + estado interno isolado ──────────────────────────
-// No iOS o focus() assíncrono não abre o teclado — precisa ser síncrono,
-// direto no handler do evento do usuário. A solução é sempre renderizar o
-// <input> mas escondê-lo quando não está editando, e chamar focus() direto
-// no onClick sem setTimeout.
 const NumInput = memo(({ label, value, onChange, disabled }) => {
   const [editando, setEditando] = useState(false);
   const [txt, setTxt]           = useState('');
@@ -292,7 +289,6 @@ const NumInput = memo(({ label, value, onChange, disabled }) => {
     const novo = String(val);
     setTxt(novo);
     setEditando(true);
-    // focus() síncrono dentro do handler — único jeito de abrir teclado no iOS
     if (ref.current) {
       ref.current.value = novo;
       ref.current.focus();
@@ -349,8 +345,8 @@ const NumInput = memo(({ label, value, onChange, disabled }) => {
 
 // ─── TELA AUTH ────────────────────────────────────────────────────────────────
 function TelaAuth({ onLogin, mostrarToast }) {
-  const [modo, setModo]           = useState('login');   // 'login' | 'cadastro'
-  const [resetAberto, setReset]   = useState(false);     // modal inline de reset
+  const [modo, setModo]           = useState('login'); 
+  const [resetAberto, setReset]   = useState(false);
   const [email, setEmail]         = useState('');
   const [senha, setSenha]         = useState('');
   const [senhaNova, setSenhaNova] = useState('');
@@ -415,7 +411,6 @@ function TelaAuth({ onLogin, mostrarToast }) {
           <p className="text-zinc-500 text-sm mt-1 font-medium">Seu diário de treino</p>
         </div>
 
-        {/* Tabs: apenas Entrar e Criar conta */}
         <div className="flex bg-zinc-900 border border-zinc-800 rounded-2xl p-1.5 mb-6">
           {[['login','Entrar'],['cadastro','Criar conta']].map(([t,l]) => (
             <button key={t} onClick={() => { setModo(t); setReset(false); limpar(); }}
@@ -432,7 +427,6 @@ function TelaAuth({ onLogin, mostrarToast }) {
             <button type="submit" disabled={loading} className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black text-base font-bold rounded-2xl mt-2 disabled:opacity-50">
               {loading ? 'Entrando...' : 'Entrar'}
             </button>
-            {/* Link de redefinição discreto abaixo do botão */}
             <button type="button" onClick={() => setReset(true)}
               className="text-zinc-500 text-sm text-center mt-1 active:text-zinc-300 transition-colors">
               Esqueci minha senha
@@ -440,7 +434,6 @@ function TelaAuth({ onLogin, mostrarToast }) {
           </form>
         )}
 
-        {/* Painel inline de redefinição — aparece abaixo do form de login */}
         {modo === 'login' && resetAberto && (
           <div className="flex flex-col gap-3">
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex items-center gap-3 mb-1">
@@ -530,7 +523,6 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                 <div className="text-zinc-600"><IconChevronRight/></div>
               </button>
             ))}
-            {/* Ações secundárias — visual diferenciado por função */}
             <div className="grid grid-cols-2 gap-3 mt-1">
               <button onClick={onGerenciar}
                 className="btn bg-zinc-900 border border-zinc-800 active:bg-zinc-800 rounded-2xl p-4 flex flex-col items-center gap-2">
@@ -607,7 +599,6 @@ function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast
     });
   }, []);
 
-  // ── desktop drag ───────────────────────────────────────────────────────────
   const onDragStart = (i) => { dragRef.current.from = i; setDragging(i); setDropTarget(i); };
   const onDragEnter = (i) => { dragRef.current.to = i; setDropTarget(i); };
   const onDragEnd   = () => {
@@ -616,7 +607,6 @@ function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast
     setDragging(null); setDropTarget(null);
   };
 
-  // ── touch / iOS drag ───────────────────────────────────────────────────────
   const onTouchStart = (i, e) => {
     touchRef.current = { idx: i };
     dragRef.current.from = i;
@@ -722,13 +712,9 @@ const EXERCICIOS_DB = {
       peito: {
         label: 'Peito', cor: '#ef4444',
         svg: (
-          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
-            {/* dois peitoral lado a lado, linha central */}
-            <path d="M8 22 Q18 14 30 20 Q30 36 20 42 Q10 38 8 28Z" fill="currentColor" opacity=".85"/>
-            <path d="M56 22 Q46 14 34 20 Q34 36 44 42 Q54 38 56 28Z" fill="currentColor" opacity=".85"/>
-            <line x1="32" y1="18" x2="32" y2="44" stroke="currentColor" strokeWidth="1.5" opacity=".3"/>
-            <path d="M8 22 Q18 14 30 20" fill="none" stroke="white" strokeWidth="1" opacity=".25" strokeLinecap="round"/>
-            <path d="M56 22 Q46 14 34 20" fill="none" stroke="white" strokeWidth="1" opacity=".25" strokeLinecap="round"/>
+          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
+            <path d="M12 20 Q 20 10 31 18 L 31 40 Q 20 46 12 36 Z" />
+            <path d="M52 20 Q 44 10 33 18 L 33 40 Q 44 46 52 36 Z" />
           </svg>
         ),
         exercicios: ['Supino reto','Supino inclinado','Supino declinado','Crucifixo','Crossover','Flexão de braço','Peck deck','Pull-over'],
@@ -736,11 +722,9 @@ const EXERCICIOS_DB = {
       costas: {
         label: 'Costas', cor: '#3b82f6',
         svg: (
-          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
-            {/* trapézio + latissimus — forma de V invertido */}
-            <path d="M12 10 Q32 6 52 10 L48 32 Q32 38 16 32Z" fill="currentColor" opacity=".7"/>
-            <path d="M16 32 Q20 50 24 56 L32 58 L40 56 Q44 50 48 32 Q32 38 16 32Z" fill="currentColor" opacity=".9"/>
-            <line x1="32" y1="8" x2="32" y2="58" stroke="white" strokeWidth="1.5" opacity=".2"/>
+          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
+            <path d="M 12 12 Q 24 16 31 20 L 31 52 Q 20 52 14 34 Z" />
+            <path d="M 52 12 Q 40 16 33 20 L 33 52 Q 44 52 50 34 Z" />
           </svg>
         ),
         exercicios: ['Puxada frontal','Puxada posterior','Remada curvada','Remada unilateral','Serrote','Levantamento terra','Pulldown','Remada cavalinho'],
@@ -748,13 +732,9 @@ const EXERCICIOS_DB = {
       ombro: {
         label: 'Ombro', cor: '#a855f7',
         svg: (
-          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
-            {/* deltóides — três cabeças como círculos/arcos */}
-            <circle cx="12" cy="32" r="11" fill="currentColor" opacity=".9"/>
-            <circle cx="52" cy="32" r="11" fill="currentColor" opacity=".9"/>
-            <rect x="22" y="27" width="20" height="10" rx="5" fill="currentColor" opacity=".5"/>
-            <path d="M4 26 Q12 20 20 28" fill="none" stroke="white" strokeWidth="1" opacity=".3" strokeLinecap="round"/>
-            <path d="M60 26 Q52 20 44 28" fill="none" stroke="white" strokeWidth="1" opacity=".3" strokeLinecap="round"/>
+          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
+            <path d="M 12 32 C 12 14 26 14 26 32 Z" />
+            <path d="M 52 32 C 52 14 38 14 38 32 Z" />
           </svg>
         ),
         exercicios: ['Desenvolvimento militar','Elevação lateral','Elevação frontal','Crucifixo invertido','Arnold press','Remada alta','Face pull','Encolhimento'],
@@ -762,13 +742,9 @@ const EXERCICIOS_DB = {
       biceps: {
         label: 'Bíceps', cor: '#f59e0b',
         svg: (
-          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
-            {/* dois braços com bíceps em pico */}
-            <path d="M10 52 Q6 36 12 20 Q18 12 22 20 Q26 30 22 52Z" fill="currentColor" opacity=".9"/>
-            <path d="M54 52 Q58 36 52 20 Q46 12 42 20 Q38 30 42 52Z" fill="currentColor" opacity=".9"/>
-            {/* pico do bíceps */}
-            <path d="M11 28 Q16 18 21 28" fill="none" stroke="white" strokeWidth="1.5" opacity=".35" strokeLinecap="round"/>
-            <path d="M53 28 Q48 18 43 28" fill="none" stroke="white" strokeWidth="1.5" opacity=".35" strokeLinecap="round"/>
+          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
+            <rect x="14" y="12" width="14" height="40" rx="7" />
+            <rect x="36" y="12" width="14" height="40" rx="7" />
           </svg>
         ),
         exercicios: ['Rosca direta','Rosca alternada','Rosca martelo','Rosca concentrada','Rosca scott','Rosca 21','Rosca cabo','Rosca inversa'],
@@ -776,12 +752,9 @@ const EXERCICIOS_DB = {
       triceps: {
         label: 'Tríceps', cor: '#ec4899',
         svg: (
-          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
-            {/* tríceps — parte de trás do braço, forma alongada */}
-            <path d="M10 52 Q4 34 10 16 Q16 10 20 16 Q16 34 18 52Z" fill="currentColor" opacity=".9"/>
-            <path d="M54 52 Q60 34 54 16 Q48 10 44 16 Q48 34 46 52Z" fill="currentColor" opacity=".9"/>
-            <path d="M10 24 Q7 32 8 42" fill="none" stroke="white" strokeWidth="1.5" opacity=".3" strokeLinecap="round"/>
-            <path d="M54 24 Q57 32 56 42" fill="none" stroke="white" strokeWidth="1.5" opacity=".3" strokeLinecap="round"/>
+          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
+            <path d="M 18 10 C 24 10 26 40 20 54 C 14 48 12 10 18 10 Z" />
+            <path d="M 46 10 C 40 10 38 40 44 54 C 50 48 52 10 46 10 Z" />
           </svg>
         ),
         exercicios: ['Tríceps pulley','Tríceps testa','Tríceps francês','Mergulho','Tríceps coice','Tríceps corda','Tríceps banco','Fechado'],
@@ -789,15 +762,13 @@ const EXERCICIOS_DB = {
       abdomen: {
         label: 'Abdômen', cor: '#6366f1',
         svg: (
-          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
-            {/* grade abdominal — 6 retângulos arredondados */}
-            <rect x="16" y="8"  width="13" height="11" rx="4" fill="currentColor" opacity=".9"/>
-            <rect x="35" y="8"  width="13" height="11" rx="4" fill="currentColor" opacity=".9"/>
-            <rect x="16" y="26" width="13" height="11" rx="4" fill="currentColor" opacity=".9"/>
-            <rect x="35" y="26" width="13" height="11" rx="4" fill="currentColor" opacity=".9"/>
-            <rect x="16" y="44" width="13" height="11" rx="4" fill="currentColor" opacity=".75"/>
-            <rect x="35" y="44" width="13" height="11" rx="4" fill="currentColor" opacity=".75"/>
-            <line x1="32" y1="6" x2="32" y2="58" stroke="currentColor" strokeWidth="1" opacity=".2"/>
+          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
+            <rect x="18" y="10" width="12" height="12" rx="4" />
+            <rect x="34" y="10" width="12" height="12" rx="4" />
+            <rect x="18" y="26" width="12" height="12" rx="4" />
+            <rect x="34" y="26" width="12" height="12" rx="4" />
+            <rect x="18" y="42" width="12" height="12" rx="4" />
+            <rect x="34" y="42" width="12" height="12" rx="4" />
           </svg>
         ),
         exercicios: ['Abdominal crunch','Prancha','Abdominal bicicleta','Elevação de pernas','Abdominal oblíquo','Rollout','Dragon flag','Abdominal infra'],
@@ -810,12 +781,9 @@ const EXERCICIOS_DB = {
       quadriceps: {
         label: 'Quadríceps', cor: '#10b981',
         svg: (
-          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
-            {/* duas coxas frontais — forma cônica */}
-            <path d="M10 8 Q16 4 20 10 Q24 22 22 54 Q18 58 14 54 Q8 40 10 8Z" fill="currentColor" opacity=".9"/>
-            <path d="M54 8 Q48 4 44 10 Q40 22 42 54 Q46 58 50 54 Q56 40 54 8Z" fill="currentColor" opacity=".9"/>
-            <path d="M11 16 Q15 8 19 16" fill="none" stroke="white" strokeWidth="1.5" opacity=".3" strokeLinecap="round"/>
-            <path d="M53 16 Q49 8 45 16" fill="none" stroke="white" strokeWidth="1.5" opacity=".3" strokeLinecap="round"/>
+          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
+            <path d="M 22 10 C 32 10 32 46 24 54 C 14 54 12 10 22 10 Z" />
+            <path d="M 42 10 C 32 10 32 46 40 54 C 50 54 52 10 42 10 Z" />
           </svg>
         ),
         exercicios: ['Agachamento livre','Leg press','Extensora','Hack squat','Agachamento búlgaro','Avanço','Afundo','Agachamento sumô'],
@@ -823,12 +791,9 @@ const EXERCICIOS_DB = {
       posterior: {
         label: 'Posterior', cor: '#06b6d4',
         svg: (
-          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
-            {/* isquiotibiais — parte de trás da coxa */}
-            <path d="M8 8 Q14 4 18 12 Q20 28 18 54 Q14 58 10 54 Q6 38 8 8Z" fill="currentColor" opacity=".9"/>
-            <path d="M56 8 Q50 4 46 12 Q44 28 46 54 Q50 58 54 54 Q58 38 56 8Z" fill="currentColor" opacity=".9"/>
-            <path d="M9 18 Q13 10 17 18" fill="none" stroke="white" strokeWidth="1.5" opacity=".3" strokeLinecap="round"/>
-            <path d="M55 18 Q51 10 47 18" fill="none" stroke="white" strokeWidth="1.5" opacity=".3" strokeLinecap="round"/>
+          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
+            <path d="M 26 12 C 30 12 30 50 26 52 C 14 50 14 12 26 12 Z" />
+            <path d="M 38 12 C 34 12 34 50 38 52 C 50 50 50 12 38 12 Z" />
           </svg>
         ),
         exercicios: ['Mesa flexora','Cadeira flexora','Stiff','Levantamento terra romeno','Bom dia','Leg curl','Flexão nórdica','Ponte'],
@@ -836,12 +801,9 @@ const EXERCICIOS_DB = {
       gluteo: {
         label: 'Glúteo', cor: '#f97316',
         svg: (
-          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
-            {/* dois glúteos arredondados */}
-            <path d="M4 20 Q6 8 18 10 Q32 12 30 32 Q28 46 16 48 Q4 44 4 32Z" fill="currentColor" opacity=".9"/>
-            <path d="M60 20 Q58 8 46 10 Q32 12 34 32 Q36 46 48 48 Q60 44 60 32Z" fill="currentColor" opacity=".9"/>
-            <path d="M5 22 Q10 12 18 14" fill="none" stroke="white" strokeWidth="1.5" opacity=".25" strokeLinecap="round"/>
-            <path d="M59 22 Q54 12 46 14" fill="none" stroke="white" strokeWidth="1.5" opacity=".25" strokeLinecap="round"/>
+          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
+            <circle cx="22" cy="32" r="16" />
+            <circle cx="42" cy="32" r="16" />
           </svg>
         ),
         exercicios: ['Agachamento','Hip thrust','Elevação pélvica','Glúteo no cabo','Abdução','Passada','Agachamento sumô','Extensão quadril'],
@@ -849,12 +811,9 @@ const EXERCICIOS_DB = {
       panturrilha: {
         label: 'Panturrilha', cor: '#84cc16',
         svg: (
-          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
-            {/* duas panturrilhas em diamante */}
-            <path d="M14 6 Q20 2 24 10 Q28 22 24 42 Q22 52 18 54 Q12 52 10 42 Q6 24 14 6Z" fill="currentColor" opacity=".9"/>
-            <path d="M50 6 Q44 2 40 10 Q36 22 40 42 Q42 52 46 54 Q52 52 54 42 Q58 24 50 6Z" fill="currentColor" opacity=".9"/>
-            <path d="M14 12 Q18 4 23 12" fill="none" stroke="white" strokeWidth="1.5" opacity=".35" strokeLinecap="round"/>
-            <path d="M50 12 Q46 4 41 12" fill="none" stroke="white" strokeWidth="1.5" opacity=".35" strokeLinecap="round"/>
+          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
+            <path d="M 22 12 C 28 12 28 40 24 52 C 18 48 16 12 22 12 Z" />
+            <path d="M 42 12 C 36 12 36 40 40 52 C 46 48 48 12 42 12 Z" />
           </svg>
         ),
         exercicios: ['Elevação de calcanhar em pé','Elevação de calcanhar sentado','Leg press panturrilha','Donkey calf raise','Panturrilha unilateral'],
@@ -865,13 +824,12 @@ const EXERCICIOS_DB = {
 
 // ─── MODAL SELECIONAR EXERCÍCIO ───────────────────────────────────────────────
 const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
-  const [regiao, setRegiao]   = useState(null);    // 'superior' | 'inferior'
-  const [musculo, setMusculo] = useState(null);    // chave do músculo
+  const [regiao, setRegiao]   = useState(null);    
+  const [musculo, setMusculo] = useState(null);    
   const [busca, setBusca]     = useState('');
 
   const db = EXERCICIOS_DB;
 
-  // lista de exercícios do músculo ativo, filtrada pela busca
   const exerciciosFiltrados = useMemo(() => {
     if (!regiao || !musculo) return [];
     const lista = db[regiao].musculos[musculo]?.exercicios || [];
@@ -903,7 +861,6 @@ const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
             </p>
           )}
         </div>
-        {/* Breadcrumb chips */}
         {regiao && (
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button onClick={() => { setRegiao(null); setMusculo(null); setBusca(''); }}
@@ -922,7 +879,7 @@ const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
         )}
       </div>
 
-      {/* TELA 1 — escolha da região */}
+      {/* TELA 1 — escolha da região com os novos bonecos minimalistas */}
       {!regiao && (
         <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6">
           <div className="text-center">
@@ -931,29 +888,16 @@ const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
           </div>
 
           <div className="flex gap-4 w-full">
-            {/* Card Superior — linha-art minimalista */}
+            {/* Card Superior */}
             <button onClick={() => setRegiao('superior')}
               className="btn flex-1 bg-zinc-900 border-2 border-zinc-800 active:border-[#c8f542] active:bg-[#c8f542]/5 rounded-3xl p-5 flex flex-col items-center gap-3 active:scale-95 transition-all">
               <svg viewBox="0 0 60 90" fill="none" className="w-20 h-28">
-                {/* Cabeça */}
-                <circle cx="30" cy="9" r="7" stroke="#52525b" strokeWidth="2.5"/>
-                {/* Pescoço */}
-                <line x1="30" y1="16" x2="30" y2="21" stroke="#52525b" strokeWidth="2.5" strokeLinecap="round"/>
-                {/* Ombros */}
-                <path d="M30 21 L12 28 M30 21 L48 28" stroke="#c8f542" strokeWidth="3" strokeLinecap="round"/>
-                {/* Braços */}
-                <line x1="12" y1="28" x2="8" y2="46" stroke="#c8f542" strokeWidth="3" strokeLinecap="round"/>
-                <line x1="48" y1="28" x2="52" y2="46" stroke="#c8f542" strokeWidth="3" strokeLinecap="round"/>
-                {/* Antebraços */}
-                <line x1="8" y1="46" x2="6" y2="60" stroke="#c8f542" strokeWidth="2.5" strokeLinecap="round" opacity=".5"/>
-                <line x1="52" y1="46" x2="54" y2="60" stroke="#c8f542" strokeWidth="2.5" strokeLinecap="round" opacity=".5"/>
-                {/* Tronco */}
-                <path d="M12 28 L14 54 L46 54 L48 28" fill="#c8f542" fillOpacity=".15" stroke="#c8f542" strokeWidth="2" strokeLinejoin="round"/>
-                {/* Abdômen */}
-                <path d="M14 54 L16 68 L44 68 L46 54" fill="#c8f542" fillOpacity=".08" stroke="#c8f542" strokeWidth="1.5" strokeLinejoin="round" strokeDasharray="3 2" opacity=".7"/>
-                {/* Pernas */}
-                <line x1="21" y1="68" x2="19" y2="88" stroke="#3f3f46" strokeWidth="3" strokeLinecap="round"/>
-                <line x1="39" y1="68" x2="41" y2="88" stroke="#3f3f46" strokeWidth="3" strokeLinecap="round"/>
+                <rect x="22" y="53" width="7" height="32" rx="3.5" fill="#3f3f46" />
+                <rect x="31" y="53" width="7" height="32" rx="3.5" fill="#3f3f46" />
+                <circle cx="30" cy="12" r="7" fill="#3f3f46" />
+                <rect x="20" y="21" width="20" height="30" rx="2" fill="#c8f542" />
+                <rect x="10" y="21" width="8" height="28" rx="4" fill="#c8f542" />
+                <rect x="42" y="21" width="8" height="28" rx="4" fill="#c8f542" />
               </svg>
               <div className="text-center">
                 <div className="text-white font-black text-sm">Superior</div>
@@ -965,27 +909,12 @@ const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
             <button onClick={() => setRegiao('inferior')}
               className="btn flex-1 bg-zinc-900 border-2 border-zinc-800 active:border-[#c8f542] active:bg-[#c8f542]/5 rounded-3xl p-5 flex flex-col items-center gap-3 active:scale-95 transition-all">
               <svg viewBox="0 0 60 90" fill="none" className="w-20 h-28">
-                {/* Cabeça */}
-                <circle cx="30" cy="9" r="7" stroke="#3f3f46" strokeWidth="2.5"/>
-                {/* Pescoço */}
-                <line x1="30" y1="16" x2="30" y2="21" stroke="#3f3f46" strokeWidth="2.5" strokeLinecap="round"/>
-                {/* Ombros */}
-                <path d="M30 21 L12 28 M30 21 L48 28" stroke="#3f3f46" strokeWidth="3" strokeLinecap="round"/>
-                {/* Braços */}
-                <line x1="12" y1="28" x2="8" y2="46" stroke="#3f3f46" strokeWidth="3" strokeLinecap="round"/>
-                <line x1="48" y1="28" x2="52" y2="46" stroke="#3f3f46" strokeWidth="3" strokeLinecap="round"/>
-                <line x1="8" y1="46" x2="6" y2="60" stroke="#3f3f46" strokeWidth="2.5" strokeLinecap="round"/>
-                <line x1="52" y1="46" x2="54" y2="60" stroke="#3f3f46" strokeWidth="2.5" strokeLinecap="round"/>
-                {/* Tronco */}
-                <path d="M12 28 L14 54 L46 54 L48 28" fill="none" stroke="#3f3f46" strokeWidth="2" strokeLinejoin="round"/>
-                {/* Glúteo — destaque */}
-                <path d="M14 54 Q30 60 46 54" stroke="#c8f542" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                {/* Pernas */}
-                <line x1="21" y1="60" x2="19" y2="78" stroke="#c8f542" strokeWidth="3.5" strokeLinecap="round"/>
-                <line x1="39" y1="60" x2="41" y2="78" stroke="#c8f542" strokeWidth="3.5" strokeLinecap="round"/>
-                {/* Canelas */}
-                <line x1="19" y1="78" x2="18" y2="88" stroke="#c8f542" strokeWidth="2.5" strokeLinecap="round" opacity=".55"/>
-                <line x1="41" y1="78" x2="42" y2="88" stroke="#c8f542" strokeWidth="2.5" strokeLinecap="round" opacity=".55"/>
+                <circle cx="30" cy="12" r="7" fill="#3f3f46" />
+                <rect x="20" y="21" width="20" height="30" rx="2" fill="#3f3f46" />
+                <rect x="10" y="21" width="8" height="28" rx="4" fill="#3f3f46" />
+                <rect x="42" y="21" width="8" height="28" rx="4" fill="#3f3f46" />
+                <rect x="22" y="53" width="7" height="32" rx="3.5" fill="#c8f542" />
+                <rect x="31" y="53" width="7" height="32" rx="3.5" fill="#c8f542" />
               </svg>
               <div className="text-center">
                 <div className="text-white font-black text-sm">Inferior</div>
@@ -994,7 +923,6 @@ const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
             </button>
           </div>
 
-          {/* Botão livre */}
           <button onClick={() => onSelecionar('')}
             className="btn w-full py-4 border border-dashed border-zinc-700 text-zinc-500 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 active:border-zinc-500 active:text-zinc-300">
             <IconPlus/> Digitar nome manualmente
@@ -1023,7 +951,6 @@ const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
       {/* TELA 3 — lista de exercícios do músculo */}
       {regiao && musculo && (
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Ilustração do músculo + busca */}
           <div className="px-4 pt-3 pb-3 flex gap-3 items-center border-b border-zinc-900">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
               style={{ color: db[regiao].musculos[musculo].cor, background: db[regiao].musculos[musculo].cor + '18' }}>
@@ -1038,7 +965,6 @@ const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
             />
           </div>
 
-          {/* Lista */}
           <div className="flex-1 overflow-y-auto px-4 pt-3 pb-6 flex flex-col gap-2">
             {exerciciosFiltrados.length === 0 ? (
               <div className="text-center py-10 text-zinc-600 text-sm">Nenhum exercício encontrado.</div>
@@ -1058,7 +984,6 @@ const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
               </button>
             ))}
 
-            {/* Opção de adicionar nome customizado */}
             <button onClick={() => onSelecionar(busca.trim() || '')}
               className="btn w-full border border-dashed border-zinc-800 active:border-zinc-600 text-zinc-500 rounded-2xl px-4 py-4 text-left flex items-center gap-3 mt-1">
               <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center flex-shrink-0 text-zinc-400">
@@ -1079,22 +1004,16 @@ const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
 function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, mostrarToast }) {
   const [exerciciosInicializados, setExerciciosInicializados] = useState(false);
 
-  // id_treino fixo para toda a sessão — gerado uma única vez ao montar o componente.
-  // Usa timestamp completo para evitar colisão quando o mesmo grupo é treinado
-  // mais de uma vez no mesmo dia.
   const idTreinoSessao = useRef(
     `${split.nome}_${usuario.id}_${new Date().toISOString().slice(0,10)}_${Date.now()}`
   );
 
   const [exercicios, setExercicios] = useState([]);
 
-  // Quando o histórico chega de forma assíncrona (após a tela já abrir),
-  // pré-popula os exercícios com os dados do último treino — uma única vez.
   useEffect(() => {
     if (exerciciosInicializados) return;
     if (!historicoAnterior || historicoAnterior.length === 0) return;
 
-    // Agrupa as séries do histórico por nome de exercício, mantendo ordem de aparição
     const mapaExercicios = new Map();
     historicoAnterior.forEach(s => {
       const nome = s.nome_exercicio?.trim() || '';
@@ -1124,7 +1043,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   const [expandidos, setExp]       = useState({});
   const [showExModal, setShowExModal] = useState(false);
 
-  // Timer de descanso
   const [tempoConfig, setTempoConfig] = useState(() => {
     const s = localStorage.getItem(REST_TIME_KEY);
     return s ? parseInt(s, 10) : 90;
@@ -1134,13 +1052,10 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   const [showConfig, setShowConfig]       = useState(false);
   const [showRestEnd, setShowRestEnd]     = useState(false);
 
-  // useRef para o intervalo — não recria o effect a cada tick
   const intervalRef   = useRef(null);
-  // useRef para tempoConfig — alternarSerie pode ler o valor atual sem violar Rules of Hooks
   const tempoConfigRef = useRef(tempoConfig);
   useEffect(() => { tempoConfigRef.current = tempoConfig; }, [tempoConfig]);
 
-  // Effect do timer — depende apenas de timerAtivo (um bool estável)
   useEffect(() => {
     if (!timerAtivo) { clearInterval(intervalRef.current); return; }
     intervalRef.current = setInterval(() => {
@@ -1179,7 +1094,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     mostrarToast(`Descanso: ${fmt(novoTempo)}`, 'info');
   }, [mostrarToast]);
 
-  // Exercícios
   const addEx = useCallback(() => setShowExModal(true), []);
 
   const onSelecionarExercicio = useCallback((nome) => {
@@ -1192,7 +1106,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     }]);
   }, []);
 
-  // ── reordenação de exercícios com setas ──────────────────────────────────────
   const moverEx = useCallback((idx, dir) => {
     setExercicios(l => {
       const next = [...l];
@@ -1206,9 +1119,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   const remEx = useCallback(async (exId) => {
     const ex = exercicios.find(x => x.id === exId);
     if (!ex) return;
-    // Remove do estado imediatamente
     setExercicios(cur => cur.filter(x => x.id !== exId));
-    // Apaga do Sheets todas as séries já enviadas deste exercício
     const enviadas = ex.series.filter(s => s.enviada && s.id_banco);
     for (const s of enviadas) {
       try { await apiFetch(`${R.serie}?id=${s.id_banco}`, { method: 'DELETE' }); } catch {}
@@ -1216,22 +1127,17 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   }, [exercicios]);
 
   const updNome = useCallback((id, novoNome) => {
-    // Atualiza o estado local imediatamente
     setExercicios(e => e.map(x => x.id===id ? {...x, nome:novoNome, nomePendente:novoNome} : x));
   }, []);
 
-  // Quando o input de nome perde o foco, sincroniza o novo nome na planilha
-  // para todas as séries já enviadas deste exercício
   const confirmarNome = useCallback(async (ex) => {
     const nomeNovo = ex.nome.trim();
     const nomeAntigo = ex.nomeAnterior;
 
-    // Atualiza o nomeAnterior para o valor atual
     setExercicios(e => e.map(x => x.id===ex.id ? {...x, nomeAnterior:nomeNovo, nomePendente:undefined} : x));
 
     if (!nomeNovo || nomeNovo === nomeAntigo) return;
 
-    // Coleta os id_banco das séries já enviadas
     const seriesEnviadas = ex.series.filter(s => s.enviada && s.id_banco);
     if (seriesEnviadas.length === 0) return;
 
@@ -1243,10 +1149,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
           nome_exercicio: nomeNovo,
         },
       });
-    } catch {
-      // Falha silenciosa — o nome local já foi atualizado, o histórico
-      // usará o nome correto na próxima sessão via id_treino único
-    }
+    } catch { }
   }, []);
 
   const addSerie = useCallback((exId) =>
@@ -1267,7 +1170,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     setExercicios(e => e.map(x => x.id!==exId ? x : { ...x, series:x.series.filter(s=>s.id!==sId) }))
   , []);
 
-  // Contador de operações em andamento — impede finalizar enquanto há sync pendente
   const pendentesRef = useRef(0);
   const [salvando, setSalvando] = useState(false);
 
@@ -1275,7 +1177,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     const snapshot = exercicios.map(x => ({...x, series:x.series.map(s=>({...s}))}));
 
     if (serie.enviada) {
-      // Desmarcar: remove da planilha
       setExercicios(cur => cur.map(x => x.id!==ex.id ? x : {
         ...x, series: x.series.map(s => s.id===serie.id ? {...s,enviada:false,id_banco:null} : s),
       }));
@@ -1286,7 +1187,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       const nid      = 'S' + Date.now();
       const idTreino = idTreinoSessao.current;
 
-      // Marca como enviada otimisticamente + indica loading
       setExercicios(cur => cur.map(x => x.id!==ex.id ? x : {
         ...x, series: x.series.map(s => s.id===serie.id ? {...s,enviada:true,salvandoNow:true,id_banco:nid} : s),
       }));
@@ -1299,7 +1199,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
           method: 'POST',
           body: { id_serie:nid, id_treino:idTreino, nome_exercicio:ex.nome, numero_serie:serie.id, repeticoes:serie.reps, carga_kg:serie.carga },
         });
-        // Remove o flag de loading após confirmação
         setExercicios(cur => cur.map(x => x.id!==ex.id ? x : {
           ...x, series: x.series.map(s => s.id===serie.id ? {...s,salvandoNow:false} : s),
         }));
@@ -1316,7 +1215,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
   const histEx = useCallback((nome, nomeOriginal) => {
     if (!historicoAnterior?.length) return [];
-    // Use nomeOriginal (o nome com que o treino foi salvo) para buscar histórico
     const chave = (nomeOriginal || nome)?.trim();
     if (!chave) return [];
     return historicoAnterior.filter(s =>
@@ -1324,7 +1222,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     );
   }, [historicoAnterior]);
 
-  // useMemo para não recalcular a cada render
   const { totalEnv, totalSer } = useMemo(() => ({
     totalEnv: exercicios.reduce((a,ex) => a + ex.series.filter(s=>s.enviada).length, 0),
     totalSer: exercicios.reduce((a,ex) => a + ex.series.length, 0),
@@ -1336,7 +1233,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       {showRestEnd && <RestEndBanner onDismiss={() => setShowRestEnd(false)}/>}
       {showConfig  && <ModalConfigDescanso tempoAtual={tempoConfig} onSalvar={salvarConfig} onFechar={() => setShowConfig(false)}/>}
 
-      {/* Header sticky */}
       <div className="sticky top-0 z-30 bg-[#0a0a0a]/96 backdrop-blur-md border-b border-zinc-900 px-5 pt-12 pb-4">
         <div className="flex items-center gap-3 mb-3">
           <button onClick={onVoltar} className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
@@ -1364,10 +1260,8 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
         </div>
       </div>
 
-      {/* Exercícios */}
       <div className="px-4 pt-5 flex flex-col gap-5">
 
-        {/* Empty state */}
         {exercicios.length === 0 && (
           <div className="flex flex-col items-center justify-center py-14 gap-4">
             <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600">
@@ -1379,11 +1273,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
               <p className="text-white font-bold text-base">Nenhum exercício ainda</p>
               <p className="text-zinc-500 text-sm mt-1">Toque em "Adicionar exercício" abaixo para começar</p>
             </div>
-            <div className="flex items-center gap-2 text-zinc-600">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
           </div>
         )}
 
@@ -1393,7 +1282,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
           return (
             <div key={ex.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
               <div className="px-4 pt-4 pb-3">
-                {/* Linha 1: número + nome + lixeira */}
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center text-[#c8f542] text-xs font-black flex-shrink-0">
                     {idx+1}
@@ -1409,7 +1297,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                     </button>
                   )}
                 </div>
-                {/* Linha 2: histórico + setas de reordenação */}
                 <div className="flex items-center gap-2">
                   {hist.length > 0 && (
                     <button onClick={() => setExp(m => ({...m,[ex.id]:!m[ex.id]}))}
@@ -1517,7 +1404,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
         </button>
       </div>
 
-      {/* Modal seleção de exercício */}
       {showExModal && (
         <ModalExercicio
           onSelecionar={onSelecionarExercicio}
@@ -1525,7 +1411,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
         />
       )}
 
-      {/* Rodapé fixo */}
       <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-3 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/98 to-transparent">
         <div className="mb-3">
           <BarraDescanso
@@ -1596,19 +1481,16 @@ function TelaResumo({ resultado, onVoltar }) {
   );
 }
 
-
 // ─── TELA RANK — LOBBY ────────────────────────────────────────────────────────
 function TelaRank({ usuario, mostrarToast, onVoltar }) {
-  const [aba, setAba]           = useState('meus');   // 'meus' | 'criar' | 'entrar' | 'lobby'
+  const [aba, setAba]           = useState('meus');   
   const [meusLobbies, setMeus]  = useState([]);
   const [lobbyAtivo, setLobby]  = useState(null);
   const [ranking, setRanking]   = useState([]);
   const [loading, setLoading]   = useState(false);
 
-  // form criar
   const [nomeLobby, setNomeLobby] = useState('');
   const [dataFim, setDataFim]     = useState('');
-  // form entrar
   const [codigo, setCodigo]       = useState('');
 
   const carregarMeus = useCallback(async () => {
@@ -1622,7 +1504,6 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
 
   useEffect(() => { carregarMeus(); }, [carregarMeus]);
 
-  // Verifica se há código no URL ao abrir (convite por link)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const cod = params.get('lobby');
@@ -1655,7 +1536,6 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
       });
       mostrarToast('Entrou no lobby!', 'sucesso');
       setCodigo('');
-      // Limpa o param da URL
       window.history.replaceState({}, '', window.location.pathname);
       await carregarMeus();
       abrirLobby(r.lobby);
@@ -1682,7 +1562,6 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
   const encerrado = lobbyAtivo && new Date(lobbyAtivo.data_fim) < new Date();
   const hoje      = new Date().toISOString().slice(0, 10);
 
-  // ── TELA LOBBY ──────────────────────────────────────────────────────────────
   if (aba === 'lobby' && lobbyAtivo) {
     const medalhas = ['🥇','🥈','🥉'];
     return (
@@ -1753,7 +1632,6 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
         <h1 className="text-xl font-bold text-white">Ranking</h1>
       </div>
 
-      {/* Abas */}
       <div className="flex gap-2 px-5 pt-4 pb-2">
         {[['meus','Meus Lobbies'],['criar','Criar'],['entrar','Entrar']].map(([v,l]) => (
           <button key={v} onClick={() => setAba(v)}
@@ -1765,7 +1643,6 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
 
       <div className="px-5 pt-4 pb-10 flex flex-col gap-3">
 
-        {/* MEUS LOBBIES */}
         {aba === 'meus' && (
           loading ? <Spinner/> : meusLobbies.length === 0 ? (
             <div className="text-center py-16">
@@ -1793,10 +1670,8 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
           })
         )}
 
-        {/* CRIAR LOBBY */}
         {aba === 'criar' && (
           <div className="flex flex-col items-center gap-5 pt-4">
-            {/* Ícone decorativo */}
             <div className="w-16 h-16 rounded-2xl bg-[#c8f542]/10 border border-[#c8f542]/20 flex items-center justify-center text-[#c8f542]">
               <IconUsers/>
             </div>
@@ -1856,7 +1731,6 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
           </div>
         )}
 
-        {/* ENTRAR NO LOBBY */}
         {aba === 'entrar' && (
           <div className="flex flex-col gap-3">
             <p className="text-zinc-500 text-sm">Digite o código ou acesse o link de convite.</p>
@@ -1902,7 +1776,6 @@ const IOSInstallBanner = memo(() => {
         className="w-full max-w-sm bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-6 shadow-2xl"
         onClick={e => e.stopPropagation()}>
 
-        {/* Ícone + título */}
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-16 h-16 rounded-2xl bg-[#c8f542]/10 border border-[#c8f542]/20 flex items-center justify-center mb-4">
             <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2} className="w-8 h-8">
@@ -1914,7 +1787,6 @@ const IOSInstallBanner = memo(() => {
           <p className="text-zinc-500 text-sm mt-1">Use o FitApp como um app nativo no seu iPhone</p>
         </div>
 
-        {/* Passos */}
         <div className="flex flex-col gap-3 mb-6">
           {[
             { n: '1', t: 'Toque nos 3 pontos (⋯) no Safari' },
@@ -1931,7 +1803,6 @@ const IOSInstallBanner = memo(() => {
           ))}
         </div>
 
-        {/* Botão fechar */}
         <button onClick={fechar}
           className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold text-base rounded-2xl">
           Entendido
@@ -1952,9 +1823,8 @@ export default function App() {
   const [resultado, setResultado]    = useState(null);
   const [lobbyConvite, setLobbyConvite] = useState(null);
   const [toast, setToast]            = useState(null);
-  const toastTimerRef                = useRef(null); // cleanup correto do timeout
+  const toastTimerRef                = useRef(null); 
 
-  // mostrarToast com cleanup para evitar vazamento se chamado rapidamente
   const mostrarToast = useCallback((mensagem, tipo='sucesso') => {
     clearTimeout(toastTimerRef.current);
     setToast({ mensagem, tipo });
@@ -1967,7 +1837,6 @@ export default function App() {
       const r = await apiFetch(`${R.splits}?id_usuario=${uid}`);
       setSplits(r.splits || []);
     } catch (err) {
-      // Erro de rede — não sobrescreve dados do usuário, só limpa a lista
       console.error('Erro ao carregar splits:', err);
       setSplits([]);
     } finally { setLoadingS(false); }
@@ -1986,16 +1855,14 @@ export default function App() {
     setSplitAtivo(null); setHistorico([]);
   }, []);
 
-  // Navega imediatamente para o treino; histórico é carregado de forma assíncrona
-  // → o usuário vê a tela de treino sem delay
   const onSelecionarSplit = useCallback(async split => {
     setSplitAtivo(split);
-    setHistorico([]); // limpa histórico anterior enquanto carrega
+    setHistorico([]); 
     setTela('treino');
     try {
       const r = await apiFetch(`${R.historico}?id_usuario=${usuario.id}&nome_treino=${encodeURIComponent(split.nome)}`);
       setHistorico(r.series || []);
-    } catch { /* sem histórico é normal */ }
+    } catch { }
   }, [usuario]);
 
   const onFinalizar = useCallback(res => {
