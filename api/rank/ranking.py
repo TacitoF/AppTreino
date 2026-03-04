@@ -50,41 +50,53 @@ def ranking():
         ws_series = planilha.worksheet('Series_Exercicios')
         series    = ws_series.get_all_records()
 
-        # Conta treinos únicos por usuário no período
-        # Um "treino" = um ID_Treino único (cada treino tem um ID composto por nome_grupo_usuario_data)
-        contagem = {}  # id_usuario → set de ID_Treino únicos
+        # Pontuação: 1 ponto por dia que o usuário treinou (independente de quantos grupos treinou)
+        # Um "dia treinado" = ao menos 1 ID_Treino com a data daquele dia
+        # ID_Treino formato: NomeGrupo_UIDUsuario_YYYY-MM-DD_timestamp
+        dias_treinados = {}  # id_usuario → set de datas únicas (YYYY-MM-DD)
         for membro in membros:
-            contagem[membro['id_usuario']] = set()
+            dias_treinados[membro['id_usuario']] = set()
 
         for s in series:
             id_treino = str(s.get('ID_Treino', ''))
             if not id_treino:
                 continue
-            # ID_Treino formato: NomeGrupo_UIDUsuario_YYYY-MM-DD
             partes = id_treino.split('_')
             if len(partes) < 3:
                 continue
-            uid_treino  = partes[-2]
-            data_treino = partes[-1]
+            # Posição fixa: penúltimo = uid, antepenúltimo pode variar; data sempre é YYYY-MM-DD
+            # Busca a data pelo formato: qualquer parte que combine com YYYY-MM-DD
+            uid_treino  = None
+            data_treino = None
+            for j, p in enumerate(partes):
+                if len(p) == 10 and p[4] == '-' and p[7] == '-':
+                    data_treino = p
+                    # uid é a parte imediatamente antes da data
+                    if j > 0:
+                        uid_treino = partes[j - 1]
+                    break
 
-            # Filtra pela data de encerramento
+            if not uid_treino or not data_treino:
+                continue
+
+            # Filtra datas após o encerramento do lobby
             if data_fim_str and data_treino > data_fim_str:
                 continue
 
-            if uid_treino in contagem:
-                contagem[uid_treino].add(id_treino)
+            if uid_treino in dias_treinados:
+                dias_treinados[uid_treino].add(data_treino)
 
-        # Monta ranking
+        # Monta ranking — pontos = número de dias distintos treinados
         resultado = []
         for membro in membros:
             uid = membro['id_usuario']
             resultado.append({
                 'id_usuario': uid,
                 'nome':       membro.get('nome', uid),
-                'treinos':    len(contagem.get(uid, set())),
+                'pontos':     len(dias_treinados.get(uid, set())),
             })
 
-        resultado.sort(key=lambda x: x['treinos'], reverse=True)
+        resultado.sort(key=lambda x: x['pontos'], reverse=True)
         return _cors(jsonify({'ranking': resultado, 'data_fim': data_fim_str}))
 
     except Exception as e:

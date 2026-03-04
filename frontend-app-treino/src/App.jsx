@@ -506,12 +506,23 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                 <div className="text-zinc-600"><IconChevronRight/></div>
               </button>
             ))}
-            <button onClick={onGerenciar} className="btn w-full border-2 border-dashed border-zinc-800 active:border-zinc-700 text-zinc-600 active:text-zinc-400 font-semibold py-5 rounded-2xl flex items-center justify-center gap-2 mt-1">
-              <IconSettings/><span className="text-sm">Gerenciar grupos musculares</span>
-            </button>
-            <button onClick={onRank} className="btn w-full border-2 border-dashed border-zinc-800 active:border-zinc-700 text-zinc-600 active:text-zinc-400 font-semibold py-5 rounded-2xl flex items-center justify-center gap-2">
-              <IconUsers/><span className="text-sm">Ranking com amigos</span>
-            </button>
+            {/* Ações secundárias — visual diferenciado por função */}
+            <div className="grid grid-cols-2 gap-3 mt-1">
+              <button onClick={onGerenciar}
+                className="btn bg-zinc-900 border border-zinc-800 active:bg-zinc-800 rounded-2xl p-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400">
+                  <IconSettings/>
+                </div>
+                <span className="text-zinc-400 text-xs font-semibold text-center leading-tight">Gerenciar<br/>grupos</span>
+              </button>
+              <button onClick={onRank}
+                className="btn bg-[#c8f542]/8 border border-[#c8f542]/25 active:bg-[#c8f542]/15 rounded-2xl p-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-[#c8f542]/15 flex items-center justify-center text-[#c8f542]">
+                  <IconTrophy/>
+                </div>
+                <span className="text-[#c8f542] text-xs font-semibold text-center leading-tight">Ranking<br/>com amigos</span>
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -1155,10 +1166,10 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-white font-bold truncate">{p.nome}</div>
-                <div className="text-zinc-500 text-xs mt-0.5">{p.treinos} treino{p.treinos !== 1 ? 's' : ''}</div>
+                <div className="text-zinc-500 text-xs mt-0.5">{p.pontos} dia{p.pontos !== 1 ? 's' : ''} treinado{p.pontos !== 1 ? 's' : ''}</div>
               </div>
               <div className={`text-right flex-shrink-0 ${i === 0 ? 'text-amber-400' : 'text-zinc-400'}`}>
-                <div className="text-xl font-black num">{p.treinos}</div>
+                <div className="text-xl font-black num">{p.pontos}</div>
                 <div className="text-xs text-zinc-600">pts</div>
               </div>
             </div>
@@ -1221,19 +1232,64 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
 
         {/* CRIAR LOBBY */}
         {aba === 'criar' && (
-          <div className="flex flex-col gap-3">
-            <input type="text" placeholder="Nome do lobby (ex: Semana dos Bros)" value={nomeLobby}
-              onChange={e => setNomeLobby(e.target.value)} maxLength={40}
-              className="w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base placeholder-zinc-600"/>
-            <div>
-              <label className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-2 block">Data de encerramento</label>
-              <input type="date" value={dataFim} min={hoje} onChange={e => setDataFim(e.target.value)}
-                className="w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base [color-scheme:dark]"/>
+          <div className="flex flex-col items-center gap-5 pt-4">
+            {/* Ícone decorativo */}
+            <div className="w-16 h-16 rounded-2xl bg-[#c8f542]/10 border border-[#c8f542]/20 flex items-center justify-center text-[#c8f542]">
+              <IconUsers/>
             </div>
-            <button onClick={criarLobby} disabled={loading}
-              className="btn w-full py-5 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold text-base rounded-2xl mt-2 disabled:opacity-50">
-              {loading ? 'Criando...' : 'Criar lobby'}
+            <div className="text-center">
+              <h2 className="text-white font-black text-xl">Criar lobby</h2>
+              <p className="text-zinc-500 text-sm mt-1">Convide amigos e vejam quem treina mais</p>
+            </div>
+
+            <div className="w-full flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-zinc-400 text-xs font-semibold uppercase tracking-wider text-center">Nome do lobby</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Semana dos Bros"
+                  value={nomeLobby}
+                  onChange={e => setNomeLobby(e.target.value)}
+                  maxLength={40}
+                  className="w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base placeholder-zinc-600 text-center"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-zinc-400 text-xs font-semibold uppercase tracking-wider text-center">Data de encerramento</label>
+                <input
+                  type="date"
+                  value={dataFim}
+                  min={hoje}
+                  onChange={e => setDataFim(e.target.value)}
+                  className="w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base text-center [color-scheme:dark]"
+                />
+                {dataFim && (
+                  <p className="text-center text-[#c8f542] text-xs font-semibold">
+                    Encerra {new Date(dataFim + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={criarLobby}
+              disabled={loading || !nomeLobby.trim() || !dataFim}
+              className="btn w-full py-5 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold text-base rounded-2xl disabled:opacity-40">
+              {loading ? 'Criando...' : 'Criar lobby 🚀'}
             </button>
+
+            <div className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-4 flex flex-col gap-2">
+              <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider text-center mb-1">Como funciona</p>
+              <div className="flex items-center gap-3">
+                <span className="text-lg">✅</span>
+                <span className="text-zinc-300 text-sm">Treinou hoje → <span className="text-[#c8f542] font-bold">+1 ponto</span></span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-lg">❌</span>
+                <span className="text-zinc-300 text-sm">Não treinou hoje → <span className="text-zinc-500 font-bold">0 pontos</span></span>
+              </div>
+            </div>
           </div>
         )}
 
