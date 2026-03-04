@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Reset mobile ─────────────────────────────────────────────────────────── */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0a0a0a;
+  overscroll-behavior: none;
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+button,
+input,
+select {
+  /* Impede zoom acidental ao tocar em inputs no iOS */
+  touch-action: manipulation;
+  font-family: inherit;
+}
+
+/* ── Remove setas dos inputs number ───────────────────────────────────────── */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* ── Números monoespaçados (carga, reps, timer) ───────────────────────────── */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ── Animações ────────────────────────────────────────────────────────────── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-8px) scale(0.96); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGreen {
+  0%,  100% { box-shadow: 0 0 0 0   rgba(200, 245, 66, 0.4); }
+  50%        { box-shadow: 0 0 0 8px rgba(200, 245, 66, 0);   }
+}
+
+.slide-up    { animation: slideUp   0.28s ease both; }
+.fade-in     { animation: fadeIn    0.2s  ease both; }
+.toast-in    { animation: toastIn   0.22s ease both; }
+.slide-down  { animation: slideDown 0.25s ease both; }
+.pulse-green { animation: pulseGreen 1.5s ease-in-out infinite; }
+
+/* ── Feedback de toque (substitui hover no mobile) ────────────────────────── */
+.btn          { transition: transform 0.1s ease; }
+.btn:active   { transform: scale(0.96); }
+
+/* ── Sheet overlay ───────────────────────────────────────────────────────── */
+.sheet-overlay { animation: fadeIn 0.2s ease both; }
