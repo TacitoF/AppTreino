@@ -1,6 +1,6 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "buildCommand": "cd frontend-app-treino && npm run build",
+  "outputDirectory": "frontend-app-treino/dist",
   "rewrites": [
     { "source": "/api/treino/serie/:id", "destination": "/api/treino/serie" },
     { "source": "/api/(.*)",             "destination": "/api/$1"           },
