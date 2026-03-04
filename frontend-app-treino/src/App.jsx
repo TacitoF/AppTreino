@@ -1056,36 +1056,66 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   const [showConfig, setShowConfig]       = useState(false);
   const [showRestEnd, setShowRestEnd]     = useState(false);
 
-  const intervalRef   = useRef(null);
+  const intervalRef    = useRef(null);
+  const timerFimRef    = useRef(null); // timestamp absoluto de quando o timer termina
   const tempoConfigRef = useRef(tempoConfig);
   useEffect(() => { tempoConfigRef.current = tempoConfig; }, [tempoConfig]);
 
+  // Calcula restante a partir do timestamp — funciona mesmo com app em background
+  const calcRestante = useCallback(() => {
+    if (!timerFimRef.current) return 0;
+    return Math.max(0, Math.round((timerFimRef.current - Date.now()) / 1000));
+  }, []);
+
+  const dispararFim = useCallback(() => {
+    clearInterval(intervalRef.current);
+    timerFimRef.current = null;
+    setTimerAtivo(false);
+    setTimerRestante(0);
+    setShowRestEnd(true);
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  }, []);
+
   useEffect(() => {
     if (!timerAtivo) { clearInterval(intervalRef.current); return; }
+    // Tick a cada 500ms para maior precisão ao voltar do background
     intervalRef.current = setInterval(() => {
-      setTimerRestante(r => {
-        if (r <= 1) {
-          clearInterval(intervalRef.current);
-          setTimerAtivo(false);
-          setShowRestEnd(true);
-          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-          return 0;
-        }
-        return r - 1;
-      });
-    }, 1000);
+      const r = calcRestante();
+      setTimerRestante(r);
+      if (r <= 0) dispararFim();
+    }, 500);
     return () => clearInterval(intervalRef.current);
-  }, [timerAtivo]);
+  }, [timerAtivo, calcRestante, dispararFim]);
+
+  // Quando o app volta do background, recalcula imediatamente
+  useEffect(() => {
+    const onVisible = () => {
+      if (!timerAtivo || !timerFimRef.current) return;
+      const r = calcRestante();
+      setTimerRestante(r);
+      if (r <= 0) dispararFim();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    // pageshow cobre o caso de restauração de aba congelada no iOS
+    window.addEventListener('pageshow', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', onVisible);
+    };
+  }, [timerAtivo, calcRestante, dispararFim]);
 
   const iniciarDescanso = useCallback(() => {
     clearInterval(intervalRef.current);
-    setTimerRestante(tempoConfigRef.current);
+    const duracao = tempoConfigRef.current;
+    timerFimRef.current = Date.now() + duracao * 1000;
+    setTimerRestante(duracao);
     setShowRestEnd(false);
     setTimerAtivo(true);
   }, []);
 
   const pararDescanso = useCallback(() => {
     clearInterval(intervalRef.current);
+    timerFimRef.current = null;
     setTimerAtivo(false);
     setTimerRestante(0);
   }, []);
