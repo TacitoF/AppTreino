@@ -1,17 +1,11 @@
-from flask import Flask, request, jsonify, make_response
+"""POST /api/registro"""
+from flask import Flask, request, jsonify
 from datetime import date
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
-from _sheets import get_sheet
+from _sheets import get_sheet, _cors
 
 app = Flask(__name__)
-
-def _cors(response, status=200):
-    r = make_response(response, status)
-    r.headers['Access-Control-Allow-Origin']  = '*'
-    r.headers['Access-Control-Allow-Methods'] = 'GET,POST,DELETE,OPTIONS'
-    r.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    return r
 
 @app.route('/api/registro', methods=['POST', 'OPTIONS'])
 def registro():

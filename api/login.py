@@ -1,7 +1,8 @@
+"""POST /api/login"""
 from flask import Flask, request, jsonify
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
-from _sheets import get_sheet
+from _sheets import get_sheet, gerar_token, _cors
 
 app = Flask(__name__)
 
@@ -24,13 +25,16 @@ def login():
         for user in registros:
             if str(user.get('Email', '')).strip() == email:
                 if str(user.get('Senha_Hash', '')).strip() == senha:
+                    uid  = str(user.get('ID_Usuario', ''))
+                    nome = str(user.get('Nome', ''))
                     return _cors(jsonify({
-                        'status': 'sucesso',
+                        'status':  'sucesso',
+                        'token':   gerar_token(uid, nome),   # ← JWT retornado aqui
                         'usuario': {
-                            'id':    str(user.get('ID_Usuario', '')),
-                            'nome':  str(user.get('Nome', '')),
+                            'id':    uid,
+                            'nome':  nome,
                             'email': str(user.get('Email', '')),
-                        }
+                        },
                     }), 200)
                 return _cors(jsonify({'detail': 'Senha incorreta.'}), 401)
 
@@ -38,12 +42,3 @@ def login():
 
     except Exception as e:
         return _cors(jsonify({'detail': str(e)}), 500)
-
-
-def _cors(response, status=200):
-    from flask import make_response
-    r = make_response(response, status)
-    r.headers['Access-Control-Allow-Origin']  = '*'
-    r.headers['Access-Control-Allow-Methods'] = 'GET,POST,DELETE,OPTIONS'
-    r.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    return r

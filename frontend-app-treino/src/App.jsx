@@ -20,18 +20,28 @@ import React, {
 const REST_TIME_KEY = 'fitapp_rest_time';
 // Rotas da API centralizadas — não altere sem atualizar o backend
 const R = {
-  login:      '/api/login',
-  registro:   '/api/registro',
-  splits:     '/api/splits',
-  serie:      '/api/treino/serie',
-  historico:  '/api/treino/historico',
+  login:       '/api/login',
+  registro:    '/api/registro',
+  splits:      '/api/splits',
+  serie:       '/api/treino/serie',
+  serieNome:   '/api/treino/serie/nome',
+  historico:   '/api/treino/historico',
 };
 
-// ─── FETCH HELPER (substitui axios — sem dependência externa) ─────────────────
+// ─── AUTH TOKEN — armazenado em memória, não no bundle ───────────────────────
+// Nunca fica visível em código estático; é preenchido após login bem-sucedido
+let _authToken = null;
+export function setAuthToken(t) { _authToken = t; }
+export function clearAuthToken() { _authToken = null; }
+
+// ─── FETCH HELPER ─────────────────────────────────────────────────────────────
 async function apiFetch(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  if (_authToken) headers['Authorization'] = `Bearer ${_authToken}`;
+
   const res = await fetch(path, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
+    headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
   if (!res.ok) {
@@ -334,6 +344,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
     setLoading(true);
     try {
       const r = await apiFetch(R.login, { method: 'POST', body: { email, senha } });
+      if (r.token) setAuthToken(r.token);
       onLogin(r.usuario);
       limpar();
     } catch (err) {
@@ -550,6 +561,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       return {
         id: Date.now() + exIdx,
         nome,
+        nomeAnterior: nome,
         series: seriesOrdenadas.map((s, i) => ({
           id:       i + 1,
           reps:     s.repeticoes,
@@ -622,12 +634,42 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
   // Exercícios
   const addEx = useCallback(() =>
-    setExercicios(e => [...e, { id:Date.now(), nome:'', series:[{id:1,reps:12,carga:0,enviada:false,id_banco:null}] }])
+    setExercicios(e => [...e, { id:Date.now(), nome:'', nomeAnterior:'', series:[{id:1,reps:12,carga:0,enviada:false,id_banco:null}] }])
   , []);
 
-  const updNome = useCallback((id, nome) =>
-    setExercicios(e => e.map(x => x.id===id ? {...x,nome} : x))
-  , []);
+  const updNome = useCallback((id, novoNome) => {
+    // Atualiza o estado local imediatamente
+    setExercicios(e => e.map(x => x.id===id ? {...x, nome:novoNome, nomePendente:novoNome} : x));
+  }, []);
+
+  // Quando o input de nome perde o foco, sincroniza o novo nome na planilha
+  // para todas as séries já enviadas deste exercício
+  const confirmarNome = useCallback(async (ex) => {
+    const nomeNovo = ex.nome.trim();
+    const nomeAntigo = ex.nomeAnterior;
+
+    // Atualiza o nomeAnterior para o valor atual
+    setExercicios(e => e.map(x => x.id===ex.id ? {...x, nomeAnterior:nomeNovo, nomePendente:undefined} : x));
+
+    if (!nomeNovo || nomeNovo === nomeAntigo) return;
+
+    // Coleta os id_banco das séries já enviadas
+    const seriesEnviadas = ex.series.filter(s => s.enviada && s.id_banco);
+    if (seriesEnviadas.length === 0) return;
+
+    try {
+      await apiFetch(R.serieNome, {
+        method: 'POST',
+        body: {
+          ids: seriesEnviadas.map(s => s.id_banco),
+          nome_exercicio: nomeNovo,
+        },
+      });
+    } catch {
+      // Falha silenciosa — o nome local já foi atualizado, o histórico
+      // usará o nome correto na próxima sessão via id_treino único
+    }
+  }, []);
 
   const addSerie = useCallback((exId) =>
     setExercicios(e => e.map(x => {
@@ -754,6 +796,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                     {idx+1}
                   </div>
                   <input type="text" value={ex.nome} onChange={e => updNome(ex.id, e.target.value)}
+                    onBlur={() => confirmarNome(ex)}
                     placeholder="Nome do exercício"
                     className="flex-1 bg-transparent text-white font-bold text-lg outline-none placeholder-zinc-700 border-b border-transparent focus:border-zinc-700 pb-0.5"/>
                 </div>
@@ -1248,6 +1291,7 @@ export default function App() {
   }, [carregarSplits, mostrarToast]);
 
   const onLogout = useCallback(() => {
+    clearAuthToken();
     setUsuario(null); setTela('auth'); setSplits([]);
     setSplitAtivo(null); setHistorico([]);
   }, []);

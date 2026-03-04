@@ -1,21 +1,19 @@
-from flask import Flask, request, jsonify, make_response
+"""GET /api/splits  |  POST /api/splits"""
+from flask import Flask, request, jsonify
 import json, sys, os
 sys.path.insert(0, os.path.dirname(__file__))
-from _sheets import get_sheet
+from _sheets import get_sheet, exigir_auth, _cors
 
 app = Flask(__name__)
-
-def _cors(response, status=200):
-    r = make_response(response, status)
-    r.headers['Access-Control-Allow-Origin']  = '*'
-    r.headers['Access-Control-Allow-Methods'] = 'GET,POST,DELETE,OPTIONS'
-    r.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    return r
 
 @app.route('/api/splits', methods=['GET', 'POST', 'OPTIONS'])
 def splits():
     if request.method == 'OPTIONS':
         return _cors('', 204)
+
+    auth, erro = exigir_auth()
+    if erro:
+        return erro
 
     try:
         ws = get_sheet().worksheet('Treinos')
@@ -38,10 +36,10 @@ def splits():
             return _cors(jsonify({'splits': [], 'encontrado': False}))
 
         if request.method == 'POST':
-            body       = request.get_json(force=True) or {}
-            id_usuario = str(body.get('id_usuario', '')).strip()
-            splits     = body.get('splits', [])
-            splits_json = json.dumps(splits, ensure_ascii=False)
+            body        = request.get_json(force=True) or {}
+            id_usuario  = str(body.get('id_usuario', '')).strip()
+            splits_list = body.get('splits', [])
+            splits_json = json.dumps(splits_list, ensure_ascii=False)
 
             dados = ws.get_all_values()
             for i, row in enumerate(dados, start=1):

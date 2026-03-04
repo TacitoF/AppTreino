@@ -1,21 +1,19 @@
-from flask import Flask, request, jsonify, make_response
+"""POST /api/treino/serie  |  DELETE /api/treino/serie"""
+from flask import Flask, request, jsonify
 import gspread, sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from _sheets import get_sheet
+from _sheets import get_sheet, exigir_auth, _cors
 
 app = Flask(__name__)
-
-def _cors(response, status=200):
-    r = make_response(response, status)
-    r.headers['Access-Control-Allow-Origin']  = '*'
-    r.headers['Access-Control-Allow-Methods'] = 'GET,POST,DELETE,OPTIONS'
-    r.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    return r
 
 @app.route('/api/treino/serie', methods=['POST', 'DELETE', 'OPTIONS'])
 def serie():
     if request.method == 'OPTIONS':
         return _cors('', 204)
+
+    auth, erro = exigir_auth()
+    if erro:
+        return erro
 
     try:
         planilha = get_sheet()
@@ -35,18 +33,18 @@ def serie():
             if not id_serie or not id_treino or not nome_exercicio:
                 return _cors(jsonify({'detail': 'Campos obrigatórios ausentes.'}), 400)
 
-            # Verifica se já existe (idempotência — evita duplicata se o cliente retentou)
+            # Idempotência — evita duplicata em caso de retentativa do cliente
             try:
                 existing = ws.find(id_serie, in_column=1)
                 if existing:
                     return _cors(jsonify({'status': 'sucesso', 'aviso': 'já existia'}))
             except gspread.exceptions.CellNotFound:
-                pass  # Normal — não existe ainda, prossegue
+                pass
 
             ws.append_row([id_serie, id_treino, nome_exercicio, numero_serie, repeticoes, carga_kg])
             return _cors(jsonify({'status': 'sucesso'}))
 
-        # ── DELETE — remove série pelo id_serie ───────────────────────────────
+        # ── DELETE — remove série ─────────────────────────────────────────────
         if request.method == 'DELETE':
             id_serie = str(request.args.get('id', '')).strip()
             if not id_serie:
@@ -56,7 +54,6 @@ def serie():
                 ws.delete_rows(cel.row)
                 return _cors(jsonify({'status': 'sucesso'}))
             except gspread.exceptions.CellNotFound:
-                # Já não existe — trata como sucesso (operação idempotente)
                 return _cors(jsonify({'status': 'sucesso', 'aviso': 'não encontrada'}))
 
     except Exception as e:
