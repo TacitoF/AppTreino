@@ -1023,11 +1023,14 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
     const exerciciosDoHistorico = Array.from(mapaExercicios.entries()).map(([nome, series], exIdx) => {
       const seriesOrdenadas = [...series].sort((a, b) => a.numero_serie - b.numero_serie);
+      // Detecta se o exercício foi salvo em modo placas (marcador [P] no nome)
+      const usaPlacas = nome.startsWith('[P]');
+      const nomeLimpo = usaPlacas ? nome.slice(3) : nome;
       return {
         id: Date.now() + exIdx,
-        nome,
-        nomeAnterior: nome,
-        usaPlacas: false,
+        nome: nomeLimpo,
+        nomeAnterior: nomeLimpo,
+        usaPlacas,
         series: seriesOrdenadas.map((s, i) => ({
           id:       i + 1,
           reps:     s.repeticoes,
@@ -1205,10 +1208,13 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       pendentesRef.current += 1;
       setSalvando(true);
 
+      // Salva "[P]" no nome quando é modo placas — permite detectar ao recarregar
+      const nomeParaSalvar = ex.usaPlacas ? `[P]${ex.nome}` : ex.nome;
+
       try {
         await apiFetch(R.serie, {
           method: 'POST',
-          body: { id_serie:nid, id_treino:idTreino, nome_exercicio:ex.nome, numero_serie:serie.id, repeticoes:serie.reps, carga_kg:serie.carga },
+          body: { id_serie:nid, id_treino:idTreino, nome_exercicio:nomeParaSalvar, numero_serie:serie.id, repeticoes:serie.reps, carga_kg:serie.carga },
         });
         setExercicios(cur => cur.map(x => x.id!==ex.id ? x : {
           ...x, series: x.series.map(s => s.id===serie.id ? {...s,salvandoNow:false} : s),
@@ -1226,11 +1232,13 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
   const histEx = useCallback((nome, nomeOriginal) => {
     if (!historicoAnterior?.length) return [];
-    const chave = (nomeOriginal || nome)?.trim();
+    const chave = (nomeOriginal || nome)?.trim().toLowerCase();
     if (!chave) return [];
-    return historicoAnterior.filter(s =>
-      s.nome_exercicio?.toLowerCase().trim() === chave.toLowerCase().trim()
-    );
+    return historicoAnterior.filter(s => {
+      // Normaliza: remove [P] do nome salvo no banco antes de comparar
+      const nomeNorm = (s.nome_exercicio || '').replace(/^\[P\]/, '').trim().toLowerCase();
+      return nomeNorm === chave;
+    });
   }, [historicoAnterior]);
 
   const { totalEnv, totalSer } = useMemo(() => ({
@@ -1293,7 +1301,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
           return (
             <div key={ex.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
               <div className="px-4 pt-4 pb-3">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <div className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center text-[#c8f542] text-xs font-black flex-shrink-0">
                     {idx+1}
                   </div>
@@ -1308,43 +1316,55 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                     </button>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+
+                {/* Toggle kg / Placas — visível e claro */}
+                <div className="flex items-center gap-2 mb-1">
+                  <button
+                    onClick={() => alternarModoPlacas(ex.id)}
+                    disabled={ex.series.some(s => s.enviada)}
+                    className={`btn relative flex items-center rounded-xl overflow-hidden border transition-all disabled:opacity-40 ${
+                      ex.usaPlacas ? 'border-blue-500/40' : 'border-zinc-700'
+                    }`}
+                    style={{ padding: 0 }}
+                  >
+                    {/* Opção kg */}
+                    <span className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all ${
+                      !ex.usaPlacas ? 'bg-[#c8f542] text-black' : 'bg-zinc-800 text-zinc-500'
+                    }`}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h3m12 0h3M6 6v12m12-12v12M3 18h3m12 0h3M6 9h12M6 15h12"/>
+                      </svg>
+                      kg
+                    </span>
+                    {/* Divider */}
+                    <span className="w-px h-full bg-zinc-700 flex-shrink-0"/>
+                    {/* Opção Placas */}
+                    <span className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all ${
+                      ex.usaPlacas ? 'bg-blue-500 text-white' : 'bg-zinc-800 text-zinc-500'
+                    }`}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">
+                        <circle cx="12" cy="12" r="9"/>
+                        <circle cx="12" cy="12" r="4"/>
+                      </svg>
+                      Placas
+                    </span>
+                  </button>
+                  {ex.series.some(s => s.enviada) && (
+                    <span className="text-zinc-600 text-xs">bloqueado após salvar</span>
+                  )}
+                  <div className="flex-1"/>
                   {hist.length > 0 && (
                     <button onClick={() => setExp(m => ({...m,[ex.id]:!m[ex.id]}))}
                       className={`btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold ${
                         show ? 'bg-amber-400/15 text-amber-400 border border-amber-400/25'
                              : 'bg-zinc-800 text-zinc-400 border border-zinc-700'}`}>
                       <IconHistory/>
-                      {show ? 'Ocultar histórico' : `Último — ${hist.length} séries`}
+                      {show ? 'Ocultar' : `Último — ${hist.length} séries`}
                     </button>
                   )}
-                  {/* Botão alternar kg ↔ placas */}
-                  <button
-                    onClick={() => alternarModoPlacas(ex.id)}
-                    disabled={ex.series.some(s => s.enviada)}
-                    title={ex.series.some(s => s.enviada) ? 'Não é possível trocar após salvar séries' : ''}
-                    className={`btn flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-35 ${
-                      ex.usaPlacas
-                        ? 'bg-blue-500/15 text-blue-400 border border-blue-500/25'
-                        : 'bg-zinc-800 text-zinc-500 border border-zinc-700'
-                    }`}>
-                    {ex.usaPlacas ? (
-                      <>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">
-                          <circle cx="12" cy="12" r="9"/>
-                          <circle cx="12" cy="12" r="4"/>
-                        </svg>
-                        <span>Placas</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h3m12 0h3M6 6v12m12-12v12M3 18h3m12 0h3M6 9h12M6 15h12"/>
-                        </svg>
-                        <span>kg</span>
-                      </>
-                    )}
-                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
                   <div className="flex-1"/>
                   {exercicios.length > 1 && (
                     <div className="flex gap-1">
@@ -1517,11 +1537,20 @@ function TelaResumo({ resultado, onVoltar }) {
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6">
           {exercicios.filter(ex=>ex.series.some(s=>s.enviada)).map(ex=>(
             <div key={ex.id} className="mb-4 last:mb-0">
-              <p className="text-white font-bold text-sm mb-2">{ex.nome||'Exercício'}</p>
+              <div className="flex items-center gap-2 mb-2">
+                <p className="text-white font-bold text-sm">{ex.nome||'Exercício'}</p>
+                {ex.usaPlacas && (
+                  <span className="text-blue-400 text-xs font-semibold bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg">
+                    Placas
+                  </span>
+                )}
+              </div>
               {ex.series.filter(s=>s.enviada).map(s=>(
                 <div key={s.id} className="flex justify-between text-sm py-0.5">
                   <span className="text-zinc-600">Série {s.id}</span>
-                  <span className="text-zinc-400 font-medium">{s.carga}kg × {s.reps} reps</span>
+                  <span className="text-zinc-400 font-medium">
+                    {s.carga}{ex.usaPlacas ? ' pl' : 'kg'} × {s.reps} reps
+                  </span>
                 </div>
               ))}
             </div>
