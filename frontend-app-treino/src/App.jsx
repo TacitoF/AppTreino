@@ -275,22 +275,33 @@ const Spinner = memo(() => (
 ));
 
 // ─── INPUT NUMÉRICO — memo + estado interno isolado ──────────────────────────
+// No iOS o focus() assíncrono não abre o teclado — precisa ser síncrono,
+// direto no handler do evento do usuário. A solução é sempre renderizar o
+// <input> mas escondê-lo quando não está editando, e chamar focus() direto
+// no onClick sem setTimeout.
 const NumInput = memo(({ label, value, onChange, disabled }) => {
   const [editando, setEditando] = useState(false);
   const [txt, setTxt]           = useState('');
   const ref = useRef(null);
   const val = Math.round(value);
 
-  const abrirEdit = useCallback(() => {
+  const abrirEdit = useCallback((e) => {
     if (disabled) return;
-    setTxt(String(val));
+    e.preventDefault();
+    const novo = String(val);
+    setTxt(novo);
     setEditando(true);
-    setTimeout(() => { ref.current?.focus(); ref.current?.select(); }, 20);
+    // focus() síncrono dentro do handler — único jeito de abrir teclado no iOS
+    if (ref.current) {
+      ref.current.value = novo;
+      ref.current.focus();
+      ref.current.select();
+    }
   }, [disabled, val]);
 
   const confirmar = useCallback(() => {
-    const n = parseInt(txt.replace(',', '.'), 10);
-    if (!isNaN(n) && n >= 0) onChange(n);
+    const n = parseFloat(txt.replace(',', '.'));
+    if (!isNaN(n) && n >= 0) onChange(Math.round(n));
     setEditando(false);
   }, [txt, onChange]);
 
@@ -305,18 +316,29 @@ const NumInput = memo(({ label, value, onChange, disabled }) => {
           className="btn w-10 h-10 bg-zinc-800 active:bg-zinc-700 rounded-xl text-white text-xl flex items-center justify-center disabled:opacity-20 select-none flex-shrink-0">
           −
         </button>
-        <div className="flex-1 flex justify-center min-w-0">
-          {editando
-            ? <input ref={ref} type="number" value={txt}
-                onChange={e => setTxt(e.target.value)}
-                onBlur={confirmar}
-                onKeyDown={e => e.key === 'Enter' && confirmar()}
-                className="w-full text-center text-xl font-black text-white bg-transparent outline-none border-b-2 border-[#c8f542] num"/>
-            : <button onClick={abrirEdit} disabled={disabled}
-                className={`btn text-xl font-black num min-w-0 w-full text-center rounded-xl py-1 px-1 active:bg-zinc-800 ${disabled ? 'text-zinc-600' : 'text-white'}`}>
-                {val}
-              </button>
-          }
+        <div className="flex-1 flex justify-center min-w-0 relative">
+          {/* Input sempre renderizado — visível só quando editando.
+              Isso evita o problema do iOS que não abre teclado em elementos
+              que aparecem depois do clique (montagem assíncrona). */}
+          <input
+            ref={ref}
+            type="number"
+            inputMode="decimal"
+            value={txt}
+            onChange={e => setTxt(e.target.value)}
+            onBlur={confirmar}
+            onKeyDown={e => e.key === 'Enter' && confirmar()}
+            style={{ display: editando ? 'block' : 'none' }}
+            className="w-full text-center text-xl font-black text-white bg-transparent outline-none border-b-2 border-[#c8f542] num"
+          />
+          {!editando && (
+            <button
+              onPointerDown={abrirEdit}
+              disabled={disabled}
+              className={`btn text-xl font-black num min-w-0 w-full text-center rounded-xl py-1 px-1 active:bg-zinc-800 ${disabled ? 'text-zinc-600' : 'text-white'}`}>
+              {val}
+            </button>
+          )}
         </div>
         <button onClick={inc} disabled={disabled}
           className="btn w-10 h-10 bg-zinc-800 active:bg-zinc-700 rounded-xl text-white text-xl flex items-center justify-center disabled:opacity-20 select-none flex-shrink-0">
