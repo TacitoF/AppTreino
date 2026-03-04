@@ -717,6 +717,358 @@ function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast
   );
 }
 
+// ─── BANCO DE EXERCÍCIOS ─────────────────────────────────────────────────────
+const EXERCICIOS_DB = {
+  superior: {
+    label: 'Superior',
+    musculos: {
+      peito: {
+        label: 'Peito',
+        cor: '#ef4444',
+        svg: (
+          <svg viewBox="0 0 80 60" className="w-full h-full">
+            <ellipse cx="22" cy="32" rx="17" ry="13" fill="currentColor" opacity=".9"/>
+            <ellipse cx="58" cy="32" rx="17" ry="13" fill="currentColor" opacity=".9"/>
+            <ellipse cx="22" cy="30" rx="12" ry="9" fill="white" opacity=".12"/>
+            <ellipse cx="58" cy="30" rx="12" ry="9" fill="white" opacity=".12"/>
+            <path d="M39 20 Q40 18 41 20 L42 38 Q40 42 38 38Z" fill="currentColor" opacity=".5"/>
+          </svg>
+        ),
+        exercicios: ['Supino reto','Supino inclinado','Supino declinado','Crucifixo','Crossover','Flexão de braço','Peck deck','Pull-over'],
+      },
+      costas: {
+        label: 'Costas',
+        cor: '#3b82f6',
+        svg: (
+          <svg viewBox="0 0 80 60" className="w-full h-full">
+            <rect x="18" y="10" width="44" height="40" rx="8" fill="currentColor" opacity=".85"/>
+            <rect x="26" y="14" width="10" height="32" rx="4" fill="white" opacity=".15"/>
+            <rect x="44" y="14" width="10" height="32" rx="4" fill="white" opacity=".15"/>
+            <rect x="37" y="12" width="6" height="36" rx="3" fill="currentColor" opacity=".4"/>
+          </svg>
+        ),
+        exercicios: ['Puxada frontal','Puxada posterior','Remada curvada','Remada unilateral','Serrote','Levantamento terra','Pulldown','Remada cavalinho'],
+      },
+      ombro: {
+        label: 'Ombro',
+        cor: '#a855f7',
+        svg: (
+          <svg viewBox="0 0 80 60" className="w-full h-full">
+            <circle cx="14" cy="30" r="12" fill="currentColor" opacity=".9"/>
+            <circle cx="66" cy="30" r="12" fill="currentColor" opacity=".9"/>
+            <rect x="26" y="24" width="28" height="12" rx="6" fill="currentColor" opacity=".6"/>
+            <circle cx="14" cy="28" r="7" fill="white" opacity=".15"/>
+            <circle cx="66" cy="28" r="7" fill="white" opacity=".15"/>
+          </svg>
+        ),
+        exercicios: ['Desenvolvimento militar','Elevação lateral','Elevação frontal','Crucifixo invertido','Arnold press','Remada alta','Face pull','Encolhimento'],
+      },
+      biceps: {
+        label: 'Bíceps',
+        cor: '#f59e0b',
+        svg: (
+          <svg viewBox="0 0 80 60" className="w-full h-full">
+            <path d="M20 48 Q14 30 20 16 Q26 8 32 16 Q36 26 32 48Z" fill="currentColor" opacity=".9"/>
+            <path d="M60 48 Q54 30 48 16 Q54 8 60 16 Q66 26 60 48Z" fill="currentColor" opacity=".9"/>
+            <path d="M22 22 Q26 16 30 22 Q28 30 26 34" fill="white" opacity=".2"/>
+            <path d="M50 22 Q54 16 58 22 Q56 30 54 34" fill="white" opacity=".2"/>
+          </svg>
+        ),
+        exercicios: ['Rosca direta','Rosca alternada','Rosca martelo','Rosca concentrada','Rosca scott','Rosca 21','Rosca cabo','Rosca inversa'],
+      },
+      triceps: {
+        label: 'Tríceps',
+        cor: '#ec4899',
+        svg: (
+          <svg viewBox="0 0 80 60" className="w-full h-full">
+            <path d="M22 14 Q28 10 34 18 Q38 30 34 48 Q28 52 22 48 Q16 36 22 14Z" fill="currentColor" opacity=".9"/>
+            <path d="M58 14 Q52 10 46 18 Q42 30 46 48 Q52 52 58 48 Q64 36 58 14Z" fill="currentColor" opacity=".9"/>
+            <path d="M24 20 Q28 14 32 20 Q34 30 30 38" fill="white" opacity=".18"/>
+            <path d="M56 20 Q52 14 48 20 Q46 30 50 38" fill="white" opacity=".18"/>
+          </svg>
+        ),
+        exercicios: ['Tríceps pulley','Tríceps testa','Tríceps francês','Mergulho','Tríceps coice','Tríceps corda','Tríceps banco','Fechado'],
+      },
+    },
+  },
+  inferior: {
+    label: 'Inferior',
+    musculos: {
+      quadriceps: {
+        label: 'Quadríceps',
+        cor: '#10b981',
+        svg: (
+          <svg viewBox="0 0 80 70" className="w-full h-full">
+            <path d="M18 8 Q24 4 28 10 Q32 20 30 50 Q28 62 22 64 Q16 62 14 50 Q12 28 18 8Z" fill="currentColor" opacity=".9"/>
+            <path d="M62 8 Q56 4 52 10 Q48 20 50 50 Q52 62 58 64 Q64 62 66 50 Q68 28 62 8Z" fill="currentColor" opacity=".9"/>
+            <path d="M20 14 Q24 8 28 14 Q30 26 28 38" fill="white" opacity=".18"/>
+            <path d="M60 14 Q56 8 52 14 Q50 26 52 38" fill="white" opacity=".18"/>
+          </svg>
+        ),
+        exercicios: ['Agachamento livre','Leg press','Extensora','Hack squat','Agachamento búlgaro','Avanço','Afundo','Agachamento sumô'],
+      },
+      posterior: {
+        label: 'Posterior',
+        cor: '#06b6d4',
+        svg: (
+          <svg viewBox="0 0 80 70" className="w-full h-full">
+            <path d="M16 10 Q22 6 26 14 Q28 28 26 52 Q24 64 18 66 Q12 64 10 52 Q8 30 16 10Z" fill="currentColor" opacity=".9"/>
+            <path d="M64 10 Q58 6 54 14 Q52 28 54 52 Q56 64 62 66 Q68 64 70 52 Q72 30 64 10Z" fill="currentColor" opacity=".9"/>
+            <path d="M18 16 Q22 10 26 16 Q28 28 24 40" fill="white" opacity=".18"/>
+            <path d="M62 16 Q58 10 54 16 Q52 28 56 40" fill="white" opacity=".18"/>
+          </svg>
+        ),
+        exercicios: ['Mesa flexora','Cadeira flexora','Stiff','Levantamento terra romeno','Bom dia','Leg curl','Flexão nórdica','Ponte'],
+      },
+      gluteo: {
+        label: 'Glúteo',
+        cor: '#f97316',
+        svg: (
+          <svg viewBox="0 0 80 60" className="w-full h-full">
+            <ellipse cx="24" cy="34" rx="20" ry="18" fill="currentColor" opacity=".9"/>
+            <ellipse cx="56" cy="34" rx="20" ry="18" fill="currentColor" opacity=".9"/>
+            <ellipse cx="22" cy="30" rx="14" ry="11" fill="white" opacity=".12"/>
+            <ellipse cx="54" cy="30" rx="14" ry="11" fill="white" opacity=".12"/>
+          </svg>
+        ),
+        exercicios: ['Agachamento','Hip thrust','Elevação pélvica','Glúteo no cabo','Abdução','Passada','Agachamento sumô','Extensão quadril'],
+      },
+      panturrilha: {
+        label: 'Panturrilha',
+        cor: '#84cc16',
+        svg: (
+          <svg viewBox="0 0 80 70" className="w-full h-full">
+            <path d="M22 4 Q28 2 32 10 Q36 24 32 50 Q30 62 24 64 Q18 62 16 50 Q12 28 22 4Z" fill="currentColor" opacity=".9"/>
+            <path d="M58 4 Q52 2 48 10 Q44 24 48 50 Q50 62 56 64 Q62 62 64 50 Q68 28 58 4Z" fill="currentColor" opacity=".9"/>
+            <path d="M24 10 Q28 4 32 10 Q34 22 28 36" fill="white" opacity=".2"/>
+            <path d="M56 10 Q52 4 48 10 Q46 22 52 36" fill="white" opacity=".2"/>
+          </svg>
+        ),
+        exercicios: ['Elevação de calcanhar em pé','Elevação de calcanhar sentado','Leg press panturrilha','Donkey calf raise','Panturrilha unilateral'],
+      },
+      abdomen: {
+        label: 'Abdômen',
+        cor: '#6366f1',
+        svg: (
+          <svg viewBox="0 0 80 60" className="w-full h-full">
+            <rect x="26" y="8" width="28" height="44" rx="6" fill="currentColor" opacity=".85"/>
+            <rect x="30" y="12" width="8" height="8" rx="3" fill="white" opacity=".2"/>
+            <rect x="42" y="12" width="8" height="8" rx="3" fill="white" opacity=".2"/>
+            <rect x="30" y="24" width="8" height="8" rx="3" fill="white" opacity=".2"/>
+            <rect x="42" y="24" width="8" height="8" rx="3" fill="white" opacity=".2"/>
+            <rect x="30" y="36" width="8" height="8" rx="3" fill="white" opacity=".2"/>
+            <rect x="42" y="36" width="8" height="8" rx="3" fill="white" opacity=".2"/>
+          </svg>
+        ),
+        exercicios: ['Abdominal crunch','Prancha','Abdominal bicicleta','Elevação de pernas','Abdominal oblíquo','Rollout','Dragon flag','Abdominal infra'],
+      },
+    },
+  },
+};
+
+// ─── MODAL SELECIONAR EXERCÍCIO ───────────────────────────────────────────────
+const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
+  const [regiao, setRegiao]   = useState(null);    // 'superior' | 'inferior'
+  const [musculo, setMusculo] = useState(null);    // chave do músculo
+  const [busca, setBusca]     = useState('');
+
+  const db = EXERCICIOS_DB;
+
+  // lista de exercícios do músculo ativo, filtrada pela busca
+  const exerciciosFiltrados = useMemo(() => {
+    if (!regiao || !musculo) return [];
+    const lista = db[regiao].musculos[musculo]?.exercicios || [];
+    if (!busca.trim()) return lista;
+    return lista.filter(e => e.toLowerCase().includes(busca.toLowerCase()));
+  }, [regiao, musculo, busca]);
+
+  const voltar = () => {
+    if (musculo) { setMusculo(null); setBusca(''); }
+    else setRegiao(null);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex flex-col bg-[#0a0a0a]" style={{paddingTop:'env(safe-area-inset-top)'}}>
+
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 flex items-center gap-3 border-b border-zinc-900">
+        <button onClick={regiao ? voltar : onFechar}
+          className="btn w-11 h-11 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
+          <IconBack/>
+        </button>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-white font-black text-lg leading-none">
+            {!regiao ? 'Escolher exercício' : !musculo ? db[regiao].label : db[regiao].musculos[musculo].label}
+          </h2>
+          {regiao && (
+            <p className="text-zinc-600 text-xs mt-0.5">
+              {!musculo ? 'Selecione o músculo' : 'Toque para adicionar'}
+            </p>
+          )}
+        </div>
+        {/* Breadcrumb chips */}
+        {regiao && (
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button onClick={() => { setRegiao(null); setMusculo(null); setBusca(''); }}
+              className="bg-zinc-800 text-zinc-400 text-xs font-semibold px-2.5 py-1.5 rounded-lg">
+              {db[regiao].label}
+            </button>
+            {musculo && (
+              <>
+                <span className="text-zinc-700 text-xs">›</span>
+                <span className="text-[#c8f542] text-xs font-semibold px-2.5 py-1.5 bg-[#c8f542]/10 rounded-lg">
+                  {db[regiao].musculos[musculo].label}
+                </span>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* TELA 1 — escolha da região */}
+      {!regiao && (
+        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6">
+          <p className="text-zinc-500 text-sm text-center mb-2">Qual região do corpo você vai treinar?</p>
+
+          {/* Corpo humano esquemático */}
+          <div className="flex gap-8 items-end justify-center w-full mb-4">
+            {/* Figura Superior */}
+            <button onClick={() => setRegiao('superior')}
+              className="btn flex flex-col items-center gap-3 active:scale-95 transition-transform">
+              <div className="relative">
+                <svg viewBox="0 0 100 120" className="w-32 h-40">
+                  {/* Cabeça */}
+                  <ellipse cx="50" cy="14" rx="12" ry="13" fill="#52525b"/>
+                  {/* Pescoço */}
+                  <rect x="44" y="25" width="12" height="8" rx="4" fill="#52525b"/>
+                  {/* Tronco */}
+                  <rect x="26" y="32" width="48" height="44" rx="8" fill="#c8f542" opacity=".9"/>
+                  {/* Braços */}
+                  <rect x="8"  y="32" width="16" height="36" rx="7" fill="#c8f542" opacity=".8"/>
+                  <rect x="76" y="32" width="16" height="36" rx="7" fill="#c8f542" opacity=".8"/>
+                  {/* Antebraços */}
+                  <rect x="10" y="70" width="12" height="28" rx="6" fill="#c8f542" opacity=".5"/>
+                  <rect x="78" y="70" width="12" height="28" rx="6" fill="#c8f542" opacity=".5"/>
+                  {/* Pernas apagadas */}
+                  <rect x="28" y="78" width="19" height="40" rx="8" fill="#27272a"/>
+                  <rect x="53" y="78" width="19" height="40" rx="8" fill="#27272a"/>
+                </svg>
+              </div>
+              <div className="bg-[#c8f542] text-black font-black text-base px-6 py-3 rounded-2xl">
+                Superior
+              </div>
+            </button>
+
+            {/* Figura Inferior */}
+            <button onClick={() => setRegiao('inferior')}
+              className="btn flex flex-col items-center gap-3 active:scale-95 transition-transform">
+              <div className="relative">
+                <svg viewBox="0 0 100 120" className="w-32 h-40">
+                  {/* Cabeça */}
+                  <ellipse cx="50" cy="14" rx="12" ry="13" fill="#52525b"/>
+                  {/* Pescoço */}
+                  <rect x="44" y="25" width="12" height="8" rx="4" fill="#52525b"/>
+                  {/* Tronco apagado */}
+                  <rect x="26" y="32" width="48" height="44" rx="8" fill="#27272a"/>
+                  {/* Braços apagados */}
+                  <rect x="8"  y="32" width="16" height="36" rx="7" fill="#27272a"/>
+                  <rect x="76" y="32" width="16" height="36" rx="7" fill="#27272a"/>
+                  <rect x="10" y="70" width="12" height="28" rx="6" fill="#27272a"/>
+                  <rect x="78" y="70" width="12" height="28" rx="6" fill="#27272a"/>
+                  {/* Pernas destacadas */}
+                  <rect x="28" y="78" width="19" height="42" rx="8" fill="#c8f542" opacity=".9"/>
+                  <rect x="53" y="78" width="19" height="42" rx="8" fill="#c8f542" opacity=".9"/>
+                  {/* Glúteo */}
+                  <rect x="26" y="72" width="48" height="16" rx="6" fill="#c8f542" opacity=".7"/>
+                </svg>
+              </div>
+              <div className="bg-zinc-800 border border-zinc-700 text-white font-black text-base px-6 py-3 rounded-2xl">
+                Inferior
+              </div>
+            </button>
+          </div>
+
+          {/* Botão livre */}
+          <button onClick={() => onSelecionar('')}
+            className="btn w-full py-4 border border-dashed border-zinc-700 text-zinc-500 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 active:border-zinc-500">
+            <IconPlus/> Adicionar sem filtro (digitar nome)
+          </button>
+        </div>
+      )}
+
+      {/* TELA 2 — grid de músculos */}
+      {regiao && !musculo && (
+        <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6">
+          <div className="grid grid-cols-2 gap-3">
+            {Object.entries(db[regiao].musculos).map(([key, m]) => (
+              <button key={key} onClick={() => setMusculo(key)}
+                className="btn bg-zinc-900 border border-zinc-800 active:border-zinc-600 rounded-2xl p-4 flex flex-col items-center gap-3 active:scale-95 transition-transform">
+                <div className="w-full h-20 rounded-xl flex items-center justify-center"
+                  style={{ color: m.cor, background: m.cor + '18' }}>
+                  {m.svg}
+                </div>
+                <span className="text-white font-bold text-sm">{m.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TELA 3 — lista de exercícios do músculo */}
+      {regiao && musculo && (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Ilustração do músculo + busca */}
+          <div className="px-4 pt-3 pb-3 flex gap-3 items-center border-b border-zinc-900">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
+              style={{ color: db[regiao].musculos[musculo].cor, background: db[regiao].musculos[musculo].cor + '18' }}>
+              {db[regiao].musculos[musculo].svg}
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar exercício..."
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+              className="flex-1 bg-zinc-900 text-white px-4 py-3 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-sm placeholder-zinc-600"
+            />
+          </div>
+
+          {/* Lista */}
+          <div className="flex-1 overflow-y-auto px-4 pt-3 pb-6 flex flex-col gap-2">
+            {exerciciosFiltrados.length === 0 ? (
+              <div className="text-center py-10 text-zinc-600 text-sm">Nenhum exercício encontrado.</div>
+            ) : exerciciosFiltrados.map(nome => (
+              <button key={nome} onClick={() => onSelecionar(nome)}
+                className="btn w-full bg-zinc-900 border border-zinc-800 active:border-[#c8f542] active:bg-[#c8f542]/5 rounded-2xl px-4 py-4 text-left flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ color: db[regiao].musculos[musculo].cor, background: db[regiao].musculos[musculo].cor + '20' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 5v14M18 5v14M3 8h3M3 16h3M18 8h3M18 16h3M6 9h12M6 15h12"/>
+                  </svg>
+                </div>
+                <span className="text-white font-semibold text-sm flex-1">{nome}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-zinc-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
+                </svg>
+              </button>
+            ))}
+
+            {/* Opção de adicionar nome customizado */}
+            <button onClick={() => onSelecionar(busca.trim() || '')}
+              className="btn w-full border border-dashed border-zinc-800 active:border-zinc-600 text-zinc-500 rounded-2xl px-4 py-4 text-left flex items-center gap-3 mt-1">
+              <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center flex-shrink-0 text-zinc-400">
+                <IconPlus/>
+              </div>
+              <span className="text-zinc-400 font-semibold text-sm">
+                {busca.trim() ? `Adicionar "${busca.trim()}"` : 'Adicionar nome personalizado'}
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+
 // ─── TELA TREINO ──────────────────────────────────────────────────────────────
 function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, mostrarToast }) {
   const [exerciciosInicializados, setExerciciosInicializados] = useState(false);
@@ -766,7 +1118,8 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     setExercicios(exerciciosDoHistorico);
     setExerciciosInicializados(true);
   }, [historicoAnterior, exerciciosInicializados]);
-  const [expandidos, setExp] = useState({});
+  const [expandidos, setExp]       = useState({});
+  const [showExModal, setShowExModal] = useState(false);
 
   // Timer de descanso
   const [tempoConfig, setTempoConfig] = useState(() => {
@@ -824,9 +1177,17 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   }, [mostrarToast]);
 
   // Exercícios
-  const addEx = useCallback(() =>
-    setExercicios(e => [...e, { id:Date.now(), nome:'', nomeAnterior:'', series:[{id:1,reps:12,carga:0,enviada:false,id_banco:null}] }])
-  , []);
+  const addEx = useCallback(() => setShowExModal(true), []);
+
+  const onSelecionarExercicio = useCallback((nome) => {
+    setShowExModal(false);
+    setExercicios(e => [...e, {
+      id: Date.now(),
+      nome: nome,
+      nomeAnterior: nome,
+      series: [{ id:1, reps:12, carga:0, enviada:false, id_banco:null }],
+    }]);
+  }, []);
 
   // ── drag-to-reorder exercícios com feedback visual ───────────────────────────
   const [exDragging, setExDragging] = useState(null);  // índice sendo arrastado
@@ -1186,10 +1547,18 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
         })}
 
         <button onClick={addEx}
-          className="btn w-full border-2 border-dashed border-zinc-800 active:border-zinc-700 text-zinc-600 font-semibold py-6 rounded-2xl flex items-center justify-center gap-2">
-          <IconPlus/><span>Novo exercício</span>
+          className="btn w-full border-2 border-dashed border-zinc-800 active:border-zinc-600 active:bg-zinc-900 text-zinc-500 font-semibold py-6 rounded-2xl flex items-center justify-center gap-2">
+          <IconPlus/><span>Adicionar exercício</span>
         </button>
       </div>
+
+      {/* Modal seleção de exercício */}
+      {showExModal && (
+        <ModalExercicio
+          onSelecionar={onSelecionarExercicio}
+          onFechar={() => setShowExModal(false)}
+        />
+      )}
 
       {/* Rodapé fixo */}
       <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-3 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/98 to-transparent">
