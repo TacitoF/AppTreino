@@ -1027,6 +1027,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
         id: Date.now() + exIdx,
         nome,
         nomeAnterior: nome,
+        usaPlacas: false,
         series: seriesOrdenadas.map((s, i) => ({
           id:       i + 1,
           reps:     s.repeticoes,
@@ -1102,8 +1103,18 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       id: Date.now(),
       nome: nome,
       nomeAnterior: nome,
+      usaPlacas: false,
       series: [{ id:1, reps:12, carga:0, enviada:false, id_banco:null }],
     }]);
+  }, []);
+
+  const alternarModoPlacas = useCallback((exId) => {
+    setExercicios(e => e.map(x => {
+      if (x.id !== exId) return x;
+      // Não permite trocar se já tem séries enviadas
+      if (x.series.some(s => s.enviada)) return x;
+      return { ...x, usaPlacas: !x.usaPlacas };
+    }));
   }, []);
 
   const moverEx = useCallback((idx, dir) => {
@@ -1307,6 +1318,33 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                       {show ? 'Ocultar histórico' : `Último — ${hist.length} séries`}
                     </button>
                   )}
+                  {/* Botão alternar kg ↔ placas */}
+                  <button
+                    onClick={() => alternarModoPlacas(ex.id)}
+                    disabled={ex.series.some(s => s.enviada)}
+                    title={ex.series.some(s => s.enviada) ? 'Não é possível trocar após salvar séries' : ''}
+                    className={`btn flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-35 ${
+                      ex.usaPlacas
+                        ? 'bg-blue-500/15 text-blue-400 border border-blue-500/25'
+                        : 'bg-zinc-800 text-zinc-500 border border-zinc-700'
+                    }`}>
+                    {ex.usaPlacas ? (
+                      <>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">
+                          <circle cx="12" cy="12" r="9"/>
+                          <circle cx="12" cy="12" r="4"/>
+                        </svg>
+                        <span>Placas</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h3m12 0h3M6 6v12m12-12v12M3 18h3m12 0h3M6 9h12M6 15h12"/>
+                        </svg>
+                        <span>kg</span>
+                      </>
+                    )}
+                  </button>
                   <div className="flex-1"/>
                   {exercicios.length > 1 && (
                     <div className="flex gap-1">
@@ -1338,7 +1376,9 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                     <div key={i} className="flex justify-between items-center py-1">
                       <span className="text-zinc-500 text-sm">Série {s.numero_serie}</span>
                       <div className="flex gap-4">
-                        <span className="text-white font-bold text-sm">{s.carga_kg} kg</span>
+                        <span className="text-white font-bold text-sm">
+                          {s.carga_kg} {ex.usaPlacas ? 'placas' : 'kg'}
+                        </span>
                         <span className="text-zinc-600 text-xs self-center">×</span>
                         <span className="text-amber-400 font-bold text-sm">{s.repeticoes} reps</span>
                       </div>
@@ -1360,7 +1400,11 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-zinc-500 text-sm font-semibold">Série {serie.id}</span>
                           {PR && <span className="text-[#c8f542] text-xs font-bold bg-[#c8f542]/10 px-2 py-0.5 rounded-lg">RECORDE</span>}
-                          {hS && !show && <span className="text-zinc-700 text-xs">ref: {hS.carga_kg}kg × {hS.repeticoes}</span>}
+                          {hS && !show && (
+                            <span className="text-zinc-700 text-xs">
+                              ref: {hS.carga_kg}{ex.usaPlacas ? ' pl' : 'kg'} × {hS.repeticoes}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           {!serie.enviada && ex.series.length > 1 && (
@@ -1383,8 +1427,18 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 px-2 pb-3 min-w-0 items-stretch">
-                        <NumInput label="Carga (kg)" value={serie.carga} onChange={v=>updSerie(ex.id,serie.id,'carga',v)} disabled={serie.enviada}/>
-                        <NumInput label="Repetições" value={serie.reps}  onChange={v=>updSerie(ex.id,serie.id,'reps',v)}  disabled={serie.enviada}/>
+                        <NumInput
+                          label={ex.usaPlacas ? 'Placas' : 'Carga (kg)'}
+                          value={serie.carga}
+                          onChange={v=>updSerie(ex.id,serie.id,'carga',v)}
+                          disabled={serie.enviada}
+                        />
+                        <NumInput
+                          label="Repetições"
+                          value={serie.reps}
+                          onChange={v=>updSerie(ex.id,serie.id,'reps',v)}
+                          disabled={serie.enviada}
+                        />
                       </div>
                     </div>
                   );

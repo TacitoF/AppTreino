@@ -8,85 +8,12 @@ from google.oauth2.service_account import Credentials
 from datetime import date, datetime, timedelta
 import json
 import time
-import asyncio
 import logging
-import threading
-from contextlib import asynccontextmanager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ── FILA DE ESCRITA EM LOTE (BUFFER) ──────────────────────────────────────────
-# Guarda todas as interações num buffer em memória e envia para o Google Sheets
-# de 15 em 15 segundos para evitar limites de API (Erro 429) e lentidão.
-_fila_escrita = []
-_fila_lock = threading.Lock()
-
-def agendar_escrita(acao: str, dados: any):
-    with _fila_lock:
-        _fila_escrita.append({"acao": acao, "dados": dados})
-
-async def worker_fila_escrita():
-    while True:
-        await asyncio.sleep(15)  # Acorda a cada 15 segundos
-        if not _fila_escrita:
-            continue
-
-        with _fila_lock:
-            # Copia e esvazia a fila instantaneamente
-            lote = _fila_escrita[:]
-            _fila_escrita.clear()
-
-        try:
-            ws = get_ws("Series_Exercicios")
-
-            # 1. PROCESSAR INSERÇÕES (Em Lote)
-            inserts = [item["dados"] for item in lote if item["acao"] == "insert"]
-            if inserts:
-                logger.info(f"Gravando {len(inserts)} séries em lote no Sheets...")
-                com_retry(lambda: ws.append_rows(inserts, value_input_option="RAW"))
-
-            # 2. PROCESSAR MUDANÇAS DE NOME (Em Lote)
-            renames = [item["dados"] for item in lote if item["acao"] == "rename"]
-            if renames:
-                todas = com_retry(lambda: ws.get_all_values())
-                updates = []
-                for ren in renames:
-                    for i, row in enumerate(todas, start=1):
-                        if row and row[0] in ren["ids"]:
-                            updates.append({"range": f"C{i}", "values": [[ren["novo_nome"]]]})
-                if updates:
-                    logger.info(f"Atualizando nome de {len(updates)} séries no Sheets...")
-                    com_retry(lambda: ws.batch_update(updates))
-
-            # 3. PROCESSAR EXCLUSÕES (Uma a uma, pois os índices mudam)
-            deletes = [item["dados"] for item in lote if item["acao"] == "delete"]
-            if deletes:
-                logger.info(f"Deletando {len(deletes)} séries do Sheets...")
-                for id_serie in deletes:
-                    try:
-                        cel = com_retry(lambda: ws.find(id_serie, in_column=1))
-                        if cel:
-                            com_retry(lambda: ws.delete_rows(cel.row))
-                    except Exception:
-                        pass # Ignora se a série já não estiver lá
-
-        except Exception as e:
-            logger.error(f"Erro grave no flush da fila (salvando de volta no buffer): {e}")
-            # Em caso de quebra de internet do servidor, devolvemos pra fila para não perder dados
-            with _fila_lock:
-                _fila_escrita = lote + _fila_escrita
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Executa quando o servidor liga
-    task = asyncio.create_task(worker_fila_escrita())
-    yield
-    # Executa quando o servidor desliga
-    task.cancel()
-
-app = FastAPI(title="FitApp API", lifespan=lifespan)
+app = FastAPI(title="FitApp API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -117,6 +44,7 @@ def get_ws(nome: str):
     return _ws_cache[nome]
 
 
+# ── RETRY COM EXPONENTIAL BACKOFF ─────────────────────────────────────────────
 def com_retry(fn, tentativas=4, espera_inicial=1.0):
     espera = espera_inicial
     for i in range(tentativas):
@@ -125,17 +53,22 @@ def com_retry(fn, tentativas=4, espera_inicial=1.0):
         except APIError as e:
             codigo = e.response.status_code if hasattr(e, 'response') else 0
             if codigo == 429:
+                logger.warning(f"Rate limit. Tentativa {i+1}/{tentativas}. Aguardando {espera}s...")
                 time.sleep(espera)
                 espera *= 2
             else:
                 raise
-        except Exception as e:
+        except Exception:
             raise
-    raise HTTPException(status_code=429, detail=f"Limite Google atingido. Tente em {int(espera)}s.")
+    raise HTTPException(status_code=429, detail=f"Limite Google atingido. Tente novamente.")
 
 
+# ── CACHE ─────────────────────────────────────────────────────────────────────
 _mem_cache: dict = {}
-CACHE_TTL = { "Usuarios": 300, "Treinos": 120 }
+CACHE_TTL = {
+    "Usuarios": 300,
+    "Treinos":  120,
+}
 
 def cache_get(key: str):
     entry = _mem_cache.get(key)
@@ -158,10 +91,10 @@ def get_records(nome_aba: str) -> list:
     return data
 
 
-# ── CACHE LOCAL DE SÉRIES ATIVAS ──────────────────────────────────────────────
-_series_cache: dict = {}         
-_series_cache_ts: dict = {}      
-SERIES_CACHE_TTL = 3600           
+# ── CACHE LOCAL DE SÉRIES (write-through) ─────────────────────────────────────
+_series_cache: dict = {}
+_series_cache_ts: dict = {}
+SERIES_CACHE_TTL = 3600
 
 def series_cache_get(chave: str) -> Optional[list]:
     ts = _series_cache_ts.get(chave)
@@ -179,57 +112,68 @@ def series_cache_append(chave: str, serie: dict):
     _series_cache[chave].append(serie)
     _series_cache_ts[chave] = time.time()
 
-def series_cache_remove(id_serie: str):
-    for chave in list(_series_cache.keys()):
-        _series_cache[chave] = [s for s in _series_cache[chave] if s.get("ID_Serie") != id_serie]
+def series_cache_remove(chave: str, id_serie: str):
+    if chave in _series_cache:
+        _series_cache[chave] = [
+            s for s in _series_cache[chave] if s.get("ID_Serie") != id_serie
+        ]
 
 
 # ── ARQUIVAMENTO AUTOMÁTICO ───────────────────────────────────────────────────
-ARCHIVE_DAYS = 90   
+ARCHIVE_DAYS = 90
 _ultimo_arquivamento: float = 0
-ARCHIVE_INTERVAL = 3600 * 6   
+ARCHIVE_INTERVAL = 3600 * 6
+
+def extrair_data_de_id_treino(id_treino: str) -> str:
+    """
+    Extrai a data YYYY-MM-DD de um ID_Treino, independente do formato.
+
+    Formatos existentes na planilha:
+      "NomeSplit_IDUsuario_2026-03-04"                  (sem timestamp)
+      "NomeSplit_IDUsuario_2026-03-04_1772656127866"    (com timestamp)
+
+    O nome do split pode conter espaços e underscores (ex: "Upper ", "Pernas "),
+    por isso NÃO usamos índice fixo — procuramos pelo padrão YYYY-MM-DD.
+    """
+    for parte in id_treino.split("_"):
+        if len(parte) == 10 and parte[4] == '-' and parte[7] == '-':
+            return parte
+    return ""
 
 def arquivar_series_antigas():
     global _ultimo_arquivamento
-    agora = time.time()
-    if agora - _ultimo_arquivamento < ARCHIVE_INTERVAL:
+    if time.time() - _ultimo_arquivamento < ARCHIVE_INTERVAL:
         return
-
-    _ultimo_arquivamento = agora
-    logger.info("Iniciando arquivamento de séries antigas...")
-
+    _ultimo_arquivamento = time.time()
+    logger.info("Iniciando arquivamento...")
     try:
         ws_ativas  = get_ws("Series_Exercicios")
         ws_arquivo = get_ws("Arquivo_Series")
         todas      = ws_ativas.get_all_values()
-        
-        if not todas or len(todas) < 2: return
-
+        if not todas or len(todas) < 2:
+            return
         cabecalho = todas[0]
         linhas    = todas[1:]
         corte     = (datetime.now() - timedelta(days=ARCHIVE_DAYS)).strftime("%Y-%m-%d")
-
         antigas, recentes = [], []
         for row in linhas:
             try:
                 id_treino = row[1] if len(row) > 1 else ""
-                partes    = id_treino.split("_")
-                data_str  = partes[2] if len(partes) >= 3 else "9999-12-31"
-                if data_str < corte: antigas.append(row)
-                else: recentes.append(row)
-            except: recentes.append(row)
-
-        if not antigas: return
-
+                data_str  = extrair_data_de_id_treino(id_treino) or "9999-12-31"
+                (antigas if data_str < corte else recentes).append(row)
+            except Exception:
+                recentes.append(row)
+        if not antigas:
+            logger.info("Nada para arquivar.")
+            return
         com_retry(lambda: ws_arquivo.append_rows(antigas, value_input_option="RAW"))
         com_retry(lambda: ws_ativas.clear())
         com_retry(lambda: ws_ativas.update("A1", [cabecalho] + recentes))
-
         _series_cache.clear()
         _series_cache_ts.clear()
-        logger.info(f"Arquivamento concluído: {len(antigas)} séries movidas.")
+        logger.info(f"Arquivadas: {len(antigas)}, mantidas: {len(recentes)}")
     except Exception as e:
-        logger.error(f"Erro no arquivamento: {e}")
+        logger.error(f"Arquivamento falhou (não crítico): {e}")
 
 
 # ── MODELOS ───────────────────────────────────────────────────────────────────
@@ -280,8 +224,7 @@ class AtualizarNomeSerie(BaseModel):
     nome_exercicio: str
 
 
-# ── ROTAS ─────────────────────────────────────────────────────────────────────
-
+# ── AUTH ──────────────────────────────────────────────────────────────────────
 @app.post("/login")
 def fazer_login(login: LoginRequest):
     try:
@@ -299,8 +242,11 @@ def fazer_login(login: LoginRequest):
                     }
                 raise HTTPException(status_code=401, detail="Senha incorreta")
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
-    except HTTPException: raise
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/registro")
 def registrar_usuario(novo_user: RegistroUsuarioRequest):
@@ -309,7 +255,6 @@ def registrar_usuario(novo_user: RegistroUsuarioRequest):
         for user in usuarios:
             if str(user.get("Email", "")) == novo_user.email:
                 raise HTTPException(status_code=400, detail="E-mail já cadastrado")
-
         novo_id = f"U{len(usuarios) + 1:03d}"
         com_retry(lambda: get_ws("Usuarios").append_row([
             novo_id, novo_user.nome, novo_user.email, novo_user.senha,
@@ -317,154 +262,228 @@ def registrar_usuario(novo_user: RegistroUsuarioRequest):
         ]))
         cache_del("Usuarios")
         return {"status": "sucesso", "mensagem": "Conta criada!"}
-    except HTTPException: raise
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── SPLITS ────────────────────────────────────────────────────────────────────
 @app.get("/splits")
 def buscar_splits(id_usuario: str = Query(...)):
     try:
-        ws = get_ws("Treinos")
-        todas = com_retry(lambda: ws.get_all_values())
+        ws       = get_ws("Treinos")
+        todas    = com_retry(lambda: ws.get_all_values())
         id_busca = id_usuario.strip()
-
         for row in todas:
-            if not row or not row[0].strip() or row[0].strip().upper() == "ID_USUARIO": continue
+            if not row or not row[0].strip():
+                continue
+            if row[0].strip().upper() == "ID_USUARIO":
+                continue
             if row[0].strip() == id_busca:
-                raw = row[1] if len(row) > 1 else "[]"
-                return {"splits": json.loads(raw) if raw else [], "encontrado": True}
-
+                raw    = row[1] if len(row) > 1 else "[]"
+                splits = json.loads(raw) if raw else []
+                return {"splits": splits, "encontrado": True}
         return {"splits": [], "encontrado": False}
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"JSON inválido: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/splits/salvar")
 def salvar_splits(req: SalvarSplitsRequest):
     try:
-        ws = get_ws("Treinos")
-        dados = com_retry(lambda: ws.get_all_values())
+        ws          = get_ws("Treinos")
+        dados       = com_retry(lambda: ws.get_all_values())
         splits_json = json.dumps([s.dict() for s in req.splits], ensure_ascii=False)
-        id_usuario = req.id_usuario.strip()
-
+        id_usuario  = req.id_usuario.strip()
         for i, row in enumerate(dados, start=1):
-            if not row or not row[0].strip() or row[0].strip().upper() == "ID_USUARIO": continue
+            if not row or not row[0].strip():
+                continue
+            if row[0].strip().upper() == "ID_USUARIO":
+                continue
             if row[0].strip() == id_usuario:
                 com_retry(lambda: ws.update_cell(i, 2, splits_json))
                 cache_del("Treinos")
-                return {"status": "sucesso"}
-
+                return {"status": "sucesso", "mensagem": "Splits atualizados."}
         com_retry(lambda: ws.append_row([id_usuario, splits_json]))
         cache_del("Treinos")
-        return {"status": "sucesso"}
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+        return {"status": "sucesso", "mensagem": "Splits salvos."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-# --- A MÁGICA DA FILA NAS SÉRIES ---
-
+# ── TREINOS / SÉRIES ──────────────────────────────────────────────────────────
 @app.post("/treino/serie")
 def registrar_serie(serie: SerieTreino):
     try:
-        # Coloca na fila em memória instantaneamente
-        nova_linha = [serie.id_serie, serie.id_treino, serie.nome_exercicio, serie.numero_serie, serie.repeticoes, serie.carga_kg]
-        agendar_escrita("insert", nova_linha)
-
-        # Atualiza a cache para que o utilizador já veja a série
-        serie_dict = {"ID_Serie": serie.id_serie, "ID_Treino": serie.id_treino, "Nome_Exercicio": serie.nome_exercicio, "Numero_da_Serie": serie.numero_serie, "Repeticoes": serie.repeticoes, "Carga_kg": serie.carga_kg}
-        series_cache_append(serie.id_treino, serie_dict)
-
+        com_retry(lambda: get_ws("Series_Exercicios").append_row([
+            serie.id_serie, serie.id_treino, serie.nome_exercicio,
+            serie.numero_serie, serie.repeticoes, serie.carga_kg,
+        ]))
+        # Write-through: adiciona ao cache sem invalidar
+        series_cache_append(serie.id_treino, {
+            "ID_Serie":        serie.id_serie,
+            "ID_Treino":       serie.id_treino,
+            "Nome_Exercicio":  serie.nome_exercicio,
+            "Numero_da_Serie": serie.numero_serie,
+            "Repeticoes":      serie.repeticoes,
+            "Carga_kg":        serie.carga_kg,
+        })
         return {"status": "sucesso"}
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.delete("/treino/serie")
 def deletar_serie(id: str = Query(...)):
     try:
-        # Tira da cache e agenda a exclusão em background
-        series_cache_remove(id)
-        agendar_escrita("delete", id)
+        ws  = get_ws("Series_Exercicios")
+        cel = com_retry(lambda: ws.find(id, in_column=1))
+        if not cel:
+            raise HTTPException(status_code=404, detail="Série não encontrada")
+        linha     = com_retry(lambda: ws.row_values(cel.row))
+        id_treino = linha[1] if len(linha) > 1 else None
+        com_retry(lambda: ws.delete_rows(cel.row))
+        if id_treino:
+            series_cache_remove(id_treino, id)
         return {"status": "sucesso"}
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except gspread.exceptions.CellNotFound:
+        raise HTTPException(status_code=404, detail="Série não encontrada")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/treino/serie/nome")
 def atualizar_nome_serie(req: AtualizarNomeSerie):
     try:
-        # 1. Atualizar imediatamente no cache de leitura
-        for chave, lista_series in _series_cache.items():
-            for s in lista_series:
-                if s.get("ID_Serie") in req.ids:
-                    s["Nome_Exercicio"] = req.nome_exercicio
-
-        # 2. Atualizar na Fila caso a série ainda não tenha sido enviada pro Google
-        with _fila_lock:
-            for item in _fila_escrita:
-                if item["acao"] == "insert" and item["dados"][0] in req.ids:
-                    item["dados"][2] = req.nome_exercicio # Atualiza o nome na fila
-
-        # 3. Agendar para atualizar as que já estão definitivamente no Google Sheets
-        agendar_escrita("rename", {"ids": req.ids, "novo_nome": req.nome_exercicio})
-
-        return {"status": "sucesso"}
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+        ws    = get_ws("Series_Exercicios")
+        todas = com_retry(lambda: ws.get_all_values())
+        updates = []
+        for i, row in enumerate(todas, start=1):
+            if row and row[0] in req.ids:
+                updates.append({"range": f"C{i}", "values": [[req.nome_exercicio]]})
+        if updates:
+            com_retry(lambda: ws.batch_update(updates))
+        return {"status": "sucesso", "atualizadas": len(updates)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/treino/historico")
-def buscar_historico(id_usuario: str = Query(...), nome_treino: str = Query(...)):
+def buscar_historico(
+    id_usuario:  str = Query(...),
+    nome_treino: str = Query(...),
+):
+    """
+    Busca as séries do ÚLTIMO treino do usuário naquele split.
+
+    BUG CORRIGIDO:
+    O código anterior fazia split("_")[-1] para extrair a data, mas isso
+    retornava o TIMESTAMP (último segmento), não a data.
+    Resultado: a chave montada era "{prefixo}{timestamp}" em vez de
+    "{prefixo}{data}_{timestamp}", e o filtro não encontrava nada.
+
+    Correção: a função extrair_data_de_id_treino() procura o padrão
+    YYYY-MM-DD em qualquer posição do ID_Treino, sem depender de índice fixo.
+    Isso funciona mesmo quando o nome do split tem espaços/underscores.
+    """
     try:
         prefixo = f"{nome_treino}_{id_usuario}_"
-        hoje = datetime.now().strftime("%Y-%m-%d")
-        chave_hoje = f"{prefixo}{hoje}"
 
-        # 1. Lê do Cache
-        cached = series_cache_get(chave_hoje)
+        # Arquivamento lazy — não bloqueia
+        try:
+            arquivar_series_antigas()
+        except Exception:
+            pass
+
+        # Leitura completa da aba
+        todas = com_retry(lambda: get_ws("Series_Exercicios").get_all_records())
+
+        # Filtra registros deste usuário + split
+        registros = [
+            r for r in todas
+            if str(r.get("ID_Treino", "")).startswith(prefixo)
+        ]
+
+        if not registros:
+            return {"series": [], "data_ultimo": None}
+
+        # Agrupa por ID_Treino completo
+        mapa_treinos: dict = {}
+        for r in registros:
+            id_treino = str(r.get("ID_Treino", ""))
+            mapa_treinos.setdefault(id_treino, []).append(r)
+
+        # Ordena por (data, timestamp) para pegar o mais recente
+        def chave_ordenacao(id_treino: str):
+            data = extrair_data_de_id_treino(id_treino)
+            partes = id_treino.split("_")
+            timestamp = next(
+                (p for p in reversed(partes) if p.isdigit() and len(p) >= 10),
+                "0"
+            )
+            return (data, timestamp)
+
+        id_ultimo  = max(mapa_treinos.keys(), key=chave_ordenacao)
+        data_ultimo = extrair_data_de_id_treino(id_ultimo)
+
+        # Checa cache da sessão
+        cached = series_cache_get(id_ultimo)
         if cached is not None:
-            return {"series": cached, "data_ultimo": hoje, "fonte": "cache"}
+            return {"series": cached, "data_ultimo": data_ultimo, "fonte": "cache"}
 
-        # 2. Arquiva lixo antigo sem bloquear a UI
-        try: arquivar_series_antigas()
-        except: pass
-
-        # 3. Leitura Cirúrgica no Sheets (Muito mais rápida que get_all_records)
-        ws = get_ws("Series_Exercicios")
-        matches = com_retry(lambda: ws.findall(prefixo, in_column=2))
-        
-        if not matches: return {"series": [], "data_ultimo": None}
-
-        numeros_linhas = [m.row for m in matches]
-        valores_celulas = com_retry(lambda: ws.batch_get([f"B{r}" for r in numeros_linhas]))
-
-        datas = set()
-        for val in valores_celulas:
-            if val and val[0] and len(val[0][0].split("_")) >= 3:
-                datas.add(val[0][0].split("_")[2])
-
-        if not datas: return {"series": [], "data_ultimo": None}
-
-        ultima_data = max(datas)
-        linhas_ultimo = [m.row for m, v in zip(matches, valores_celulas) if v and v[0] and ultima_data in v[0][0]]
-        
-        if not linhas_ultimo: return {"series": [], "data_ultimo": ultima_data}
-
-        ranges = [f"A{r}:F{r}" for r in linhas_ultimo]
-        dados_batch = com_retry(lambda: ws.batch_get(ranges))
-
+        # Formata resposta
         series = []
-        for dado in dados_batch:
-            if not dado or not dado[0] or len(dado[0]) < 6: continue
-            row = dado[0]
-            series.append({
-                "id_serie": str(row[0]), "id_treino": str(row[1]), "nome_exercicio": str(row[2]),
-                "numero_serie": int(row[3]) if str(row[3]).isdigit() else 0,
-                "repeticoes": int(row[4]) if str(row[4]).isdigit() else 0,
-                "carga_kg": float(row[5]) if row[5] else 0.0,
-            })
+        for r in mapa_treinos[id_ultimo]:
+            try:
+                series.append({
+                    "id_serie":       str(r.get("ID_Serie", "")),
+                    "id_treino":      str(r.get("ID_Treino", "")),
+                    "nome_exercicio": str(r.get("Nome_Exercicio", "")),
+                    "numero_serie":   int(r.get("Numero_da_Serie", 0)),
+                    "repeticoes":     int(r.get("Repeticoes", 0)),
+                    "carga_kg":       float(r.get("Carga_kg", 0)),
+                })
+            except (ValueError, TypeError):
+                continue
 
-        series_cache_set(f"{prefixo}{ultima_data}", series)
-        return {"series": series, "data_ultimo": ultima_data, "fonte": "sheets"}
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+        series_cache_set(id_ultimo, series)
+        return {"series": series, "data_ultimo": data_ultimo, "fonte": "sheets"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── DIETA ─────────────────────────────────────────────────────────────────────
+@app.post("/dieta/registro")
+def registrar_dieta(registro: RegistroDieta):
+    try:
+        com_retry(lambda: get_ws("Dieta_Suplementacao").append_row([
+            registro.id_registro, registro.id_usuario, registro.data,
+            registro.tipo_refeicao, registro.calorias, registro.proteinas_g,
+            registro.carbos_g, registro.gorduras_g, registro.check_agua,
+            registro.check_whey, registro.check_creatina,
+        ]))
+        return {"status": "sucesso"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── HEALTH ────────────────────────────────────────────────────────────────────
 @app.get("/health")
 def health():
     return {
-        "status": "ok",
-        "tamanho_da_fila": len(_fila_escrita),
-        "chaves_series_cache": len(_series_cache)
+        "status":              "ok",
+        "cache_usuarios":      "Usuarios" in _mem_cache,
+        "cache_treinos":       "Treinos"  in _mem_cache,
+        "chaves_series_cache": len(_series_cache),
+        "series_em_cache":     sum(len(v) for v in _series_cache.values()),
+        "ultimo_arquivamento": (
+            datetime.fromtimestamp(_ultimo_arquivamento).isoformat()
+            if _ultimo_arquivamento else None
+        ),
     }
