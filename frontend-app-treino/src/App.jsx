@@ -260,28 +260,28 @@ const NumInput = memo(({ label, value, onChange, disabled }) => {
   const inc = useCallback(() => { if (!disabled) onChange(val + 1); }, [disabled, val, onChange]);
 
   return (
-    <div className="flex flex-col items-center bg-black rounded-2xl py-3 px-1">
+    <div className="flex flex-col items-center bg-black rounded-2xl py-2 px-1 min-w-0">
       <span className="text-zinc-600 text-xs font-semibold uppercase tracking-wider mb-2">{label}</span>
       <div className="flex items-center w-full gap-1">
         <button onClick={dec} disabled={disabled}
-          className="btn w-14 h-14 bg-zinc-800 active:bg-zinc-700 rounded-xl text-white text-2xl flex items-center justify-center disabled:opacity-20 select-none flex-shrink-0">
+          className="btn w-10 h-10 bg-zinc-800 active:bg-zinc-700 rounded-xl text-white text-xl flex items-center justify-center disabled:opacity-20 select-none flex-shrink-0">
           −
         </button>
-        <div className="flex-1 flex justify-center">
+        <div className="flex-1 flex justify-center min-w-0">
           {editando
             ? <input ref={ref} type="number" value={txt}
                 onChange={e => setTxt(e.target.value)}
                 onBlur={confirmar}
                 onKeyDown={e => e.key === 'Enter' && confirmar()}
-                className="w-full text-center text-2xl font-black text-white bg-transparent outline-none border-b-2 border-[#c8f542] num"/>
+                className="w-full text-center text-xl font-black text-white bg-transparent outline-none border-b-2 border-[#c8f542] num"/>
             : <button onClick={abrirEdit} disabled={disabled}
-                className={`btn text-2xl font-black num min-w-[44px] text-center rounded-xl py-1 px-2 active:bg-zinc-800 ${disabled ? 'text-zinc-600' : 'text-white'}`}>
+                className={`btn text-xl font-black num min-w-0 w-full text-center rounded-xl py-1 px-1 active:bg-zinc-800 ${disabled ? 'text-zinc-600' : 'text-white'}`}>
                 {val}
               </button>
           }
         </div>
         <button onClick={inc} disabled={disabled}
-          className="btn w-14 h-14 bg-zinc-800 active:bg-zinc-700 rounded-xl text-white text-2xl flex items-center justify-center disabled:opacity-20 select-none flex-shrink-0">
+          className="btn w-10 h-10 bg-zinc-800 active:bg-zinc-700 rounded-xl text-white text-xl flex items-center justify-center disabled:opacity-20 select-none flex-shrink-0">
           +
         </button>
       </div>
@@ -763,7 +763,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                           </button>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 px-3 pb-3">
+                      <div className="grid grid-cols-2 gap-2 px-2 pb-3 min-w-0">
                         <NumInput label="Carga (kg)" value={serie.carga} onChange={v=>updSerie(ex.id,serie.id,'carga',v)} disabled={serie.enviada}/>
                         <NumInput label="Repetições" value={serie.reps}  onChange={v=>updSerie(ex.id,serie.id,'reps',v)}  disabled={serie.enviada}/>
                       </div>
@@ -851,6 +851,69 @@ function TelaResumo({ resultado, onVoltar }) {
   );
 }
 
+// ─── IOS INSTALL BANNER ──────────────────────────────────────────────────────
+const IOSInstallBanner = memo(() => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    // Só mostra no Safari iOS, e só se ainda não foi adicionado à tela inicial
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isInStandalone = window.navigator.standalone === true;
+    const jaFechou = localStorage.getItem('ios_banner_closed');
+    if (isIOS && !isInStandalone && !jaFechou) {
+      setVisible(true);
+    }
+  }, []);
+
+  const fechar = () => {
+    localStorage.setItem('ios_banner_closed', '1');
+    setVisible(false);
+  };
+
+  if (!visible) return null;
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-[300] px-4 pb-6 pt-2">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-3xl px-5 py-4 shadow-2xl">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#c8f542]/10 border border-[#c8f542]/20 flex items-center justify-center flex-shrink-0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2} className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.5V12m0 0V5.5M12 12H5.5M12 12h6.5"/>
+                <rect x="3" y="3" width="18" height="18" rx="4" strokeOpacity="0.3"/>
+              </svg>
+            </div>
+            <div>
+              <p className="text-white font-bold text-sm">Adicionar à tela inicial</p>
+              <p className="text-zinc-500 text-xs mt-0.5">Use o FitApp como um app nativo</p>
+            </div>
+          </div>
+          <button onClick={fechar} className="btn text-zinc-600 active:text-zinc-400 p-1 flex-shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div className="flex flex-col gap-2">
+          {[
+            { n: '1', t: 'Toque nos 3 pontos horizontais (⋯) no Safari' },
+            { n: '2', t: 'Selecione "Compartilhar"' },
+            { n: '3', t: 'Toque em "Ver mais"' },
+            { n: '4', t: 'Selecione "Adicionar à Tela de Início"' },
+          ].map(s => (
+            <div key={s.n} className="flex items-center gap-3">
+              <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                <span className="text-[#c8f542] text-xs font-bold">{s.n}</span>
+              </div>
+              <span className="text-zinc-400 text-xs">{s.t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+});
+
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [usuario, setUsuario]        = useState(null);
@@ -915,6 +978,7 @@ export default function App() {
   return (
     <>
       <Toast data={toast}/>
+      <IOSInstallBanner/>
       {tela==='auth'             && <TelaAuth onLogin={onLogin} mostrarToast={mostrarToast}/>}
       {tela==='grupamentos'      && usuario && <TelaGrupamentos usuario={usuario} splits={splits} loadingSplits={loadingSplits} onSelecionarSplit={onSelecionarSplit} onGerenciar={()=>setTela('gerenciar-splits')} onLogout={onLogout}/>}
       {tela==='gerenciar-splits' && usuario && <TelaGerenciarSplits usuario={usuario} splits={splits} onSalvar={l=>{setSplits(l);setTela('grupamentos');}} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
