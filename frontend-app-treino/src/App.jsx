@@ -30,14 +30,16 @@ const R = {
 
 // ─── AUTH TOKEN — armazenado em memória, não no bundle ───────────────────────
 // Nunca fica visível em código estático; é preenchido após login bem-sucedido
-let _authToken = null;
-export function setAuthToken(t) { _authToken = t; }
-export function clearAuthToken() { _authToken = null; }
+const TOKEN_KEY = 'fa_tk';
+function setAuthToken(t)   { try { sessionStorage.setItem(TOKEN_KEY, t); } catch {} }
+function clearAuthToken()  { try { sessionStorage.removeItem(TOKEN_KEY); } catch {} }
+function getAuthToken()    { try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; } }
 
 // ─── FETCH HELPER ─────────────────────────────────────────────────────────────
 async function apiFetch(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...options.headers };
-  if (_authToken) headers['Authorization'] = `Bearer ${_authToken}`;
+  const tk = getAuthToken();
+  if (tk) headers['Authorization'] = `Bearer ${tk}`;
 
   const res = await fetch(path, {
     ...options,
@@ -1193,59 +1195,63 @@ const IOSInstallBanner = memo(() => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Só mostra no Safari iOS, e só se ainda não foi adicionado à tela inicial
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isInStandalone = window.navigator.standalone === true;
-    const jaFechou = localStorage.getItem('ios_banner_closed');
+    const jaFechou = sessionStorage.getItem('ios_banner_closed');
     if (isIOS && !isInStandalone && !jaFechou) {
       setVisible(true);
     }
   }, []);
 
   const fechar = () => {
-    localStorage.setItem('ios_banner_closed', '1');
+    sessionStorage.setItem('ios_banner_closed', '1');
     setVisible(false);
   };
 
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[300] px-4 pb-6 pt-2">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-3xl px-5 py-4 shadow-2xl">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#c8f542]/10 border border-[#c8f542]/20 flex items-center justify-center flex-shrink-0">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2} className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.5V12m0 0V5.5M12 12H5.5M12 12h6.5"/>
-                <rect x="3" y="3" width="18" height="18" rx="4" strokeOpacity="0.3"/>
-              </svg>
-            </div>
-            <div>
-              <p className="text-white font-bold text-sm">Adicionar à tela inicial</p>
-              <p className="text-zinc-500 text-xs mt-0.5">Use o FitApp como um app nativo</p>
-            </div>
-          </div>
-          <button onClick={fechar} className="btn text-zinc-600 active:text-zinc-400 p-1 flex-shrink-0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+    <div className="fixed inset-0 z-[300] flex items-center justify-center px-6"
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
+      onClick={fechar}>
+      <div
+        className="w-full max-w-sm bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-6 shadow-2xl"
+        onClick={e => e.stopPropagation()}>
+
+        {/* Ícone + título */}
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="w-16 h-16 rounded-2xl bg-[#c8f542]/10 border border-[#c8f542]/20 flex items-center justify-center mb-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2} className="w-8 h-8">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v13m0-13l-4 4m4-4l4 4"/>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 17h14a2 2 0 012 2v1a1 1 0 01-1 1H4a1 1 0 01-1-1v-1a2 2 0 012-2z"/>
             </svg>
-          </button>
+          </div>
+          <h2 className="text-white font-black text-lg">Adicione à tela inicial</h2>
+          <p className="text-zinc-500 text-sm mt-1">Use o FitApp como um app nativo no seu iPhone</p>
         </div>
-        <div className="flex flex-col gap-2">
+
+        {/* Passos */}
+        <div className="flex flex-col gap-3 mb-6">
           {[
-            { n: '1', t: 'Toque nos 3 pontos horizontais (⋯) no Safari' },
+            { n: '1', t: 'Toque nos 3 pontos (⋯) no Safari' },
             { n: '2', t: 'Selecione "Compartilhar"' },
             { n: '3', t: 'Toque em "Ver mais"' },
             { n: '4', t: 'Selecione "Adicionar à Tela de Início"' },
           ].map(s => (
-            <div key={s.n} className="flex items-center gap-3">
-              <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                <span className="text-[#c8f542] text-xs font-bold">{s.n}</span>
+            <div key={s.n} className="flex items-center gap-3 bg-zinc-800 rounded-2xl px-4 py-3">
+              <div className="w-6 h-6 rounded-full bg-[#c8f542] flex items-center justify-center flex-shrink-0">
+                <span className="text-black text-xs font-black">{s.n}</span>
               </div>
-              <span className="text-zinc-400 text-xs">{s.t}</span>
+              <span className="text-zinc-300 text-sm font-medium">{s.t}</span>
             </div>
           ))}
         </div>
+
+        {/* Botão fechar */}
+        <button onClick={fechar}
+          className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold text-base rounded-2xl">
+          Entendido
+        </button>
       </div>
     </div>
   );
