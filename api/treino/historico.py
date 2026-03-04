@@ -27,15 +27,19 @@ def historico():
         ws    = get_sheet().worksheet('Series_Exercicios')
         todas = ws.get_all_records()
 
+        # Prefixo: "NomeGrupo_UIDUsuario_"
+        # O id_treino agora tem formato: NomeGrupo_UIDUsuario_YYYY-MM-DD_timestamp
+        # Mantemos compatibilidade com o formato antigo (sem timestamp)
         prefixo   = f"{nome_treino}_{id_usuario}_"
         registros = [r for r in todas if str(r.get('ID_Treino', '')).startswith(prefixo)]
 
         if not registros:
             return _cors(jsonify({'series': [], 'data_ultimo': None}))
 
-        datas  = {str(r.get('ID_Treino', '')).split('_')[-1] for r in registros}
-        ultima = max(datas)
-        chave  = f"{prefixo}{ultima}"
+        # Agrupa por id_treino completo (sessão exata)
+        # Ordena pelos id_treino — o maior é o mais recente pois contém timestamp
+        ids_treino = sorted({str(r.get('ID_Treino', '')) for r in registros}, reverse=True)
+        chave_ultima = ids_treino[0]  # sessão mais recente
 
         series = [
             {
@@ -46,10 +50,14 @@ def historico():
                 'repeticoes':     int(r.get('Repeticoes', 0)),
                 'carga_kg':       float(r.get('Carga_kg', 0)),
             }
-            for r in registros if str(r.get('ID_Treino', '')) == chave
+            for r in registros if str(r.get('ID_Treino', '')) == chave_ultima
         ]
 
-        return _cors(jsonify({'series': series, 'data_ultimo': ultima}))
+        # Extrai a data para exibição (parte YYYY-MM-DD do id_treino)
+        partes    = chave_ultima.split('_')
+        data_exib = partes[-2] if len(partes) >= 4 else partes[-1]
+
+        return _cors(jsonify({'series': series, 'data_ultimo': data_exib}))
 
     except Exception as e:
         return _cors(jsonify({'detail': str(e)}), 500)

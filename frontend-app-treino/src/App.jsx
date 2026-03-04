@@ -17,12 +17,19 @@ import React, {
 } from 'react';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
-const API = '';
 const REST_TIME_KEY = 'fitapp_rest_time';
+// Rotas da API centralizadas — não altere sem atualizar o backend
+const R = {
+  login:      '/api/login',
+  registro:   '/api/registro',
+  splits:     '/api/splits',
+  serie:      '/api/treino/serie',
+  historico:  '/api/treino/historico',
+};
 
 // ─── FETCH HELPER (substitui axios — sem dependência externa) ─────────────────
 async function apiFetch(path, options = {}) {
-  const res = await fetch(`${API}${path}`, {
+  const res = await fetch(path, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
     body: options.body ? JSON.stringify(options.body) : undefined,
@@ -97,6 +104,25 @@ export const IconTrophy = memo(() => (
 export const IconStop = memo(() => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
     <rect x="5" y="5" width="14" height="14" rx="2"/>
+  </svg>
+));
+
+export const IconUsers = memo(() => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+    <circle cx="9" cy="7" r="4"/>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+  </svg>
+));
+export const IconCrown = memo(() => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+    <path d="M2 19h20v2H2v-2zM2 6l5 7 5-7 5 7 5-7v11H2V6z"/>
+  </svg>
+));
+export const IconLink = memo(() => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
   </svg>
 ));
 
@@ -260,7 +286,7 @@ const NumInput = memo(({ label, value, onChange, disabled }) => {
   const inc = useCallback(() => { if (!disabled) onChange(val + 1); }, [disabled, val, onChange]);
 
   return (
-    <div className="flex flex-col items-center bg-black rounded-2xl py-2 px-1 min-w-0">
+    <div className="flex flex-col items-center justify-between bg-black rounded-2xl py-2 px-1 min-w-0 h-full">
       <span className="text-zinc-600 text-xs font-semibold uppercase tracking-wider mb-2">{label}</span>
       <div className="flex items-center w-full gap-1">
         <button onClick={dec} disabled={disabled}
@@ -307,7 +333,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
     if (!email || !senha) { mostrarToast('Preencha e-mail e senha.', 'erro'); return; }
     setLoading(true);
     try {
-      const r = await apiFetch('/api/login', { method: 'POST', body: { email, senha } });
+      const r = await apiFetch(R.login, { method: 'POST', body: { email, senha } });
       onLogin(r.usuario);
       limpar();
     } catch (err) {
@@ -322,7 +348,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
     if (!nome || !email || !senha) { mostrarToast('Preencha nome, e-mail e senha.', 'erro'); return; }
     setLoading(true);
     try {
-      await apiFetch('/api/registro', { method: 'POST', body: { nome, email, senha, peso_atual: peso || '0', objetivo: obj || 'Hipertrofia' } });
+      await apiFetch(R.registro, { method: 'POST', body: { nome, email, senha, peso_atual: peso || '0', objetivo: obj || 'Hipertrofia' } });
       mostrarToast('Conta criada. Faça login.', 'sucesso');
       setModo('login'); limpar();
     } catch (err) {
@@ -380,7 +406,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
 }
 
 // ─── TELA GRUPAMENTOS ─────────────────────────────────────────────────────────
-function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onLogout }) {
+function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onRank, onLogout }) {
   const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
@@ -423,6 +449,9 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
             <button onClick={onGerenciar} className="btn w-full border-2 border-dashed border-zinc-800 active:border-zinc-700 text-zinc-600 active:text-zinc-400 font-semibold py-5 rounded-2xl flex items-center justify-center gap-2 mt-1">
               <IconSettings/><span className="text-sm">Gerenciar grupos musculares</span>
             </button>
+            <button onClick={onRank} className="btn w-full border-2 border-dashed border-zinc-800 active:border-zinc-700 text-zinc-600 active:text-zinc-400 font-semibold py-5 rounded-2xl flex items-center justify-center gap-2">
+              <IconUsers/><span className="text-sm">Ranking com amigos</span>
+            </button>
           </>
         )}
       </div>
@@ -451,7 +480,7 @@ function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast
     if (lista.some(s => !s.nome.trim())) { mostrarToast('Preencha o nome de todos os grupos.', 'erro'); return; }
     setSaving(true);
     try {
-      await apiFetch('/api/splits', { method: 'POST', body: { id_usuario: usuario.id, splits: lista } });
+      await apiFetch(R.splits, { method: 'POST', body: { id_usuario: usuario.id, splits: lista } });
       mostrarToast('Grupos salvos.', 'sucesso');
       onSalvar(lista);
     } catch { mostrarToast('Erro ao salvar.', 'erro'); }
@@ -489,6 +518,13 @@ function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast
 // ─── TELA TREINO ──────────────────────────────────────────────────────────────
 function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, mostrarToast }) {
   const [exerciciosInicializados, setExerciciosInicializados] = useState(false);
+
+  // id_treino fixo para toda a sessão — gerado uma única vez ao montar o componente.
+  // Usa timestamp completo para evitar colisão quando o mesmo grupo é treinado
+  // mais de uma vez no mesmo dia.
+  const idTreinoSessao = useRef(
+    `${split.nome}_${usuario.id}_${new Date().toISOString().slice(0,10)}_${Date.now()}`
+  );
 
   const [exercicios, setExercicios] = useState(() => [{
     id: Date.now(), nome: '',
@@ -611,33 +647,49 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     setExercicios(e => e.map(x => x.id!==exId ? x : { ...x, series:x.series.filter(s=>s.id!==sId) }))
   , []);
 
+  // Contador de operações em andamento — impede finalizar enquanto há sync pendente
+  const pendentesRef = useRef(0);
+  const [salvando, setSalvando] = useState(false);
+
   const alternarSerie = useCallback(async (ex, serie) => {
-    // Snapshot do estado atual para rollback
     const snapshot = exercicios.map(x => ({...x, series:x.series.map(s=>({...s}))}));
 
     if (serie.enviada) {
+      // Desmarcar: remove da planilha
       setExercicios(cur => cur.map(x => x.id!==ex.id ? x : {
         ...x, series: x.series.map(s => s.id===serie.id ? {...s,enviada:false,id_banco:null} : s),
       }));
-      try { await apiFetch(`/api/treino/serie?id=${serie.id_banco}`, { method: 'DELETE' }); }
+      try { await apiFetch(`${R.serie}?id=${serie.id_banco}`, { method: 'DELETE' }); }
       catch { setExercicios(snapshot); mostrarToast('Sem conexão. Não removido.', 'erro'); }
     } else {
       if (!ex.nome.trim()) { mostrarToast('Digite o nome do exercício.', 'erro'); return; }
       const nid      = 'S' + Date.now();
-      const idTreino = `${split.nome}_${usuario.id}_${new Date().toISOString().slice(0,10)}`;
+      const idTreino = idTreinoSessao.current;
 
+      // Marca como enviada otimisticamente + indica loading
       setExercicios(cur => cur.map(x => x.id!==ex.id ? x : {
-        ...x, series: x.series.map(s => s.id===serie.id ? {...s,enviada:true,id_banco:nid} : s),
+        ...x, series: x.series.map(s => s.id===serie.id ? {...s,enviada:true,salvandoNow:true,id_banco:nid} : s),
       }));
+
+      pendentesRef.current += 1;
+      setSalvando(true);
+
       try {
-        await apiFetch('/api/treino/serie', {
+        await apiFetch(R.serie, {
           method: 'POST',
           body: { id_serie:nid, id_treino:idTreino, nome_exercicio:ex.nome, numero_serie:serie.id, repeticoes:serie.reps, carga_kg:serie.carga },
         });
-        iniciarDescanso(); // usa tempoConfigRef internamente, sem dependência de estado
+        // Remove o flag de loading após confirmação
+        setExercicios(cur => cur.map(x => x.id!==ex.id ? x : {
+          ...x, series: x.series.map(s => s.id===serie.id ? {...s,salvandoNow:false} : s),
+        }));
+        iniciarDescanso();
       } catch {
         setExercicios(snapshot);
         mostrarToast('Sem conexão. Série não salva.', 'erro');
+      } finally {
+        pendentesRef.current = Math.max(0, pendentesRef.current - 1);
+        if (pendentesRef.current === 0) setSalvando(false);
       }
     }
   }, [exercicios, split, usuario, mostrarToast, iniciarDescanso]);
@@ -754,16 +806,20 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                               <IconTrash/>
                             </button>
                           )}
-                          <button onClick={() => alternarSerie(ex, serie)}
+                          <button onClick={() => !serie.salvandoNow && alternarSerie(ex, serie)}
+                            disabled={serie.salvandoNow}
                             className={`btn w-14 h-14 rounded-2xl flex items-center justify-center ${
+                              serie.salvandoNow ? 'bg-zinc-800 border border-zinc-700' :
                               serie.enviada
                                 ? 'bg-transparent border-2 border-[#c8f542]/30 text-[#c8f542]/60 active:bg-[#c8f542]/5'
                                 : 'bg-[#c8f542] text-black active:bg-[#b0d93b] shadow-[0_0_20px_rgba(200,245,66,0.15)]'}`}>
-                            {serie.enviada ? <IconUndo/> : <IconCheck/>}
+                            {serie.salvandoNow
+                              ? <div className="w-5 h-5 border-2 border-zinc-600 border-t-[#c8f542] rounded-full animate-spin"/>
+                              : serie.enviada ? <IconUndo/> : <IconCheck/>}
                           </button>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 px-2 pb-3 min-w-0">
+                      <div className="grid grid-cols-2 gap-2 px-2 pb-3 min-w-0 items-stretch">
                         <NumInput label="Carga (kg)" value={serie.carga} onChange={v=>updSerie(ex.id,serie.id,'carga',v)} disabled={serie.enviada}/>
                         <NumInput label="Repetições" value={serie.reps}  onChange={v=>updSerie(ex.id,serie.id,'reps',v)}  disabled={serie.enviada}/>
                       </div>
@@ -797,9 +853,14 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
             onPararTimer={pararDescanso}
           />
         </div>
-        <button onClick={() => onFinalizar({ exercicios, split })}
-          className="btn w-full py-5 bg-zinc-900 border border-zinc-700 active:bg-zinc-800 text-white font-bold text-base rounded-2xl">
-          Finalizar treino
+        <button
+          onClick={() => { if (!salvando) onFinalizar({ exercicios, split }); }}
+          disabled={salvando}
+          className="btn w-full py-5 bg-zinc-900 border border-zinc-700 active:bg-zinc-800 text-white font-bold text-base rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
+          {salvando
+            ? <><div className="w-4 h-4 border-2 border-zinc-600 border-t-white rounded-full animate-spin"/><span>Salvando...</span></>
+            : 'Finalizar treino'
+          }
         </button>
       </div>
     </div>
@@ -846,6 +907,239 @@ function TelaResumo({ resultado, onVoltar }) {
         <button onClick={onVoltar} className="btn w-full py-5 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold text-base rounded-2xl">
           Voltar ao início
         </button>
+      </div>
+    </div>
+  );
+}
+
+
+// ─── TELA RANK — LOBBY ────────────────────────────────────────────────────────
+function TelaRank({ usuario, mostrarToast, onVoltar }) {
+  const [aba, setAba]           = useState('meus');   // 'meus' | 'criar' | 'entrar' | 'lobby'
+  const [meusLobbies, setMeus]  = useState([]);
+  const [lobbyAtivo, setLobby]  = useState(null);
+  const [ranking, setRanking]   = useState([]);
+  const [loading, setLoading]   = useState(false);
+
+  // form criar
+  const [nomeLobby, setNomeLobby] = useState('');
+  const [dataFim, setDataFim]     = useState('');
+  // form entrar
+  const [codigo, setCodigo]       = useState('');
+
+  const carregarMeus = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await apiFetch(`/api/rank/lobbies?id_usuario=${usuario.id}`);
+      setMeus(r.lobbies || []);
+    } catch { mostrarToast('Erro ao carregar lobbies.', 'erro'); }
+    finally { setLoading(false); }
+  }, [usuario.id, mostrarToast]);
+
+  useEffect(() => { carregarMeus(); }, [carregarMeus]);
+
+  // Verifica se há código no URL ao abrir (convite por link)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const cod = params.get('lobby');
+    if (cod) { setCodigo(cod); setAba('entrar'); }
+  }, []);
+
+  const criarLobby = async () => {
+    if (!nomeLobby.trim() || !dataFim) { mostrarToast('Preencha nome e data.', 'erro'); return; }
+    setLoading(true);
+    try {
+      const r = await apiFetch('/api/rank/criar', {
+        method: 'POST',
+        body: { id_usuario: usuario.id, nome: nomeLobby.trim(), data_fim: dataFim },
+      });
+      mostrarToast('Lobby criado!', 'sucesso');
+      setNomeLobby(''); setDataFim('');
+      await carregarMeus();
+      abrirLobby(r.lobby);
+    } catch(e) { mostrarToast(e.message || 'Erro ao criar.', 'erro'); }
+    finally { setLoading(false); }
+  };
+
+  const entrarLobby = async () => {
+    if (!codigo.trim()) { mostrarToast('Digite o código.', 'erro'); return; }
+    setLoading(true);
+    try {
+      const r = await apiFetch('/api/rank/entrar', {
+        method: 'POST',
+        body: { id_usuario: usuario.id, nome_usuario: usuario.nome, codigo: codigo.trim().toUpperCase() },
+      });
+      mostrarToast('Entrou no lobby!', 'sucesso');
+      setCodigo('');
+      // Limpa o param da URL
+      window.history.replaceState({}, '', window.location.pathname);
+      await carregarMeus();
+      abrirLobby(r.lobby);
+    } catch(e) { mostrarToast(e.message || 'Código inválido.', 'erro'); }
+    finally { setLoading(false); }
+  };
+
+  const abrirLobby = async (lobby) => {
+    setLobby(lobby);
+    setAba('lobby');
+    setLoading(true);
+    try {
+      const r = await apiFetch(`/api/rank/ranking?codigo=${lobby.codigo}`);
+      setRanking(r.ranking || []);
+    } catch { }
+    finally { setLoading(false); }
+  };
+
+  const copiarLink = (cod) => {
+    const url = `${window.location.origin}?lobby=${cod}`;
+    navigator.clipboard.writeText(url).then(() => mostrarToast('Link copiado!', 'sucesso'));
+  };
+
+  const encerrado = lobbyAtivo && new Date(lobbyAtivo.data_fim) < new Date();
+  const hoje      = new Date().toISOString().slice(0, 10);
+
+  // ── TELA LOBBY ──────────────────────────────────────────────────────────────
+  if (aba === 'lobby' && lobbyAtivo) {
+    const medalhas = ['🥇','🥈','🥉'];
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
+        <div className="sticky top-0 z-30 bg-[#0a0a0a]/96 backdrop-blur-md border-b border-zinc-900 px-5 pt-12 pb-4 flex items-center gap-3">
+          <button onClick={() => { setAba('meus'); setLobby(null); }}
+            className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
+            <IconBack/>
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className={`text-xs font-semibold uppercase tracking-wider ${encerrado ? 'text-red-400' : 'text-[#c8f542]'}`}>
+              {encerrado ? 'Encerrado' : `Até ${new Date(lobbyAtivo.data_fim + 'T00:00:00').toLocaleDateString('pt-BR')}`}
+            </div>
+            <div className="text-white font-bold text-lg truncate">{lobbyAtivo.nome}</div>
+          </div>
+          <button onClick={() => copiarLink(lobbyAtivo.codigo)}
+            className="btn flex items-center gap-2 px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-300 text-sm active:bg-zinc-800">
+            <IconLink/><span className="text-xs font-semibold">{lobbyAtivo.codigo}</span>
+          </button>
+        </div>
+
+        <div className="px-4 pt-6 pb-10 flex flex-col gap-3">
+          {encerrado && (
+            <div className="bg-amber-400/10 border border-amber-400/20 rounded-2xl px-4 py-3 text-center mb-2">
+              <p className="text-amber-400 font-bold text-sm">🏆 Lobby encerrado — resultado final</p>
+            </div>
+          )}
+
+          {loading ? <Spinner/> : ranking.length === 0 ? (
+            <div className="text-center py-16 text-zinc-600 text-sm">Nenhum treino registrado ainda.</div>
+          ) : ranking.map((p, i) => (
+            <div key={p.id_usuario}
+              className={`rounded-2xl border px-4 py-4 flex items-center gap-4 ${
+                i === 0 ? 'bg-amber-400/8 border-amber-400/25' :
+                i === 1 ? 'bg-zinc-800/60 border-zinc-700' :
+                i === 2 ? 'bg-orange-900/20 border-orange-800/30' :
+                          'bg-zinc-900 border-zinc-800'}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 font-black ${
+                i === 0 ? 'bg-amber-400/15 text-amber-400' :
+                i === 1 ? 'bg-zinc-700 text-zinc-300' :
+                i === 2 ? 'bg-orange-900/40 text-orange-400' :
+                          'bg-zinc-800 text-zinc-500'}`}>
+                {i < 3 ? medalhas[i] : i + 1}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-white font-bold truncate">{p.nome}</div>
+                <div className="text-zinc-500 text-xs mt-0.5">{p.treinos} treino{p.treinos !== 1 ? 's' : ''}</div>
+              </div>
+              <div className={`text-right flex-shrink-0 ${i === 0 ? 'text-amber-400' : 'text-zinc-400'}`}>
+                <div className="text-xl font-black num">{p.treinos}</div>
+                <div className="text-xs text-zinc-600">pts</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── TELA PRINCIPAL RANK ─────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
+      <div className="px-5 pt-14 pb-4 flex items-center gap-3 border-b border-zinc-900">
+        <button onClick={onVoltar}
+          className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
+          <IconBack/>
+        </button>
+        <h1 className="text-xl font-bold text-white">Ranking</h1>
+      </div>
+
+      {/* Abas */}
+      <div className="flex gap-2 px-5 pt-4 pb-2">
+        {[['meus','Meus Lobbies'],['criar','Criar'],['entrar','Entrar']].map(([v,l]) => (
+          <button key={v} onClick={() => setAba(v)}
+            className={`btn px-4 py-2 rounded-xl text-sm font-semibold ${aba===v ? 'bg-[#c8f542] text-black' : 'bg-zinc-900 border border-zinc-800 text-zinc-400'}`}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      <div className="px-5 pt-4 pb-10 flex flex-col gap-3">
+
+        {/* MEUS LOBBIES */}
+        {aba === 'meus' && (
+          loading ? <Spinner/> : meusLobbies.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-zinc-500 text-sm mb-4">Você ainda não participa de nenhum lobby.</p>
+              <button onClick={() => setAba('criar')}
+                className="btn px-6 py-4 bg-[#c8f542] text-black font-bold rounded-2xl">Criar lobby</button>
+            </div>
+          ) : meusLobbies.map(lb => {
+            const enc = new Date(lb.data_fim) < new Date();
+            return (
+              <button key={lb.codigo} onClick={() => abrirLobby(lb)}
+                className="btn w-full bg-zinc-900 border border-zinc-800 active:bg-zinc-800 rounded-2xl p-4 text-left flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${enc ? 'bg-zinc-800 text-zinc-500' : 'bg-[#c8f542]/10 text-[#c8f542]'}`}>
+                  <IconUsers/>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-white font-bold truncate">{lb.nome}</div>
+                  <div className={`text-xs mt-0.5 ${enc ? 'text-red-400' : 'text-zinc-500'}`}>
+                    {enc ? 'Encerrado' : `Até ${new Date(lb.data_fim + 'T00:00:00').toLocaleDateString('pt-BR')}`} · {lb.membros} membro{lb.membros !== 1 ? 's' : ''}
+                  </div>
+                </div>
+                <IconChevronRight/>
+              </button>
+            );
+          })
+        )}
+
+        {/* CRIAR LOBBY */}
+        {aba === 'criar' && (
+          <div className="flex flex-col gap-3">
+            <input type="text" placeholder="Nome do lobby (ex: Semana dos Bros)" value={nomeLobby}
+              onChange={e => setNomeLobby(e.target.value)} maxLength={40}
+              className="w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base placeholder-zinc-600"/>
+            <div>
+              <label className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-2 block">Data de encerramento</label>
+              <input type="date" value={dataFim} min={hoje} onChange={e => setDataFim(e.target.value)}
+                className="w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base [color-scheme:dark]"/>
+            </div>
+            <button onClick={criarLobby} disabled={loading}
+              className="btn w-full py-5 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold text-base rounded-2xl mt-2 disabled:opacity-50">
+              {loading ? 'Criando...' : 'Criar lobby'}
+            </button>
+          </div>
+        )}
+
+        {/* ENTRAR NO LOBBY */}
+        {aba === 'entrar' && (
+          <div className="flex flex-col gap-3">
+            <p className="text-zinc-500 text-sm">Digite o código ou acesse o link de convite.</p>
+            <input type="text" placeholder="Código (ex: ABC123)" value={codigo}
+              onChange={e => setCodigo(e.target.value.toUpperCase())} maxLength={6}
+              className="w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base placeholder-zinc-600 tracking-widest font-bold uppercase"/>
+            <button onClick={entrarLobby} disabled={loading || !codigo.trim()}
+              className="btn w-full py-5 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold text-base rounded-2xl disabled:opacity-50">
+              {loading ? 'Entrando...' : 'Entrar no lobby'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -923,6 +1217,7 @@ export default function App() {
   const [splitAtivo, setSplitAtivo]  = useState(null);
   const [historico, setHistorico]    = useState([]);
   const [resultado, setResultado]    = useState(null);
+  const [lobbyConvite, setLobbyConvite] = useState(null);
   const [toast, setToast]            = useState(null);
   const toastTimerRef                = useRef(null); // cleanup correto do timeout
 
@@ -936,7 +1231,7 @@ export default function App() {
   const carregarSplits = useCallback(async uid => {
     setLoadingS(true);
     try {
-      const r = await apiFetch(`/api/splits?id_usuario=${uid}`);
+      const r = await apiFetch(`${R.splits}?id_usuario=${uid}`);
       setSplits(r.splits || []);
     } catch (err) {
       // Erro de rede — não sobrescreve dados do usuário, só limpa a lista
@@ -964,7 +1259,7 @@ export default function App() {
     setHistorico([]); // limpa histórico anterior enquanto carrega
     setTela('treino');
     try {
-      const r = await apiFetch(`/api/treino/historico?id_usuario=${usuario.id}&nome_treino=${encodeURIComponent(split.nome)}`);
+      const r = await apiFetch(`${R.historico}?id_usuario=${usuario.id}&nome_treino=${encodeURIComponent(split.nome)}`);
       setHistorico(r.series || []);
     } catch { /* sem histórico é normal */ }
   }, [usuario]);
@@ -980,10 +1275,11 @@ export default function App() {
       <Toast data={toast}/>
       <IOSInstallBanner/>
       {tela==='auth'             && <TelaAuth onLogin={onLogin} mostrarToast={mostrarToast}/>}
-      {tela==='grupamentos'      && usuario && <TelaGrupamentos usuario={usuario} splits={splits} loadingSplits={loadingSplits} onSelecionarSplit={onSelecionarSplit} onGerenciar={()=>setTela('gerenciar-splits')} onLogout={onLogout}/>}
+      {tela==='grupamentos'      && usuario && <TelaGrupamentos usuario={usuario} splits={splits} loadingSplits={loadingSplits} onSelecionarSplit={onSelecionarSplit} onGerenciar={()=>setTela('gerenciar-splits')} onRank={()=>setTela('rank')} onLogout={onLogout}/>}
       {tela==='gerenciar-splits' && usuario && <TelaGerenciarSplits usuario={usuario} splits={splits} onSalvar={l=>{setSplits(l);setTela('grupamentos');}} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
       {tela==='treino'           && splitAtivo && <TelaTreino usuario={usuario} split={splitAtivo} historicoAnterior={historico} onFinalizar={onFinalizar} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
       {tela==='resumo'           && resultado && <TelaResumo resultado={resultado} onVoltar={()=>setTela('grupamentos')}/>}
+      {tela==='rank'             && usuario && <TelaRank usuario={usuario} mostrarToast={mostrarToast} onVoltar={()=>setTela('grupamentos')}/>}
     </>
   );
 }
