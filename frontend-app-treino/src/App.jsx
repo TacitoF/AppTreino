@@ -537,7 +537,7 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                 <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400">
                   <IconSettings/>
                 </div>
-                <span className="text-zinc-400 text-xs font-semibold text-center leading-tight">Gerenciar<br/>grupos</span>
+                <span className="text-zinc-400 text-xs font-semibold text-center leading-tight">Gerenciar<br/>grupos musculares</span>
               </button>
               <button onClick={onRank}
                 className="btn bg-[#c8f542]/8 border border-[#c8f542]/25 active:bg-[#c8f542]/15 rounded-2xl p-4 flex flex-col items-center gap-2">
@@ -721,32 +721,85 @@ const EXERCICIOS_DB = {
     musculos: {
       peito: {
         label: 'Peito', cor: '#ef4444',
-        svg: (<svg viewBox="0 0 80 60" className="w-full h-full"><ellipse cx="22" cy="32" rx="17" ry="13" fill="currentColor" opacity=".9"/><ellipse cx="58" cy="32" rx="17" ry="13" fill="currentColor" opacity=".9"/><ellipse cx="22" cy="30" rx="12" ry="9" fill="white" opacity=".12"/><ellipse cx="58" cy="30" rx="12" ry="9" fill="white" opacity=".12"/><path d="M39 20 Q40 18 41 20 L42 38 Q40 42 38 38Z" fill="currentColor" opacity=".5"/></svg>),
+        svg: (
+          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
+            {/* dois peitoral lado a lado, linha central */}
+            <path d="M8 22 Q18 14 30 20 Q30 36 20 42 Q10 38 8 28Z" fill="currentColor" opacity=".85"/>
+            <path d="M56 22 Q46 14 34 20 Q34 36 44 42 Q54 38 56 28Z" fill="currentColor" opacity=".85"/>
+            <line x1="32" y1="18" x2="32" y2="44" stroke="currentColor" strokeWidth="1.5" opacity=".3"/>
+            <path d="M8 22 Q18 14 30 20" fill="none" stroke="white" strokeWidth="1" opacity=".25" strokeLinecap="round"/>
+            <path d="M56 22 Q46 14 34 20" fill="none" stroke="white" strokeWidth="1" opacity=".25" strokeLinecap="round"/>
+          </svg>
+        ),
         exercicios: ['Supino reto','Supino inclinado','Supino declinado','Crucifixo','Crossover','Flexão de braço','Peck deck','Pull-over'],
       },
       costas: {
         label: 'Costas', cor: '#3b82f6',
-        svg: (<svg viewBox="0 0 80 60" className="w-full h-full"><rect x="18" y="10" width="44" height="40" rx="8" fill="currentColor" opacity=".85"/><rect x="26" y="14" width="10" height="32" rx="4" fill="white" opacity=".15"/><rect x="44" y="14" width="10" height="32" rx="4" fill="white" opacity=".15"/><rect x="37" y="12" width="6" height="36" rx="3" fill="currentColor" opacity=".4"/></svg>),
+        svg: (
+          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
+            {/* trapézio + latissimus — forma de V invertido */}
+            <path d="M12 10 Q32 6 52 10 L48 32 Q32 38 16 32Z" fill="currentColor" opacity=".7"/>
+            <path d="M16 32 Q20 50 24 56 L32 58 L40 56 Q44 50 48 32 Q32 38 16 32Z" fill="currentColor" opacity=".9"/>
+            <line x1="32" y1="8" x2="32" y2="58" stroke="white" strokeWidth="1.5" opacity=".2"/>
+          </svg>
+        ),
         exercicios: ['Puxada frontal','Puxada posterior','Remada curvada','Remada unilateral','Serrote','Levantamento terra','Pulldown','Remada cavalinho'],
       },
       ombro: {
         label: 'Ombro', cor: '#a855f7',
-        svg: (<svg viewBox="0 0 80 60" className="w-full h-full"><circle cx="14" cy="30" r="12" fill="currentColor" opacity=".9"/><circle cx="66" cy="30" r="12" fill="currentColor" opacity=".9"/><rect x="26" y="24" width="28" height="12" rx="6" fill="currentColor" opacity=".6"/><circle cx="14" cy="28" r="7" fill="white" opacity=".15"/><circle cx="66" cy="28" r="7" fill="white" opacity=".15"/></svg>),
+        svg: (
+          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
+            {/* deltóides — três cabeças como círculos/arcos */}
+            <circle cx="12" cy="32" r="11" fill="currentColor" opacity=".9"/>
+            <circle cx="52" cy="32" r="11" fill="currentColor" opacity=".9"/>
+            <rect x="22" y="27" width="20" height="10" rx="5" fill="currentColor" opacity=".5"/>
+            <path d="M4 26 Q12 20 20 28" fill="none" stroke="white" strokeWidth="1" opacity=".3" strokeLinecap="round"/>
+            <path d="M60 26 Q52 20 44 28" fill="none" stroke="white" strokeWidth="1" opacity=".3" strokeLinecap="round"/>
+          </svg>
+        ),
         exercicios: ['Desenvolvimento militar','Elevação lateral','Elevação frontal','Crucifixo invertido','Arnold press','Remada alta','Face pull','Encolhimento'],
       },
       biceps: {
         label: 'Bíceps', cor: '#f59e0b',
-        svg: (<svg viewBox="0 0 80 60" className="w-full h-full"><path d="M20 48 Q14 30 20 16 Q26 8 32 16 Q36 26 32 48Z" fill="currentColor" opacity=".9"/><path d="M60 48 Q54 30 48 16 Q54 8 60 16 Q66 26 60 48Z" fill="currentColor" opacity=".9"/><path d="M22 22 Q26 16 30 22 Q28 30 26 34" fill="white" opacity=".2"/><path d="M50 22 Q54 16 58 22 Q56 30 54 34" fill="white" opacity=".2"/></svg>),
+        svg: (
+          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
+            {/* dois braços com bíceps em pico */}
+            <path d="M10 52 Q6 36 12 20 Q18 12 22 20 Q26 30 22 52Z" fill="currentColor" opacity=".9"/>
+            <path d="M54 52 Q58 36 52 20 Q46 12 42 20 Q38 30 42 52Z" fill="currentColor" opacity=".9"/>
+            {/* pico do bíceps */}
+            <path d="M11 28 Q16 18 21 28" fill="none" stroke="white" strokeWidth="1.5" opacity=".35" strokeLinecap="round"/>
+            <path d="M53 28 Q48 18 43 28" fill="none" stroke="white" strokeWidth="1.5" opacity=".35" strokeLinecap="round"/>
+          </svg>
+        ),
         exercicios: ['Rosca direta','Rosca alternada','Rosca martelo','Rosca concentrada','Rosca scott','Rosca 21','Rosca cabo','Rosca inversa'],
       },
       triceps: {
         label: 'Tríceps', cor: '#ec4899',
-        svg: (<svg viewBox="0 0 80 60" className="w-full h-full"><path d="M22 14 Q28 10 34 18 Q38 30 34 48 Q28 52 22 48 Q16 36 22 14Z" fill="currentColor" opacity=".9"/><path d="M58 14 Q52 10 46 18 Q42 30 46 48 Q52 52 58 48 Q64 36 58 14Z" fill="currentColor" opacity=".9"/><path d="M24 20 Q28 14 32 20 Q34 30 30 38" fill="white" opacity=".18"/><path d="M56 20 Q52 14 48 20 Q46 30 50 38" fill="white" opacity=".18"/></svg>),
+        svg: (
+          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
+            {/* tríceps — parte de trás do braço, forma alongada */}
+            <path d="M10 52 Q4 34 10 16 Q16 10 20 16 Q16 34 18 52Z" fill="currentColor" opacity=".9"/>
+            <path d="M54 52 Q60 34 54 16 Q48 10 44 16 Q48 34 46 52Z" fill="currentColor" opacity=".9"/>
+            <path d="M10 24 Q7 32 8 42" fill="none" stroke="white" strokeWidth="1.5" opacity=".3" strokeLinecap="round"/>
+            <path d="M54 24 Q57 32 56 42" fill="none" stroke="white" strokeWidth="1.5" opacity=".3" strokeLinecap="round"/>
+          </svg>
+        ),
         exercicios: ['Tríceps pulley','Tríceps testa','Tríceps francês','Mergulho','Tríceps coice','Tríceps corda','Tríceps banco','Fechado'],
       },
       abdomen: {
         label: 'Abdômen', cor: '#6366f1',
-        svg: (<svg viewBox="0 0 80 60" className="w-full h-full"><rect x="26" y="8" width="28" height="44" rx="6" fill="currentColor" opacity=".85"/><rect x="30" y="12" width="8" height="8" rx="3" fill="white" opacity=".2"/><rect x="42" y="12" width="8" height="8" rx="3" fill="white" opacity=".2"/><rect x="30" y="24" width="8" height="8" rx="3" fill="white" opacity=".2"/><rect x="42" y="24" width="8" height="8" rx="3" fill="white" opacity=".2"/><rect x="30" y="36" width="8" height="8" rx="3" fill="white" opacity=".2"/><rect x="42" y="36" width="8" height="8" rx="3" fill="white" opacity=".2"/></svg>),
+        svg: (
+          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
+            {/* grade abdominal — 6 retângulos arredondados */}
+            <rect x="16" y="8"  width="13" height="11" rx="4" fill="currentColor" opacity=".9"/>
+            <rect x="35" y="8"  width="13" height="11" rx="4" fill="currentColor" opacity=".9"/>
+            <rect x="16" y="26" width="13" height="11" rx="4" fill="currentColor" opacity=".9"/>
+            <rect x="35" y="26" width="13" height="11" rx="4" fill="currentColor" opacity=".9"/>
+            <rect x="16" y="44" width="13" height="11" rx="4" fill="currentColor" opacity=".75"/>
+            <rect x="35" y="44" width="13" height="11" rx="4" fill="currentColor" opacity=".75"/>
+            <line x1="32" y1="6" x2="32" y2="58" stroke="currentColor" strokeWidth="1" opacity=".2"/>
+          </svg>
+        ),
         exercicios: ['Abdominal crunch','Prancha','Abdominal bicicleta','Elevação de pernas','Abdominal oblíquo','Rollout','Dragon flag','Abdominal infra'],
       },
     },
@@ -756,22 +809,54 @@ const EXERCICIOS_DB = {
     musculos: {
       quadriceps: {
         label: 'Quadríceps', cor: '#10b981',
-        svg: (<svg viewBox="0 0 80 70" className="w-full h-full"><path d="M18 8 Q24 4 28 10 Q32 20 30 50 Q28 62 22 64 Q16 62 14 50 Q12 28 18 8Z" fill="currentColor" opacity=".9"/><path d="M62 8 Q56 4 52 10 Q48 20 50 50 Q52 62 58 64 Q64 62 66 50 Q68 28 62 8Z" fill="currentColor" opacity=".9"/><path d="M20 14 Q24 8 28 14 Q30 26 28 38" fill="white" opacity=".18"/><path d="M60 14 Q56 8 52 14 Q50 26 52 38" fill="white" opacity=".18"/></svg>),
+        svg: (
+          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
+            {/* duas coxas frontais — forma cônica */}
+            <path d="M10 8 Q16 4 20 10 Q24 22 22 54 Q18 58 14 54 Q8 40 10 8Z" fill="currentColor" opacity=".9"/>
+            <path d="M54 8 Q48 4 44 10 Q40 22 42 54 Q46 58 50 54 Q56 40 54 8Z" fill="currentColor" opacity=".9"/>
+            <path d="M11 16 Q15 8 19 16" fill="none" stroke="white" strokeWidth="1.5" opacity=".3" strokeLinecap="round"/>
+            <path d="M53 16 Q49 8 45 16" fill="none" stroke="white" strokeWidth="1.5" opacity=".3" strokeLinecap="round"/>
+          </svg>
+        ),
         exercicios: ['Agachamento livre','Leg press','Extensora','Hack squat','Agachamento búlgaro','Avanço','Afundo','Agachamento sumô'],
       },
       posterior: {
         label: 'Posterior', cor: '#06b6d4',
-        svg: (<svg viewBox="0 0 80 70" className="w-full h-full"><path d="M16 10 Q22 6 26 14 Q28 28 26 52 Q24 64 18 66 Q12 64 10 52 Q8 30 16 10Z" fill="currentColor" opacity=".9"/><path d="M64 10 Q58 6 54 14 Q52 28 54 52 Q56 64 62 66 Q68 64 70 52 Q72 30 64 10Z" fill="currentColor" opacity=".9"/><path d="M18 16 Q22 10 26 16 Q28 28 24 40" fill="white" opacity=".18"/><path d="M62 16 Q58 10 54 16 Q52 28 56 40" fill="white" opacity=".18"/></svg>),
+        svg: (
+          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
+            {/* isquiotibiais — parte de trás da coxa */}
+            <path d="M8 8 Q14 4 18 12 Q20 28 18 54 Q14 58 10 54 Q6 38 8 8Z" fill="currentColor" opacity=".9"/>
+            <path d="M56 8 Q50 4 46 12 Q44 28 46 54 Q50 58 54 54 Q58 38 56 8Z" fill="currentColor" opacity=".9"/>
+            <path d="M9 18 Q13 10 17 18" fill="none" stroke="white" strokeWidth="1.5" opacity=".3" strokeLinecap="round"/>
+            <path d="M55 18 Q51 10 47 18" fill="none" stroke="white" strokeWidth="1.5" opacity=".3" strokeLinecap="round"/>
+          </svg>
+        ),
         exercicios: ['Mesa flexora','Cadeira flexora','Stiff','Levantamento terra romeno','Bom dia','Leg curl','Flexão nórdica','Ponte'],
       },
       gluteo: {
         label: 'Glúteo', cor: '#f97316',
-        svg: (<svg viewBox="0 0 80 60" className="w-full h-full"><ellipse cx="24" cy="34" rx="20" ry="18" fill="currentColor" opacity=".9"/><ellipse cx="56" cy="34" rx="20" ry="18" fill="currentColor" opacity=".9"/><ellipse cx="22" cy="30" rx="14" ry="11" fill="white" opacity=".12"/><ellipse cx="54" cy="30" rx="14" ry="11" fill="white" opacity=".12"/></svg>),
+        svg: (
+          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
+            {/* dois glúteos arredondados */}
+            <path d="M4 20 Q6 8 18 10 Q32 12 30 32 Q28 46 16 48 Q4 44 4 32Z" fill="currentColor" opacity=".9"/>
+            <path d="M60 20 Q58 8 46 10 Q32 12 34 32 Q36 46 48 48 Q60 44 60 32Z" fill="currentColor" opacity=".9"/>
+            <path d="M5 22 Q10 12 18 14" fill="none" stroke="white" strokeWidth="1.5" opacity=".25" strokeLinecap="round"/>
+            <path d="M59 22 Q54 12 46 14" fill="none" stroke="white" strokeWidth="1.5" opacity=".25" strokeLinecap="round"/>
+          </svg>
+        ),
         exercicios: ['Agachamento','Hip thrust','Elevação pélvica','Glúteo no cabo','Abdução','Passada','Agachamento sumô','Extensão quadril'],
       },
       panturrilha: {
         label: 'Panturrilha', cor: '#84cc16',
-        svg: (<svg viewBox="0 0 80 70" className="w-full h-full"><path d="M22 4 Q28 2 32 10 Q36 24 32 50 Q30 62 24 64 Q18 62 16 50 Q12 28 22 4Z" fill="currentColor" opacity=".9"/><path d="M58 4 Q52 2 48 10 Q44 24 48 50 Q50 62 56 64 Q62 62 64 50 Q68 28 58 4Z" fill="currentColor" opacity=".9"/><path d="M24 10 Q28 4 32 10 Q34 22 28 36" fill="white" opacity=".2"/><path d="M56 10 Q52 4 48 10 Q46 22 52 36" fill="white" opacity=".2"/></svg>),
+        svg: (
+          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
+            {/* duas panturrilhas em diamante */}
+            <path d="M14 6 Q20 2 24 10 Q28 22 24 42 Q22 52 18 54 Q12 52 10 42 Q6 24 14 6Z" fill="currentColor" opacity=".9"/>
+            <path d="M50 6 Q44 2 40 10 Q36 22 40 42 Q42 52 46 54 Q52 52 54 42 Q58 24 50 6Z" fill="currentColor" opacity=".9"/>
+            <path d="M14 12 Q18 4 23 12" fill="none" stroke="white" strokeWidth="1.5" opacity=".35" strokeLinecap="round"/>
+            <path d="M50 12 Q46 4 41 12" fill="none" stroke="white" strokeWidth="1.5" opacity=".35" strokeLinecap="round"/>
+          </svg>
+        ),
         exercicios: ['Elevação de calcanhar em pé','Elevação de calcanhar sentado','Leg press panturrilha','Donkey calf raise','Panturrilha unilateral'],
       },
     },
@@ -846,70 +931,65 @@ const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
           </div>
 
           <div className="flex gap-4 w-full">
-            {/* Card Superior */}
+            {/* Card Superior — linha-art minimalista */}
             <button onClick={() => setRegiao('superior')}
-              className="btn flex-1 bg-zinc-900 border-2 border-zinc-800 active:border-[#c8f542] active:bg-[#c8f542]/5 rounded-3xl p-4 flex flex-col items-center gap-3 active:scale-95 transition-all">
-              <svg viewBox="0 0 80 110" className="w-24 h-32">
+              className="btn flex-1 bg-zinc-900 border-2 border-zinc-800 active:border-[#c8f542] active:bg-[#c8f542]/5 rounded-3xl p-5 flex flex-col items-center gap-3 active:scale-95 transition-all">
+              <svg viewBox="0 0 60 90" fill="none" className="w-20 h-28">
                 {/* Cabeça */}
-                <ellipse cx="40" cy="10" rx="9" ry="10" fill="#52525b"/>
+                <circle cx="30" cy="9" r="7" stroke="#52525b" strokeWidth="2.5"/>
                 {/* Pescoço */}
-                <rect x="35" y="19" width="10" height="7" rx="3" fill="#52525b"/>
+                <line x1="30" y1="16" x2="30" y2="21" stroke="#52525b" strokeWidth="2.5" strokeLinecap="round"/>
                 {/* Ombros */}
-                <ellipse cx="17" cy="30" rx="9" ry="7" fill="#c8f542" opacity=".95"/>
-                <ellipse cx="63" cy="30" rx="9" ry="7" fill="#c8f542" opacity=".95"/>
-                {/* Tronco / peito */}
-                <path d="M22 26 Q40 22 58 26 L60 54 Q40 58 20 54Z" fill="#c8f542" opacity=".9"/>
+                <path d="M30 21 L12 28 M30 21 L48 28" stroke="#c8f542" strokeWidth="3" strokeLinecap="round"/>
+                {/* Braços */}
+                <line x1="12" y1="28" x2="8" y2="46" stroke="#c8f542" strokeWidth="3" strokeLinecap="round"/>
+                <line x1="48" y1="28" x2="52" y2="46" stroke="#c8f542" strokeWidth="3" strokeLinecap="round"/>
+                {/* Antebraços */}
+                <line x1="8" y1="46" x2="6" y2="60" stroke="#c8f542" strokeWidth="2.5" strokeLinecap="round" opacity=".5"/>
+                <line x1="52" y1="46" x2="54" y2="60" stroke="#c8f542" strokeWidth="2.5" strokeLinecap="round" opacity=".5"/>
+                {/* Tronco */}
+                <path d="M12 28 L14 54 L46 54 L48 28" fill="#c8f542" fillOpacity=".15" stroke="#c8f542" strokeWidth="2" strokeLinejoin="round"/>
                 {/* Abdômen */}
-                <path d="M24 54 Q40 57 56 54 L54 72 Q40 75 26 72Z" fill="#c8f542" opacity=".6"/>
-                {/* Braço esquerdo */}
-                <rect x="6" y="26" width="10" height="28" rx="5" fill="#c8f542" opacity=".85"/>
-                {/* Braço direito */}
-                <rect x="64" y="26" width="10" height="28" rx="5" fill="#c8f542" opacity=".85"/>
-                {/* Antebraço esq */}
-                <rect x="7" y="55" width="8" height="20" rx="4" fill="#c8f542" opacity=".45"/>
-                {/* Antebraço dir */}
-                <rect x="65" y="55" width="8" height="20" rx="4" fill="#c8f542" opacity=".45"/>
-                {/* Pernas — apagadas */}
-                <rect x="23" y="73" width="14" height="35" rx="7" fill="#27272a"/>
-                <rect x="43" y="73" width="14" height="35" rx="7" fill="#27272a"/>
+                <path d="M14 54 L16 68 L44 68 L46 54" fill="#c8f542" fillOpacity=".08" stroke="#c8f542" strokeWidth="1.5" strokeLinejoin="round" strokeDasharray="3 2" opacity=".7"/>
+                {/* Pernas */}
+                <line x1="21" y1="68" x2="19" y2="88" stroke="#3f3f46" strokeWidth="3" strokeLinecap="round"/>
+                <line x1="39" y1="68" x2="41" y2="88" stroke="#3f3f46" strokeWidth="3" strokeLinecap="round"/>
               </svg>
               <div className="text-center">
-                <div className="text-white font-black text-base">Superior</div>
-                <div className="text-zinc-500 text-xs mt-0.5">Peito · Costas · Ombro · Braços · Abdômen</div>
+                <div className="text-white font-black text-sm">Superior</div>
+                <div className="text-zinc-600 text-xs mt-0.5">Peito · Costas · Ombro<br/>Braços · Abdômen</div>
               </div>
             </button>
 
             {/* Card Inferior */}
             <button onClick={() => setRegiao('inferior')}
-              className="btn flex-1 bg-zinc-900 border-2 border-zinc-800 active:border-[#c8f542] active:bg-[#c8f542]/5 rounded-3xl p-4 flex flex-col items-center gap-3 active:scale-95 transition-all">
-              <svg viewBox="0 0 80 110" className="w-24 h-32">
+              className="btn flex-1 bg-zinc-900 border-2 border-zinc-800 active:border-[#c8f542] active:bg-[#c8f542]/5 rounded-3xl p-5 flex flex-col items-center gap-3 active:scale-95 transition-all">
+              <svg viewBox="0 0 60 90" fill="none" className="w-20 h-28">
                 {/* Cabeça */}
-                <ellipse cx="40" cy="10" rx="9" ry="10" fill="#52525b"/>
+                <circle cx="30" cy="9" r="7" stroke="#3f3f46" strokeWidth="2.5"/>
                 {/* Pescoço */}
-                <rect x="35" y="19" width="10" height="7" rx="3" fill="#52525b"/>
-                {/* Ombros — apagados */}
-                <ellipse cx="17" cy="30" rx="9" ry="7" fill="#27272a"/>
-                <ellipse cx="63" cy="30" rx="9" ry="7" fill="#27272a"/>
-                {/* Tronco — apagado */}
-                <path d="M22 26 Q40 22 58 26 L60 54 Q40 58 20 54Z" fill="#27272a"/>
-                <path d="M24 54 Q40 57 56 54 L54 72 Q40 75 26 72Z" fill="#27272a"/>
-                {/* Braços — apagados */}
-                <rect x="6" y="26" width="10" height="28" rx="5" fill="#27272a"/>
-                <rect x="64" y="26" width="10" height="28" rx="5" fill="#27272a"/>
-                <rect x="7" y="55" width="8" height="20" rx="4" fill="#27272a"/>
-                <rect x="65" y="55" width="8" height="20" rx="4" fill="#27272a"/>
-                {/* Glúteo */}
-                <path d="M23 72 Q40 68 57 72 L57 82 Q40 86 23 82Z" fill="#c8f542" opacity=".85"/>
-                {/* Pernas destacadas */}
-                <rect x="23" y="80" width="14" height="28" rx="7" fill="#c8f542" opacity=".9"/>
-                <rect x="43" y="80" width="14" height="28" rx="7" fill="#c8f542" opacity=".9"/>
-                {/* Joelhos */}
-                <ellipse cx="30" cy="108" rx="7" ry="4" fill="#c8f542" opacity=".5"/>
-                <ellipse cx="50" cy="108" rx="7" ry="4" fill="#c8f542" opacity=".5"/>
+                <line x1="30" y1="16" x2="30" y2="21" stroke="#3f3f46" strokeWidth="2.5" strokeLinecap="round"/>
+                {/* Ombros */}
+                <path d="M30 21 L12 28 M30 21 L48 28" stroke="#3f3f46" strokeWidth="3" strokeLinecap="round"/>
+                {/* Braços */}
+                <line x1="12" y1="28" x2="8" y2="46" stroke="#3f3f46" strokeWidth="3" strokeLinecap="round"/>
+                <line x1="48" y1="28" x2="52" y2="46" stroke="#3f3f46" strokeWidth="3" strokeLinecap="round"/>
+                <line x1="8" y1="46" x2="6" y2="60" stroke="#3f3f46" strokeWidth="2.5" strokeLinecap="round"/>
+                <line x1="52" y1="46" x2="54" y2="60" stroke="#3f3f46" strokeWidth="2.5" strokeLinecap="round"/>
+                {/* Tronco */}
+                <path d="M12 28 L14 54 L46 54 L48 28" fill="none" stroke="#3f3f46" strokeWidth="2" strokeLinejoin="round"/>
+                {/* Glúteo — destaque */}
+                <path d="M14 54 Q30 60 46 54" stroke="#c8f542" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+                {/* Pernas */}
+                <line x1="21" y1="60" x2="19" y2="78" stroke="#c8f542" strokeWidth="3.5" strokeLinecap="round"/>
+                <line x1="39" y1="60" x2="41" y2="78" stroke="#c8f542" strokeWidth="3.5" strokeLinecap="round"/>
+                {/* Canelas */}
+                <line x1="19" y1="78" x2="18" y2="88" stroke="#c8f542" strokeWidth="2.5" strokeLinecap="round" opacity=".55"/>
+                <line x1="41" y1="78" x2="42" y2="88" stroke="#c8f542" strokeWidth="2.5" strokeLinecap="round" opacity=".55"/>
               </svg>
               <div className="text-center">
-                <div className="text-white font-black text-base">Inferior</div>
-                <div className="text-zinc-500 text-xs mt-0.5">Quadríceps · Posterior · Glúteo · Panturrilha</div>
+                <div className="text-white font-black text-sm">Inferior</div>
+                <div className="text-zinc-600 text-xs mt-0.5">Quadríceps · Posterior<br/>Glúteo · Panturrilha</div>
               </div>
             </button>
           </div>
@@ -1006,10 +1086,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     `${split.nome}_${usuario.id}_${new Date().toISOString().slice(0,10)}_${Date.now()}`
   );
 
-  const [exercicios, setExercicios] = useState(() => [{
-    id: Date.now(), nome: '',
-    series: [{ id:1, reps:12, carga:0, enviada:false, id_banco:null }],
-  }]);
+  const [exercicios, setExercicios] = useState([]);
 
   // Quando o histórico chega de forma assíncrona (após a tela já abrir),
   // pré-popula os exercícios com os dados do último treino — uma única vez.
@@ -1237,10 +1314,13 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     }
   }, [exercicios, split, usuario, mostrarToast, iniciarDescanso]);
 
-  const histEx = useCallback((nome) => {
-    if (!historicoAnterior?.length || !nome?.trim()) return [];
+  const histEx = useCallback((nome, nomeOriginal) => {
+    if (!historicoAnterior?.length) return [];
+    // Use nomeOriginal (o nome com que o treino foi salvo) para buscar histórico
+    const chave = (nomeOriginal || nome)?.trim();
+    if (!chave) return [];
     return historicoAnterior.filter(s =>
-      s.nome_exercicio?.toLowerCase().trim() === nome.toLowerCase().trim()
+      s.nome_exercicio?.toLowerCase().trim() === chave.toLowerCase().trim()
     );
   }, [historicoAnterior]);
 
@@ -1286,8 +1366,29 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
       {/* Exercícios */}
       <div className="px-4 pt-5 flex flex-col gap-5">
+
+        {/* Empty state */}
+        {exercicios.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-14 gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 5v14M18 5v14M3 8h3M3 16h3M18 8h3M18 16h3M6 9h12M6 15h12"/>
+              </svg>
+            </div>
+            <div className="text-center">
+              <p className="text-white font-bold text-base">Nenhum exercício ainda</p>
+              <p className="text-zinc-500 text-sm mt-1">Toque em "Adicionar exercício" abaixo para começar</p>
+            </div>
+            <div className="flex items-center gap-2 text-zinc-600">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        )}
+
         {exercicios.map((ex, idx) => {
-          const hist = histEx(ex.nome);
+          const hist = histEx(ex.nome, ex.nomeAnterior);
           const show = expandidos[ex.id];
           return (
             <div key={ex.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
