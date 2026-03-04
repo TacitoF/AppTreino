@@ -352,14 +352,15 @@ const NumInput = memo(({ label, value, onChange, disabled }) => {
 
 // ─── TELA AUTH ────────────────────────────────────────────────────────────────
 function TelaAuth({ onLogin, mostrarToast }) {
-  const [modo, setModo]         = useState('login');
-  const [email, setEmail]       = useState('');
-  const [senha, setSenha]       = useState('');
+  const [modo, setModo]           = useState('login');   // 'login' | 'cadastro'
+  const [resetAberto, setReset]   = useState(false);     // modal inline de reset
+  const [email, setEmail]         = useState('');
+  const [senha, setSenha]         = useState('');
   const [senhaNova, setSenhaNova] = useState('');
-  const [nome, setNome]         = useState('');
-  const [peso, setPeso]         = useState('');
-  const [obj, setObj]           = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [nome, setNome]           = useState('');
+  const [peso, setPeso]           = useState('');
+  const [obj, setObj]             = useState('');
+  const [loading, setLoading]     = useState(false);
 
   const limpar = () => { setEmail(''); setSenha(''); setNome(''); setPeso(''); setObj(''); setSenhaNova(''); };
   const inp = "w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base placeholder-zinc-600";
@@ -387,7 +388,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
     try {
       await apiFetch(R.resetSenha, { method: 'POST', body: { email, senha_nova: senhaNova } });
       mostrarToast('Senha redefinida! Faça login.', 'sucesso');
-      setModo('login'); limpar();
+      setReset(false); setSenhaNova('');
     } catch (err) {
       if (err.status === 404) mostrarToast('E-mail não encontrado.', 'erro');
       else mostrarToast('Erro ao redefinir senha.', 'erro');
@@ -416,23 +417,58 @@ function TelaAuth({ onLogin, mostrarToast }) {
           <h1 className="text-4xl font-black text-white">FitApp</h1>
           <p className="text-zinc-500 text-sm mt-1 font-medium">Seu diário de treino</p>
         </div>
+
+        {/* Tabs: apenas Entrar e Criar conta */}
         <div className="flex bg-zinc-900 border border-zinc-800 rounded-2xl p-1.5 mb-6">
-          {[['login','Entrar'],['cadastro','Criar conta'],['reset','Esqueci']].map(([t,l]) => (
-            <button key={t} onClick={() => { setModo(t); limpar(); }}
-              className={`btn flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all ${modo===t ? 'bg-[#c8f542] text-black' : 'text-zinc-500'}`}>
+          {[['login','Entrar'],['cadastro','Criar conta']].map(([t,l]) => (
+            <button key={t} onClick={() => { setModo(t); setReset(false); limpar(); }}
+              className={`btn flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${modo===t ? 'bg-[#c8f542] text-black' : 'text-zinc-500'}`}>
               {l}
             </button>
           ))}
         </div>
-        {modo === 'login' ? (
+
+        {modo === 'login' && !resetAberto && (
           <form onSubmit={login} className="flex flex-col gap-3">
             <input type="email" placeholder="E-mail" value={email} onChange={e=>setEmail(e.target.value)} className={inp} autoComplete="email"/>
             <input type="password" placeholder="Senha" value={senha} onChange={e=>setSenha(e.target.value)} className={inp} autoComplete="current-password"/>
             <button type="submit" disabled={loading} className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black text-base font-bold rounded-2xl mt-2 disabled:opacity-50">
               {loading ? 'Entrando...' : 'Entrar'}
             </button>
+            {/* Link de redefinição discreto abaixo do botão */}
+            <button type="button" onClick={() => setReset(true)}
+              className="text-zinc-500 text-sm text-center mt-1 active:text-zinc-300 transition-colors">
+              Esqueci minha senha
+            </button>
           </form>
-        ) : modo === 'cadastro' ? (
+        )}
+
+        {/* Painel inline de redefinição — aparece abaixo do form de login */}
+        {modo === 'login' && resetAberto && (
+          <div className="flex flex-col gap-3">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex items-center gap-3 mb-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2} className="w-5 h-5 flex-shrink-0">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+              </svg>
+              <div>
+                <p className="text-white text-sm font-semibold">Redefinir senha</p>
+                <p className="text-zinc-500 text-xs">Insira seu e-mail e a nova senha desejada.</p>
+              </div>
+            </div>
+            <input type="email" placeholder="E-mail da conta" value={email} onChange={e=>setEmail(e.target.value)} className={inp} autoComplete="email"/>
+            <input type="password" placeholder="Nova senha" value={senhaNova} onChange={e=>setSenhaNova(e.target.value)} className={inp}/>
+            <button onClick={resetSenha} disabled={loading}
+              className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black text-base font-bold rounded-2xl disabled:opacity-50">
+              {loading ? 'Salvando...' : 'Redefinir senha'}
+            </button>
+            <button type="button" onClick={() => { setReset(false); setSenhaNova(''); }}
+              className="text-zinc-500 text-sm text-center active:text-zinc-300 transition-colors">
+              ← Voltar ao login
+            </button>
+          </div>
+        )}
+
+        {modo === 'cadastro' && (
           <form onSubmit={cadastro} className="flex flex-col gap-3">
             <input type="text" placeholder="Nome completo" value={nome} onChange={e=>setNome(e.target.value)} className={inp}/>
             <input type="email" placeholder="E-mail" value={email} onChange={e=>setEmail(e.target.value)} className={inp} autoComplete="email"/>
@@ -450,16 +486,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
               {loading ? 'Criando...' : 'Criar conta'}
             </button>
           </form>
-        ) : modo === 'reset' ? (
-          <form onSubmit={resetSenha} className="flex flex-col gap-3">
-            <p className="text-zinc-500 text-sm text-center mb-1">Digite seu e-mail e escolha uma nova senha.</p>
-            <input type="email" placeholder="E-mail da conta" value={email} onChange={e=>setEmail(e.target.value)} className={inp} autoComplete="email"/>
-            <input type="password" placeholder="Nova senha" value={senhaNova} onChange={e=>setSenhaNova(e.target.value)} className={inp}/>
-            <button type="submit" disabled={loading} className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black text-base font-bold rounded-2xl mt-2 disabled:opacity-50">
-              {loading ? 'Salvando...' : 'Redefinir senha'}
-            </button>
-          </form>
-        ) : null}
+        )}
       </div>
     </div>
   );
@@ -530,10 +557,23 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
   );
 }
 
+// ─── ÍCONE DRAG HANDLE ───────────────────────────────────────────────────────
+const IconDrag = memo(() => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+    <circle cx="9" cy="6"  r="1.5"/><circle cx="15" cy="6"  r="1.5"/>
+    <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+    <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+  </svg>
+));
+
 // ─── TELA GERENCIAR SPLITS ────────────────────────────────────────────────────
 function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast }) {
   const [lista, setLista]   = useState(() => splits.map(s => ({...s})));
   const [saving, setSaving] = useState(false);
+
+  // drag state
+  const dragIdx  = useRef(null);
+  const dragOver = useRef(null);
 
   const adicionar = useCallback(() =>
     setLista(l => [...l, { id:`split_${Date.now()}`, id_usuario:usuario.id, nome:'', ultimo_treino:null }])
@@ -558,19 +598,100 @@ function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast
     finally { setSaving(false); }
   };
 
+  // ── drag handlers ──────────────────────────────────────────────────────────
+  const onDragStart = (i) => { dragIdx.current = i; };
+  const onDragEnter = (i) => { dragOver.current = i; };
+  const onDragEnd   = () => {
+    const from = dragIdx.current;
+    const to   = dragOver.current;
+    if (from === null || to === null || from === to) { dragIdx.current = dragOver.current = null; return; }
+    setLista(l => {
+      const next = [...l];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+    dragIdx.current = dragOver.current = null;
+  };
+
+  // touch drag state
+  const touchStart   = useRef(null);
+  const touchListRef = useRef(null);
+
+  const onTouchStart = (i, e) => {
+    touchStart.current = { idx: i, y: e.touches[0].clientY };
+  };
+  const onTouchMove = (e) => {
+    if (!touchStart.current) return;
+    e.preventDefault();
+    const y = e.touches[0].clientY;
+    const els = touchListRef.current?.querySelectorAll('[data-item]');
+    if (!els) return;
+    let target = touchStart.current.idx;
+    els.forEach((el, j) => {
+      const rect = el.getBoundingClientRect();
+      if (y >= rect.top && y <= rect.bottom) target = j;
+    });
+    dragOver.current = target;
+  };
+  const onTouchEnd = () => {
+    if (!touchStart.current) return;
+    const from = touchStart.current.idx;
+    const to   = dragOver.current ?? from;
+    if (from !== to) {
+      setLista(l => {
+        const next = [...l];
+        const [moved] = next.splice(from, 1);
+        next.splice(to, 0, moved);
+        return next;
+      });
+    }
+    touchStart.current = null;
+    dragOver.current   = null;
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
       <div className="px-5 pt-14 pb-4 flex items-center gap-4 border-b border-zinc-900">
         <button onClick={onVoltar} className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800"><IconBack/></button>
-        <h1 className="text-xl font-bold text-white">Grupos Musculares</h1>
+        <div>
+          <h1 className="text-xl font-bold text-white">Grupos Musculares</h1>
+          <p className="text-zinc-500 text-xs mt-0.5">Arraste <IconDrag className="inline"/> para reordenar</p>
+        </div>
       </div>
-      <div className="px-5 pt-4 flex flex-col gap-3 flex-1 pb-4">
+      <div
+        ref={touchListRef}
+        className="px-5 pt-4 flex flex-col gap-3 flex-1 pb-4"
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         {lista.map((s, i) => (
-          <div key={s.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center gap-3 px-4 py-2">
-            <span className="text-zinc-600 font-bold text-sm w-5 text-center">{i+1}</span>
-            <input type="text" value={s.nome} onChange={e => renomear(s.id, e.target.value)} placeholder="Nome do grupo muscular"
-              className="flex-1 bg-transparent text-white font-semibold text-base outline-none placeholder-zinc-700 py-3"/>
-            <button onClick={() => remover(s.id)} className="btn w-11 h-11 rounded-xl flex items-center justify-center text-zinc-700 active:text-red-400 active:bg-zinc-800"><IconTrash/></button>
+          <div
+            key={s.id}
+            data-item={i}
+            draggable
+            onDragStart={() => onDragStart(i)}
+            onDragEnter={() => onDragEnter(i)}
+            onDragEnd={onDragEnd}
+            onDragOver={e => e.preventDefault()}
+            onTouchStart={e => onTouchStart(i, e)}
+            className="bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center gap-3 px-3 py-2 select-none"
+          >
+            {/* Handle de arraste */}
+            <div className="text-zinc-600 active:text-zinc-400 cursor-grab active:cursor-grabbing px-1 flex-shrink-0 touch-none">
+              <IconDrag/>
+            </div>
+            <span className="text-zinc-600 font-bold text-sm w-5 text-center flex-shrink-0">{i+1}</span>
+            <input
+              type="text"
+              value={s.nome}
+              onChange={e => renomear(s.id, e.target.value)}
+              placeholder="Nome do grupo muscular"
+              className="flex-1 bg-transparent text-white font-semibold text-base outline-none placeholder-zinc-700 py-3"
+            />
+            <button onClick={() => remover(s.id)} className="btn w-11 h-11 rounded-xl flex items-center justify-center text-zinc-700 active:text-red-400 active:bg-zinc-800 flex-shrink-0">
+              <IconTrash/>
+            </button>
           </div>
         ))}
         <button onClick={adicionar} className="btn w-full border border-dashed border-zinc-800 active:border-zinc-600 text-zinc-600 font-semibold py-5 rounded-2xl flex items-center justify-center gap-2">
@@ -696,6 +817,58 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   const addEx = useCallback(() =>
     setExercicios(e => [...e, { id:Date.now(), nome:'', nomeAnterior:'', series:[{id:1,reps:12,carga:0,enviada:false,id_banco:null}] }])
   , []);
+
+  // drag-to-reorder exercícios
+  const exDragIdx  = useRef(null);
+  const exDragOver = useRef(null);
+  const exListRef  = useRef(null);
+  const exTouchStart = useRef(null);
+
+  const onExDragStart = useCallback((i) => { exDragIdx.current = i; }, []);
+  const onExDragEnter = useCallback((i) => { exDragOver.current = i; }, []);
+  const onExDragEnd   = useCallback(() => {
+    const from = exDragIdx.current;
+    const to   = exDragOver.current;
+    if (from === null || to === null || from === to) { exDragIdx.current = exDragOver.current = null; return; }
+    setExercicios(l => {
+      const next = [...l];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+    exDragIdx.current = exDragOver.current = null;
+  }, []);
+  const onExTouchStart = useCallback((i, e) => {
+    exTouchStart.current = { idx: i, y: e.touches[0].clientY };
+  }, []);
+  const onExTouchMove = useCallback((e) => {
+    if (!exTouchStart.current) return;
+    e.preventDefault();
+    const y = e.touches[0].clientY;
+    const els = exListRef.current?.querySelectorAll('[data-exitem]');
+    if (!els) return;
+    let target = exTouchStart.current.idx;
+    els.forEach((el, j) => {
+      const rect = el.getBoundingClientRect();
+      if (y >= rect.top && y <= rect.bottom) target = j;
+    });
+    exDragOver.current = target;
+  }, []);
+  const onExTouchEnd = useCallback(() => {
+    if (!exTouchStart.current) return;
+    const from = exTouchStart.current.idx;
+    const to   = exDragOver.current ?? from;
+    if (from !== to) {
+      setExercicios(l => {
+        const next = [...l];
+        const [moved] = next.splice(from, 1);
+        next.splice(to, 0, moved);
+        return next;
+      });
+    }
+    exTouchStart.current = null;
+    exDragOver.current   = null;
+  }, []);
 
   const remEx = useCallback(async (exId) => {
     const ex = exercicios.find(x => x.id === exId);
@@ -856,14 +1029,33 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       </div>
 
       {/* Exercícios */}
-      <div className="px-4 pt-5 flex flex-col gap-5">
+      <div
+        ref={exListRef}
+        className="px-4 pt-5 flex flex-col gap-5"
+        onTouchMove={onExTouchMove}
+        onTouchEnd={onExTouchEnd}
+      >
         {exercicios.map((ex, idx) => {
           const hist = histEx(ex.nome);
           const show = expandidos[ex.id];
           return (
-            <div key={ex.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden slide-up">
+            <div
+              key={ex.id}
+              data-exitem={idx}
+              draggable
+              onDragStart={() => onExDragStart(idx)}
+              onDragEnter={() => onExDragEnter(idx)}
+              onDragEnd={onExDragEnd}
+              onDragOver={e => e.preventDefault()}
+              onTouchStart={e => onExTouchStart(idx, e)}
+              className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden slide-up select-none"
+            >
               <div className="px-4 pt-4 pb-3">
                 <div className="flex items-start gap-3 mb-3">
+                  {/* Handle de arraste */}
+                  <div className="text-zinc-700 cursor-grab active:cursor-grabbing pt-1 flex-shrink-0 touch-none">
+                    <IconDrag/>
+                  </div>
                   <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-[#c8f542] text-sm font-black flex-shrink-0 mt-0.5">
                     {idx+1}
                   </div>
