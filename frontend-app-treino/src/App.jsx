@@ -737,7 +737,7 @@ const EXERCICIOS_DB = {
             <path d="M 52 32 C 52 14 38 14 38 32 Z" />
           </svg>
         ),
-        exercicios: ['Desenvolvimento militar','Elevação lateral','Elevação frontal','Crucifixo invertido','Arnold press','Remada alta','Face pull','Encolhimento'],
+        exercicios: ['Desenvolvimento militar','Elevação lateral','Elevação frontal','Crucifixo invertido','Desenvolvimento','Arnold press','Remada alta','Face pull','Encolhimento'],
       },
       biceps: {
         label: 'Bíceps', cor: '#f59e0b',
@@ -1349,9 +1349,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                       Placas
                     </span>
                   </button>
-                  {ex.series.some(s => s.enviada) && (
-                    <span className="text-zinc-600 text-xs">bloqueado após salvar</span>
-                  )}
                   <div className="flex-1"/>
                   {hist.length > 0 && (
                     <button onClick={() => setExp(m => ({...m,[ex.id]:!m[ex.id]}))}
