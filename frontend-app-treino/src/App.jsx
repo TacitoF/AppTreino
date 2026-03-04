@@ -32,10 +32,22 @@ const R = {
 
 // ─── AUTH TOKEN — armazenado em memória, não no bundle ───────────────────────
 // Nunca fica visível em código estático; é preenchido após login bem-sucedido
-const TOKEN_KEY = 'fa_tk';
-function setAuthToken(t)   { try { sessionStorage.setItem(TOKEN_KEY, t); } catch {} }
-function clearAuthToken()  { try { sessionStorage.removeItem(TOKEN_KEY); } catch {} }
-function getAuthToken()    { try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; } }
+const TOKEN_KEY  = 'fa_tk';
+const SESSAO_KEY = 'fa_sessao';
+// localStorage sobrevive ao kill do iOS (sessionStorage não)
+function setAuthToken(t)   { try { localStorage.setItem(TOKEN_KEY, t); } catch {} }
+function clearAuthToken()  { try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(SESSAO_KEY); } catch {} }
+function getAuthToken()    { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } }
+function salvarSessao(u, tela, split) {
+  try {
+    const t = ['grupamentos','treino','rank','gerenciar-splits'].includes(tela) ? tela : 'grupamentos';
+    localStorage.setItem(SESSAO_KEY, JSON.stringify({ usuario: u, tela: t, splitAtivo: split || null }));
+  } catch {}
+}
+function carregarSessao() {
+  try { const r = localStorage.getItem(SESSAO_KEY); return r ? JSON.parse(r) : null; }
+  catch { return null; }
+}
 
 // ─── FETCH HELPER ─────────────────────────────────────────────────────────────
 async function apiFetch(path, options = {}) {
@@ -1057,11 +1069,10 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   const [showRestEnd, setShowRestEnd]     = useState(false);
 
   const intervalRef    = useRef(null);
-  const timerFimRef    = useRef(null); // timestamp absoluto de quando o timer termina
+  const timerFimRef    = useRef(null); // timestamp absoluto — funciona mesmo com app em background
   const tempoConfigRef = useRef(tempoConfig);
   useEffect(() => { tempoConfigRef.current = tempoConfig; }, [tempoConfig]);
 
-  // Calcula restante a partir do timestamp — funciona mesmo com app em background
   const calcRestante = useCallback(() => {
     if (!timerFimRef.current) return 0;
     return Math.max(0, Math.round((timerFimRef.current - Date.now()) / 1000));
@@ -1078,7 +1089,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
   useEffect(() => {
     if (!timerAtivo) { clearInterval(intervalRef.current); return; }
-    // Tick a cada 500ms para maior precisão ao voltar do background
     intervalRef.current = setInterval(() => {
       const r = calcRestante();
       setTimerRestante(r);
@@ -1096,7 +1106,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       if (r <= 0) dispararFim();
     };
     document.addEventListener('visibilitychange', onVisible);
-    // pageshow cobre o caso de restauração de aba congelada no iOS
     window.addEventListener('pageshow', onVisible);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
@@ -1924,16 +1933,47 @@ const IOSInstallBanner = memo(() => {
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [usuario, setUsuario]        = useState(null);
-  const [tela, setTela]              = useState('auth');
+  // Restaura sessão salva (evita voltar ao login quando iOS descarrega a página)
+  const sessaoSalva = carregarSessao();
+  const tokenSalvo  = getAuthToken();
+  const podeRestaurar = !!(sessaoSalva?.usuario && tokenSalvo);
+
+  const [usuario, setUsuario]        = useState(podeRestaurar ? sessaoSalva.usuario : null);
+  const [tela, setTela]              = useState(podeRestaurar ? sessaoSalva.tela : 'auth');
   const [splits, setSplits]          = useState([]);
   const [loadingSplits, setLoadingS] = useState(false);
-  const [splitAtivo, setSplitAtivo]  = useState(null);
+  const [splitAtivo, setSplitAtivo]  = useState(podeRestaurar ? sessaoSalva.splitAtivo : null);
   const [historico, setHistorico]    = useState([]);
   const [resultado, setResultado]    = useState(null);
   const [lobbyConvite, setLobbyConvite] = useState(null);
   const [toast, setToast]            = useState(null);
-  const toastTimerRef                = useRef(null); 
+  const toastTimerRef                = useRef(null);
+
+  // Persiste sessão sempre que estado crítico muda
+  const usuarioRef   = useRef(usuario);
+  const telaRef      = useRef(tela);
+  const splitAtivoRef = useRef(splitAtivo);
+  useEffect(() => { usuarioRef.current = usuario; }, [usuario]);
+  useEffect(() => { telaRef.current = tela; }, [tela]);
+  useEffect(() => { splitAtivoRef.current = splitAtivo; }, [splitAtivo]);
+
+  useEffect(() => {
+    if (usuario) salvarSessao(usuario, tela, splitAtivo);
+  }, [usuario, tela, splitAtivo]);
+
+  // Se restaurou sessão, recarrega splits em background sem bloquear a UI
+  useEffect(() => {
+    if (podeRestaurar && sessaoSalva.usuario) {
+      carregarSplitsInterno(sessaoSalva.usuario.id);
+      // Se estava no treino, recarrega histórico em background também
+      if (sessaoSalva.tela === 'treino' && sessaoSalva.splitAtivo) {
+        apiFetch(`${R.historico}?id_usuario=${sessaoSalva.usuario.id}&nome_treino=${encodeURIComponent(sessaoSalva.splitAtivo.nome)}`)
+          .then(r => setHistorico(r.series || []))
+          .catch(() => {});
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const mostrarToast = useCallback((mensagem, tipo='sucesso') => {
     clearTimeout(toastTimerRef.current);
@@ -1941,7 +1981,7 @@ export default function App() {
     toastTimerRef.current = setTimeout(() => setToast(null), 2800);
   }, []);
 
-  const carregarSplits = useCallback(async uid => {
+  const carregarSplitsInterno = useCallback(async uid => {
     setLoadingS(true);
     try {
       const r = await apiFetch(`${R.splits}?id_usuario=${uid}`);
@@ -1952,12 +1992,14 @@ export default function App() {
     } finally { setLoadingS(false); }
   }, []);
 
+  const carregarSplits = carregarSplitsInterno;
+
   const onLogin = useCallback(u => {
     setUsuario(u);
-    carregarSplits(u.id);
+    carregarSplitsInterno(u.id);
     setTela('grupamentos');
     mostrarToast(`Bem-vindo, ${u.nome.split(' ')[0]}.`, 'sucesso');
-  }, [carregarSplits, mostrarToast]);
+  }, [carregarSplitsInterno, mostrarToast]);
 
   const onLogout = useCallback(() => {
     clearAuthToken();
@@ -1970,13 +2012,14 @@ export default function App() {
     setHistorico([]); 
     setTela('treino');
     try {
-      const r = await apiFetch(`${R.historico}?id_usuario=${usuario.id}&nome_treino=${encodeURIComponent(split.nome)}`);
+      const r = await apiFetch(`${R.historico}?id_usuario=${usuarioRef.current.id}&nome_treino=${encodeURIComponent(split.nome)}`);
       setHistorico(r.series || []);
     } catch { }
-  }, [usuario]);
+  }, []);
 
   const onFinalizar = useCallback(res => {
     setResultado(res);
+    setSplitAtivo(null);
     setTela('resumo');
     mostrarToast('Treino finalizado.', 'sucesso');
   }, [mostrarToast]);
