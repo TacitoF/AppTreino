@@ -568,12 +568,14 @@ const IconDrag = memo(() => (
 
 // ─── TELA GERENCIAR SPLITS ────────────────────────────────────────────────────
 function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast }) {
-  const [lista, setLista]   = useState(() => splits.map(s => ({...s})));
-  const [saving, setSaving] = useState(false);
+  const [lista, setLista]       = useState(() => splits.map(s => ({...s})));
+  const [saving, setSaving]     = useState(false);
+  const [dragging, setDragging] = useState(null);
+  const [dropTarget, setDropTarget] = useState(null);
 
-  // drag state
-  const dragIdx  = useRef(null);
-  const dragOver = useRef(null);
+  const dragRef    = useRef({ from: null, to: null });
+  const touchRef   = useRef(null);
+  const listRef    = useRef(null);
 
   const adicionar = useCallback(() =>
     setLista(l => [...l, { id:`split_${Date.now()}`, id_usuario:usuario.id, nome:'', ultimo_treino:null }])
@@ -598,56 +600,53 @@ function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast
     finally { setSaving(false); }
   };
 
-  // ── drag handlers ──────────────────────────────────────────────────────────
-  const onDragStart = (i) => { dragIdx.current = i; };
-  const onDragEnter = (i) => { dragOver.current = i; };
-  const onDragEnd   = () => {
-    const from = dragIdx.current;
-    const to   = dragOver.current;
-    if (from === null || to === null || from === to) { dragIdx.current = dragOver.current = null; return; }
+  const applyReorder = useCallback((from, to) => {
+    if (from === null || to === null || from === to) return;
     setLista(l => {
       const next = [...l];
       const [moved] = next.splice(from, 1);
       next.splice(to, 0, moved);
       return next;
     });
-    dragIdx.current = dragOver.current = null;
+  }, []);
+
+  // ── desktop drag ───────────────────────────────────────────────────────────
+  const onDragStart = (i) => { dragRef.current.from = i; setDragging(i); setDropTarget(i); };
+  const onDragEnter = (i) => { dragRef.current.to = i; setDropTarget(i); };
+  const onDragEnd   = () => {
+    applyReorder(dragRef.current.from, dragRef.current.to);
+    dragRef.current = { from: null, to: null };
+    setDragging(null); setDropTarget(null);
   };
 
-  // touch drag state
-  const touchStart   = useRef(null);
-  const touchListRef = useRef(null);
-
+  // ── touch / iOS drag ───────────────────────────────────────────────────────
   const onTouchStart = (i, e) => {
-    touchStart.current = { idx: i, y: e.touches[0].clientY };
+    touchRef.current = { idx: i };
+    dragRef.current.from = i;
+    setDragging(i); setDropTarget(i);
   };
   const onTouchMove = (e) => {
-    if (!touchStart.current) return;
+    if (!touchRef.current) return;
     e.preventDefault();
     const y = e.touches[0].clientY;
-    const els = touchListRef.current?.querySelectorAll('[data-item]');
+    const els = listRef.current?.querySelectorAll('[data-item]');
     if (!els) return;
-    let target = touchStart.current.idx;
+    let target = dragRef.current.from;
     els.forEach((el, j) => {
       const rect = el.getBoundingClientRect();
       if (y >= rect.top && y <= rect.bottom) target = j;
     });
-    dragOver.current = target;
+    if (target !== dragRef.current.to) {
+      dragRef.current.to = target;
+      setDropTarget(target);
+    }
   };
   const onTouchEnd = () => {
-    if (!touchStart.current) return;
-    const from = touchStart.current.idx;
-    const to   = dragOver.current ?? from;
-    if (from !== to) {
-      setLista(l => {
-        const next = [...l];
-        const [moved] = next.splice(from, 1);
-        next.splice(to, 0, moved);
-        return next;
-      });
-    }
-    touchStart.current = null;
-    dragOver.current   = null;
+    if (!touchRef.current) return;
+    applyReorder(dragRef.current.from, dragRef.current.to);
+    touchRef.current = null;
+    dragRef.current  = { from: null, to: null };
+    setDragging(null); setDropTarget(null);
   };
 
   return (
@@ -656,44 +655,55 @@ function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast
         <button onClick={onVoltar} className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800"><IconBack/></button>
         <div>
           <h1 className="text-xl font-bold text-white">Grupos Musculares</h1>
-          <p className="text-zinc-500 text-xs mt-0.5">Arraste <IconDrag className="inline"/> para reordenar</p>
+          <p className="text-zinc-500 text-xs mt-0.5">Arraste para reordenar</p>
         </div>
       </div>
       <div
-        ref={touchListRef}
+        ref={listRef}
         className="px-5 pt-4 flex flex-col gap-3 flex-1 pb-4"
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        {lista.map((s, i) => (
-          <div
-            key={s.id}
-            data-item={i}
-            draggable
-            onDragStart={() => onDragStart(i)}
-            onDragEnter={() => onDragEnter(i)}
-            onDragEnd={onDragEnd}
-            onDragOver={e => e.preventDefault()}
-            onTouchStart={e => onTouchStart(i, e)}
-            className="bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center gap-3 px-3 py-2 select-none"
-          >
-            {/* Handle de arraste */}
-            <div className="text-zinc-600 active:text-zinc-400 cursor-grab active:cursor-grabbing px-1 flex-shrink-0 touch-none">
-              <IconDrag/>
+        {lista.map((s, i) => {
+          const isDragging = dragging === i;
+          const isDropZone = dropTarget === i && dragging !== null && dragging !== i;
+          return (
+            <div
+              key={s.id}
+              data-item={i}
+              draggable
+              onDragStart={() => onDragStart(i)}
+              onDragEnter={() => onDragEnter(i)}
+              onDragEnd={onDragEnd}
+              onDragOver={e => e.preventDefault()}
+              onTouchStart={e => onTouchStart(i, e)}
+              style={{ transition: 'opacity 0.15s, transform 0.15s, box-shadow 0.15s' }}
+              className={[
+                'rounded-2xl flex items-center gap-3 px-3 py-2 select-none',
+                isDragging
+                  ? 'opacity-40 scale-95 border-2 border-dashed border-[#c8f542]/50 bg-zinc-900'
+                  : isDropZone
+                  ? 'border-2 border-[#c8f542] bg-[#c8f542]/5 shadow-[0_0_0_3px_rgba(200,245,66,0.15)]'
+                  : 'bg-zinc-900 border border-zinc-800',
+              ].join(' ')}
+            >
+              <div className={`cursor-grab active:cursor-grabbing px-1 flex-shrink-0 touch-none transition-colors ${dragging !== null ? 'text-[#c8f542]' : 'text-zinc-600'}`}>
+                <IconDrag/>
+              </div>
+              <span className="text-zinc-600 font-bold text-sm w-5 text-center flex-shrink-0">{i+1}</span>
+              <input
+                type="text"
+                value={s.nome}
+                onChange={e => renomear(s.id, e.target.value)}
+                placeholder="Nome do grupo muscular"
+                className="flex-1 bg-transparent text-white font-semibold text-base outline-none placeholder-zinc-700 py-3"
+              />
+              <button onClick={() => remover(s.id)} className="btn w-11 h-11 rounded-xl flex items-center justify-center text-zinc-700 active:text-red-400 active:bg-zinc-800 flex-shrink-0">
+                <IconTrash/>
+              </button>
             </div>
-            <span className="text-zinc-600 font-bold text-sm w-5 text-center flex-shrink-0">{i+1}</span>
-            <input
-              type="text"
-              value={s.nome}
-              onChange={e => renomear(s.id, e.target.value)}
-              placeholder="Nome do grupo muscular"
-              className="flex-1 bg-transparent text-white font-semibold text-base outline-none placeholder-zinc-700 py-3"
-            />
-            <button onClick={() => remover(s.id)} className="btn w-11 h-11 rounded-xl flex items-center justify-center text-zinc-700 active:text-red-400 active:bg-zinc-800 flex-shrink-0">
-              <IconTrash/>
-            </button>
-          </div>
-        ))}
+          );
+        })}
         <button onClick={adicionar} className="btn w-full border border-dashed border-zinc-800 active:border-zinc-600 text-zinc-600 font-semibold py-5 rounded-2xl flex items-center justify-center gap-2">
           <IconPlus/><span className="text-sm">Adicionar grupo</span>
         </button>
@@ -818,57 +828,74 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     setExercicios(e => [...e, { id:Date.now(), nome:'', nomeAnterior:'', series:[{id:1,reps:12,carga:0,enviada:false,id_banco:null}] }])
   , []);
 
-  // drag-to-reorder exercícios
-  const exDragIdx  = useRef(null);
-  const exDragOver = useRef(null);
-  const exListRef  = useRef(null);
-  const exTouchStart = useRef(null);
+  // ── drag-to-reorder exercícios com feedback visual ───────────────────────────
+  const [exDragging, setExDragging] = useState(null);  // índice sendo arrastado
+  const [exDropTarget, setExDropTarget] = useState(null); // índice alvo atual
+  const exListRef    = useRef(null);
+  const exDragRef    = useRef({ from: null, to: null }); // refs para os handlers sem re-render
 
-  const onExDragStart = useCallback((i) => { exDragIdx.current = i; }, []);
-  const onExDragEnter = useCallback((i) => { exDragOver.current = i; }, []);
-  const onExDragEnd   = useCallback(() => {
-    const from = exDragIdx.current;
-    const to   = exDragOver.current;
-    if (from === null || to === null || from === to) { exDragIdx.current = exDragOver.current = null; return; }
+  const applyReorder = useCallback((from, to) => {
+    if (from === null || to === null || from === to) return;
     setExercicios(l => {
       const next = [...l];
       const [moved] = next.splice(from, 1);
       next.splice(to, 0, moved);
       return next;
     });
-    exDragIdx.current = exDragOver.current = null;
   }, []);
+
+  // ── mouse / desktop drag ───────────────────────────────────────────────────
+  const onExDragStart = useCallback((i) => {
+    exDragRef.current.from = i;
+    setExDragging(i);
+    setExDropTarget(i);
+  }, []);
+  const onExDragEnter = useCallback((i) => {
+    exDragRef.current.to = i;
+    setExDropTarget(i);
+  }, []);
+  const onExDragEnd = useCallback(() => {
+    applyReorder(exDragRef.current.from, exDragRef.current.to);
+    exDragRef.current = { from: null, to: null };
+    setExDragging(null);
+    setExDropTarget(null);
+  }, [applyReorder]);
+
+  // ── touch / iOS drag ───────────────────────────────────────────────────────
+  const exTouchRef = useRef(null); // { idx, startY }
+
   const onExTouchStart = useCallback((i, e) => {
-    exTouchStart.current = { idx: i, y: e.touches[0].clientY };
+    exTouchRef.current = { idx: i, startY: e.touches[0].clientY };
+    exDragRef.current.from = i;
+    setExDragging(i);
+    setExDropTarget(i);
   }, []);
+
   const onExTouchMove = useCallback((e) => {
-    if (!exTouchStart.current) return;
+    if (!exTouchRef.current) return;
     e.preventDefault();
     const y = e.touches[0].clientY;
     const els = exListRef.current?.querySelectorAll('[data-exitem]');
     if (!els) return;
-    let target = exTouchStart.current.idx;
+    let target = exDragRef.current.from;
     els.forEach((el, j) => {
       const rect = el.getBoundingClientRect();
       if (y >= rect.top && y <= rect.bottom) target = j;
     });
-    exDragOver.current = target;
-  }, []);
-  const onExTouchEnd = useCallback(() => {
-    if (!exTouchStart.current) return;
-    const from = exTouchStart.current.idx;
-    const to   = exDragOver.current ?? from;
-    if (from !== to) {
-      setExercicios(l => {
-        const next = [...l];
-        const [moved] = next.splice(from, 1);
-        next.splice(to, 0, moved);
-        return next;
-      });
+    if (target !== exDragRef.current.to) {
+      exDragRef.current.to = target;
+      setExDropTarget(target);
     }
-    exTouchStart.current = null;
-    exDragOver.current   = null;
   }, []);
+
+  const onExTouchEnd = useCallback(() => {
+    if (!exTouchRef.current) return;
+    applyReorder(exDragRef.current.from, exDragRef.current.to);
+    exTouchRef.current = null;
+    exDragRef.current  = { from: null, to: null };
+    setExDragging(null);
+    setExDropTarget(null);
+  }, [applyReorder]);
 
   const remEx = useCallback(async (exId) => {
     const ex = exercicios.find(x => x.id === exId);
@@ -1038,6 +1065,8 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
         {exercicios.map((ex, idx) => {
           const hist = histEx(ex.nome);
           const show = expandidos[ex.id];
+          const isDragging  = exDragging === idx;
+          const isDropZone  = exDropTarget === idx && exDragging !== null && exDragging !== idx;
           return (
             <div
               key={ex.id}
@@ -1048,12 +1077,20 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
               onDragEnd={onExDragEnd}
               onDragOver={e => e.preventDefault()}
               onTouchStart={e => onExTouchStart(idx, e)}
-              className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden slide-up select-none"
+              style={{ transition: 'opacity 0.15s, transform 0.15s, box-shadow 0.15s' }}
+              className={[
+                'rounded-3xl overflow-hidden select-none',
+                isDragging
+                  ? 'opacity-40 scale-95 border-2 border-dashed border-[#c8f542]/50 bg-zinc-900'
+                  : isDropZone
+                  ? 'border-2 border-[#c8f542] bg-[#c8f542]/5 shadow-[0_0_0_3px_rgba(200,245,66,0.15)]'
+                  : 'bg-zinc-900 border border-zinc-800',
+              ].join(' ')}
             >
               <div className="px-4 pt-4 pb-3">
                 <div className="flex items-start gap-3 mb-3">
                   {/* Handle de arraste */}
-                  <div className="text-zinc-700 cursor-grab active:cursor-grabbing pt-1 flex-shrink-0 touch-none">
+                  <div className={`pt-1 flex-shrink-0 touch-none cursor-grab active:cursor-grabbing transition-colors ${exDragging !== null ? 'text-[#c8f542]' : 'text-zinc-700'}`}>
                     <IconDrag/>
                   </div>
                   <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-[#c8f542] text-sm font-black flex-shrink-0 mt-0.5">
