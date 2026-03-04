@@ -1,56 +1,47 @@
-"""
-POST   /api/treino/serie            → registra série
-DELETE /api/treino/serie?id=SXXX    → deleta série pelo ID
-"""
-import json, sys, os
-import gspread
+from flask import Flask, request, jsonify, make_response
+import gspread, sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from _sheets import get_sheet, cors_headers, ok, err
+from _sheets import get_sheet
 
-def handler(request, context=None):
-    method = request.get("method", request.get("httpMethod", "POST")).upper()
+app = Flask(__name__)
 
-    if method == "OPTIONS":
-        return {"statusCode": 204, "headers": cors_headers(), "body": ""}
+def _cors(response, status=200):
+    r = make_response(response, status)
+    r.headers['Access-Control-Allow-Origin']  = '*'
+    r.headers['Access-Control-Allow-Methods'] = 'GET,POST,DELETE,OPTIONS'
+    r.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return r
+
+@app.route('/api/treino/serie', methods=['POST', 'DELETE', 'OPTIONS'])
+def serie():
+    if request.method == 'OPTIONS':
+        return _cors('', 204)
 
     try:
-        planilha = get_sheet()
-        ws       = planilha.worksheet("Series_Exercicios")
+        ws = get_sheet().worksheet('Series_Exercicios')
 
-        # ── POST — registra nova série ────────────────────────────────────────
-        if method == "POST":
-            body = json.loads(request.get("body") or "{}")
+        if request.method == 'POST':
+            body = request.get_json(force=True) or {}
             ws.append_row([
-                str(body.get("id_serie", "")),
-                str(body.get("id_treino", "")),
-                str(body.get("nome_exercicio", "")),
-                int(body.get("numero_serie", 0)),
-                int(body.get("repeticoes", 0)),
-                float(body.get("carga_kg", 0)),
+                str(body.get('id_serie', '')),
+                str(body.get('id_treino', '')),
+                str(body.get('nome_exercicio', '')),
+                int(body.get('numero_serie', 0)),
+                int(body.get('repeticoes', 0)),
+                float(body.get('carga_kg', 0)),
             ])
-            return ok({"status": "sucesso"})
+            return _cors(jsonify({'status': 'sucesso'}))
 
-        # ── DELETE — remove série pelo id_serie ───────────────────────────────
-        if method == "DELETE":
-            params   = request.get("queryStringParameters") or {}
-            id_serie = str(params.get("id", "")).strip()
-
+        if request.method == 'DELETE':
+            id_serie = str(request.args.get('id', '')).strip()
             if not id_serie:
-                # Tenta extrair do path: /api/treino/serie/SXXX
-                path = request.get("path", "")
-                id_serie = path.rstrip("/").split("/")[-1]
-
-            if not id_serie:
-                return err("id da série obrigatório.", 400)
-
+                return _cors(jsonify({'detail': 'id obrigatório.'}), 400)
             try:
                 cel = ws.find(id_serie)
                 ws.delete_rows(cel.row)
-                return ok({"status": "sucesso"})
+                return _cors(jsonify({'status': 'sucesso'}))
             except gspread.exceptions.CellNotFound:
-                return err("Série não encontrada.", 404)
-
-        return err("Método não permitido.", 405)
+                return _cors(jsonify({'detail': 'Série não encontrada.'}), 404)
 
     except Exception as e:
-        return err(str(e), 500)
+        return _cors(jsonify({'detail': str(e)}), 500)

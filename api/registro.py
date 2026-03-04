@@ -1,36 +1,45 @@
-"""POST /api/registro"""
-import json, sys, os
+from flask import Flask, request, jsonify, make_response
 from datetime import date
+import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
-from _sheets import get_sheet, cors_headers, ok, err
+from _sheets import get_sheet
 
-def handler(request, context=None):
-    if request.get("method", request.get("httpMethod", "")) == "OPTIONS":
-        return {"statusCode": 204, "headers": cors_headers(), "body": ""}
+app = Flask(__name__)
+
+def _cors(response, status=200):
+    r = make_response(response, status)
+    r.headers['Access-Control-Allow-Origin']  = '*'
+    r.headers['Access-Control-Allow-Methods'] = 'GET,POST,DELETE,OPTIONS'
+    r.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return r
+
+@app.route('/api/registro', methods=['POST', 'OPTIONS'])
+def registro():
+    if request.method == 'OPTIONS':
+        return _cors('', 204)
 
     try:
-        body      = json.loads(request.get("body") or "{}")
-        nome      = str(body.get("nome", "")).strip()
-        email     = str(body.get("email", "")).strip()
-        senha     = str(body.get("senha", "")).strip()
-        peso      = str(body.get("peso_atual", "")).strip()
-        objetivo  = str(body.get("objetivo", "")).strip()
+        body     = request.get_json(force=True) or {}
+        nome     = str(body.get('nome', '')).strip()
+        email    = str(body.get('email', '')).strip()
+        senha    = str(body.get('senha', '')).strip()
+        peso     = str(body.get('peso_atual', '')).strip()
+        objetivo = str(body.get('objetivo', '')).strip()
 
         if not all([nome, email, senha]):
-            return err("Nome, e-mail e senha obrigatórios.", 400)
+            return _cors(jsonify({'detail': 'Nome, e-mail e senha obrigatórios.'}), 400)
 
-        planilha  = get_sheet()
-        ws        = planilha.worksheet("Usuarios")
+        ws        = get_sheet().worksheet('Usuarios')
         registros = ws.get_all_records()
 
         for user in registros:
-            if str(user.get("Email", "")).strip() == email:
-                return err("E-mail já cadastrado.", 400)
+            if str(user.get('Email', '')).strip() == email:
+                return _cors(jsonify({'detail': 'E-mail já cadastrado.'}), 400)
 
         novo_id = f"U{len(registros) + 1:03d}"
         ws.append_row([novo_id, nome, email, senha, date.today().isoformat(), peso, objetivo])
 
-        return ok({"status": "sucesso", "mensagem": "Conta criada!"})
+        return _cors(jsonify({'status': 'sucesso', 'mensagem': 'Conta criada!'}), 200)
 
     except Exception as e:
-        return err(str(e), 500)
+        return _cors(jsonify({'detail': str(e)}), 500)

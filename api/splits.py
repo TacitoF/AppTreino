@@ -1,69 +1,60 @@
-"""
-GET  /api/splits?id_usuario=U001   → busca splits
-POST /api/splits                   → salva splits  (body: {id_usuario, splits})
-"""
+from flask import Flask, request, jsonify, make_response
 import json, sys, os
 sys.path.insert(0, os.path.dirname(__file__))
-from _sheets import get_sheet, cors_headers, ok, err
+from _sheets import get_sheet
 
-def handler(request, context=None):
-    method = request.get("method", request.get("httpMethod", "GET")).upper()
+app = Flask(__name__)
 
-    if method == "OPTIONS":
-        return {"statusCode": 204, "headers": cors_headers(), "body": ""}
+def _cors(response, status=200):
+    r = make_response(response, status)
+    r.headers['Access-Control-Allow-Origin']  = '*'
+    r.headers['Access-Control-Allow-Methods'] = 'GET,POST,DELETE,OPTIONS'
+    r.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return r
+
+@app.route('/api/splits', methods=['GET', 'POST', 'OPTIONS'])
+def splits():
+    if request.method == 'OPTIONS':
+        return _cors('', 204)
 
     try:
-        planilha = get_sheet()
-        ws       = planilha.worksheet("Treinos")
+        ws = get_sheet().worksheet('Treinos')
 
-        # ── GET — busca splits do usuário ─────────────────────────────────────
-        if method == "GET":
-            params     = request.get("queryStringParameters") or {}
-            id_usuario = str(params.get("id_usuario", "")).strip()
-
+        if request.method == 'GET':
+            id_usuario = str(request.args.get('id_usuario', '')).strip()
             if not id_usuario:
-                return err("Parâmetro id_usuario obrigatório.", 400)
+                return _cors(jsonify({'detail': 'id_usuario obrigatório.'}), 400)
 
             todas = ws.get_all_values()
             for row in todas:
                 if not row or not row[0].strip():
                     continue
-                if row[0].strip().upper() == "ID_USUARIO":
+                if row[0].strip().upper() == 'ID_USUARIO':
                     continue
                 if row[0].strip() == id_usuario:
-                    raw    = row[1] if len(row) > 1 else "[]"
-                    splits = json.loads(raw) if raw else []
-                    return ok({"splits": splits, "encontrado": True})
+                    raw = row[1] if len(row) > 1 else '[]'
+                    return _cors(jsonify({'splits': json.loads(raw) if raw else [], 'encontrado': True}))
 
-            return ok({"splits": [], "encontrado": False})
+            return _cors(jsonify({'splits': [], 'encontrado': False}))
 
-        # ── POST — salva/atualiza splits ──────────────────────────────────────
-        if method == "POST":
-            body       = json.loads(request.get("body") or "{}")
-            id_usuario = str(body.get("id_usuario", "")).strip()
-            splits     = body.get("splits", [])
-
-            if not id_usuario:
-                return err("id_usuario obrigatório.", 400)
-
+        if request.method == 'POST':
+            body       = request.get_json(force=True) or {}
+            id_usuario = str(body.get('id_usuario', '')).strip()
+            splits     = body.get('splits', [])
             splits_json = json.dumps(splits, ensure_ascii=False)
-            dados       = ws.get_all_values()
 
+            dados = ws.get_all_values()
             for i, row in enumerate(dados, start=1):
                 if not row or not row[0].strip():
                     continue
-                if row[0].strip().upper() == "ID_USUARIO":
+                if row[0].strip().upper() == 'ID_USUARIO':
                     continue
                 if row[0].strip() == id_usuario:
                     ws.update_cell(i, 2, splits_json)
-                    return ok({"status": "sucesso", "mensagem": "Splits atualizados."})
+                    return _cors(jsonify({'status': 'sucesso', 'mensagem': 'Splits atualizados.'}))
 
             ws.append_row([id_usuario, splits_json])
-            return ok({"status": "sucesso", "mensagem": "Splits salvos."})
+            return _cors(jsonify({'status': 'sucesso', 'mensagem': 'Splits salvos.'}))
 
-        return err("Método não permitido.", 405)
-
-    except json.JSONDecodeError as e:
-        return err(f"JSON inválido: {str(e)}", 500)
     except Exception as e:
-        return err(str(e), 500)
+        return _cors(jsonify({'detail': str(e)}), 500)
