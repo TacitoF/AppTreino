@@ -9,19 +9,19 @@ from datetime import date, datetime, timedelta
 import json
 import time
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="FitApp API")
 
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "*")
+origins = [o.strip() for o in ALLOWED_ORIGINS.split(",")] if ALLOWED_ORIGINS != "*" else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:4173",
-    ],
+    allow_origins=origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,11 +40,7 @@ _ws_cache: dict = {}
 
 def get_ws(nome: str):
     if nome not in _ws_cache:
-        try:
-            _ws_cache[nome] = planilha.worksheet(nome)
-        except Exception as e:
-            logger.error(f"[get_ws] Aba '{nome}' não encontrada: {e}")
-            raise
+        _ws_cache[nome] = planilha.worksheet(nome)
     return _ws_cache[nome]
 
 
@@ -497,28 +493,24 @@ def registrar_dieta(registro: RegistroDieta):
 # ── CARDIO ────────────────────────────────────────────────────────────────────
 @app.post("/cardio")
 def registrar_cardio(registro: RegistroCardio):
-    logger.info(f"[cardio POST] Recebido: usuario={registro.id_usuario} atividade={registro.atividade} kcal={registro.kcal}")
+    logger.info(f"[cardio] POST recebido: {registro.dict()}")
     try:
+        _ws_cache.pop("Cardio", None)  # força re-lookup da aba
+        ws = get_ws("Cardio")
         linha = [
-            registro.id_registro,
-            registro.id_usuario,
-            registro.data,
-            registro.atividade,
-            registro.label,
-            registro.intensidade,
-            registro.minutos,
-            registro.peso_kg,
-            registro.kcal,
+            registro.id_registro, registro.id_usuario, registro.data,
+            registro.atividade,   registro.label,       registro.intensidade,
+            registro.minutos,     registro.peso_kg,     registro.kcal,
             registro.met,
         ]
-        logger.info(f"[cardio POST] Gravando linha: {linha}")
-        # Invalida cache da aba para forçar re-lookup caso tenha falhado antes
-        _ws_cache.pop("Cardio", None)
-        com_retry(lambda: get_ws("Cardio").append_row(linha))
-        logger.info(f"[cardio POST] Gravado com sucesso: {registro.id_registro}")
+        logger.info(f"[cardio] Gravando: {linha}")
+        com_retry(lambda: ws.append_row(linha))
+        logger.info(f"[cardio] Gravado com sucesso")
         return {"status": "sucesso"}
     except Exception as e:
-        logger.error(f"[cardio POST] ERRO: {type(e).__name__}: {e}")
+        import traceback
+        tb = traceback.format_exc()
+        logger.error(f"[cardio] ERRO:\n{tb}")
         raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {str(e)}")
 
 

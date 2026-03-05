@@ -62,8 +62,15 @@ async function apiFetch(path, options = {}) {
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    const error = new Error(err.detail || 'Erro desconhecido');
+    const texto = await res.text().catch(() => '');
+    let detalhe = `HTTP ${res.status}`;
+    try {
+      const json = JSON.parse(texto);
+      detalhe = json.detail || json.message || JSON.stringify(json);
+    } catch {
+      detalhe = texto || res.statusText || `HTTP ${res.status}`;
+    }
+    const error = new Error(detalhe);
     error.status = res.status;
     throw error;
   }
@@ -2018,21 +2025,21 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
         method: 'POST',
         body: {
           id_registro: `C${Date.now()}`,
-          id_usuario:  usuario.id,
+          id_usuario:  String(usuario.id),
           data:        new Date().toISOString().slice(0, 10),
-          atividade:   atividade.id,
-          label:       atividade.label,
-          intensidade,
-          minutos,
-          peso_kg:     pesoNum,
-          kcal,
-          met,
+          atividade:   String(atividade.id),
+          label:       String(atividade.label),
+          intensidade: String(intensidade),
+          minutos:     Math.max(1, parseInt(minutos) || 1),
+          peso_kg:     parseFloat(pesoNum) || 70,
+          kcal:        Math.max(0, parseInt(kcal) || 0),
+          met:         parseFloat(met) || 0,
         },
       });
       mostrarToast(`${kcal} kcal registradas! 🔥`, 'sucesso');
       onVoltar();
     } catch (e) {
-      mostrarToast(`Erro: ${e.message || 'Tente novamente'}`, 'erro');
+      mostrarToast(`[${e.status || '?'}] ${e.message}`, 'erro');
     } finally {
       setSalvando(false);
     }
