@@ -9,26 +9,27 @@ function TelaAuth({ onLogin, mostrarToast }) {
   const [email, setEmail]         = useState('');
   const [senha, setSenha]         = useState('');
   const [senhaNova, setSenhaNova] = useState('');
+  const [senhaConfirm, setSenhaConfirm] = useState('');
   const [nome, setNome]           = useState('');
   const [peso, setPeso]           = useState('');
   const [obj, setObj]             = useState('');
   const [loading, setLoading]     = useState(false);
 
-  const limpar = () => { setEmail(''); setSenha(''); setNome(''); setPeso(''); setObj(''); setSenhaNova(''); };
+  const limpar = () => { setEmail(''); setSenha(''); setNome(''); setPeso(''); setObj(''); setSenhaNova(''); setSenhaConfirm(''); };
   const inp = "w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base placeholder-zinc-600";
 
   const login = async e => {
     e.preventDefault();
-    if (!email || !senha) { mostrarToast('Preencha e-mail e senha.', 'erro'); return; }
+    if (!email || !senha) { mostrarToast('Preencha e-mail ou nome de usuário e senha.', 'erro'); return; }
     setLoading(true);
     try {
-      const r = await apiFetch(R.login, { method: 'POST', body: { email, senha } });
+      const r = await apiFetch(R.login, { method: 'POST', body: { login: email, senha } });
       if (r.token) setAuthToken(r.token);
       onLogin(r.usuario);
       limpar();
     } catch (err) {
       if (err.status === 401) mostrarToast('Senha incorreta.', 'erro');
-      else if (err.status === 404) mostrarToast('E-mail não encontrado.', 'erro');
+      else if (err.status === 404) mostrarToast('Usuário não encontrado.', 'erro');
       else mostrarToast('Não foi possível conectar.', 'erro');
     } finally { setLoading(false); }
   };
@@ -50,6 +51,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
   const cadastro = async e => {
     e.preventDefault();
     if (!nome || !email || !senha) { mostrarToast('Preencha nome, e-mail e senha.', 'erro'); return; }
+    if (senha !== senhaConfirm) { mostrarToast('As senhas não coincidem.', 'erro'); return; }
     setLoading(true);
     try {
       await apiFetch(R.registro, { method: 'POST', body: { nome, email, senha, peso_atual: peso || '0', objetivo: obj || 'Hipertrofia' } });
@@ -86,7 +88,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
 
         {modo === 'login' && !resetAberto && (
           <form onSubmit={login} className="flex flex-col gap-3">
-            <input type="email" placeholder="E-mail" value={email} onChange={e=>setEmail(e.target.value)} className={inp} autoComplete="email"/>
+            <input type="text" placeholder="E-mail ou nome de usuário" value={email} onChange={e=>setEmail(e.target.value)} className={inp} autoComplete="username"/>
             <input type="password" placeholder="Senha" value={senha} onChange={e=>setSenha(e.target.value)} className={inp} autoComplete="current-password"/>
             <button type="submit" disabled={loading} className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black text-base font-bold rounded-2xl mt-2 disabled:opacity-50">
               {loading ? 'Entrando...' : 'Entrar'}
@@ -127,6 +129,18 @@ function TelaAuth({ onLogin, mostrarToast }) {
             <input type="text" placeholder="Nome completo" value={nome} onChange={e=>setNome(e.target.value)} className={inp}/>
             <input type="email" placeholder="E-mail" value={email} onChange={e=>setEmail(e.target.value)} className={inp} autoComplete="email"/>
             <input type="password" placeholder="Senha" value={senha} onChange={e=>setSenha(e.target.value)} className={inp}/>
+            <div className="relative">
+              <input type="password" placeholder="Confirmar senha" value={senhaConfirm} onChange={e=>setSenhaConfirm(e.target.value)}
+                className={`${inp} ${senhaConfirm && senha !== senhaConfirm ? 'border-red-500 focus:border-red-500' : senhaConfirm && senha === senhaConfirm ? 'border-[#c8f542]' : ''}`}/>
+              {senhaConfirm && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  {senha === senhaConfirm
+                    ? <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2.5} className="w-4 h-4"><path d="M20 6L9 17l-5-5"/></svg>
+                    : <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth={2.5} className="w-4 h-4"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  }
+                </div>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <input type="number" placeholder="Peso (kg)" value={peso} onChange={e=>setPeso(e.target.value)} className={inp}/>
               <select value={obj} onChange={e=>setObj(e.target.value)} className={`${inp} cursor-pointer ${obj===''?'text-zinc-600':'text-white'}`}>
@@ -136,7 +150,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
                 <option value="Manutencao" className="bg-zinc-900 text-white">Manter peso</option>
               </select>
             </div>
-            <button type="submit" disabled={loading} className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black text-base font-bold rounded-2xl mt-2 disabled:opacity-50">
+            <button type="submit" disabled={loading || (senhaConfirm !== '' && senha !== senhaConfirm)} className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black text-base font-bold rounded-2xl mt-2 disabled:opacity-50">
               {loading ? 'Criando...' : 'Criar conta'}
             </button>
           </form>
