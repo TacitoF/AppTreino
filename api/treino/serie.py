@@ -1,7 +1,10 @@
 """POST /api/treino/serie  |  DELETE /api/treino/serie"""
 from flask import Flask, request, jsonify
 import gspread, sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+_api_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _api_dir not in sys.path:
+    sys.path.insert(0, _api_dir)
 from _sheets import get_sheet, exigir_auth, _cors
 
 app = Flask(__name__)

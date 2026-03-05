@@ -2397,19 +2397,20 @@ export default function App() {
     setSplitAtivo(null); setHistorico([]);
   }, []);
 
-  const onSelecionarSplit = useCallback(async split => {
+  const onSelecionarSplit = useCallback(split => {
+    // Navega imediatamente para dar feedback visual ao usuário
     setSplitAtivo(split);
     setHistorico([]);
-    try {
-      const nomeParaBusca = split.nomeHistorico || split.nome;
-      const r = await apiFetch(
-        `${R.historico}?id_usuario=${usuarioRef.current.id}` +
-        `&split_id=${encodeURIComponent(split.id)}` +
-        `&nome_treino=${encodeURIComponent(nomeParaBusca)}`
-      );
-      setHistorico(r.series || []);
-    } catch { }
     setTela('treino');
+    // Busca histórico em background — TelaTreino reage quando historicoAnterior muda
+    const nomeParaBusca = split.nomeHistorico || split.nome;
+    apiFetch(
+      `${R.historico}?id_usuario=${usuarioRef.current.id}` +
+      `&split_id=${encodeURIComponent(split.id)}` +
+      `&nome_treino=${encodeURIComponent(nomeParaBusca)}`
+    )
+      .then(r => setHistorico(r.series || []))
+      .catch(() => {});
   }, []);
 
   const onFinalizar = useCallback(res => {
