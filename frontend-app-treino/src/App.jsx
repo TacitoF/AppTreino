@@ -288,34 +288,55 @@ const Spinner = memo(() => (
   </div>
 ));
 
-// ─── INPUT NUMÉRICO — memo + estado interno isolado ──────────────────────────
+// ─── INPUT NUMÉRICO — um toque abre teclado numérico no iOS ─────────────────
+// Estratégia: input sempre renderizado e visível, nunca escondido.
+// O iOS abre o teclado no primeiro toque quando o input já está no DOM e focável.
+// Evitar display:none / pointer-events:none — ambos impedem o focus no primeiro tap.
 const NumInput = memo(({ label, value, onChange, disabled }) => {
-  const [editando, setEditando] = useState(false);
-  const [txt, setTxt]           = useState('');
-  const ref = useRef(null);
-  const val = Math.round(value);
+  const [txt, setTxt] = useState(String(Math.round(value)));
+  const ref           = useRef(null);
+  const val           = Math.round(value);
 
-  const abrirEdit = useCallback((e) => {
-    if (disabled) return;
-    e.preventDefault();
-    const novo = String(val);
-    setTxt(novo);
-    setEditando(true);
-    if (ref.current) {
-      ref.current.value = novo;
-      ref.current.focus();
-      ref.current.select();
+  // Sincroniza o texto quando o valor externo muda (ex: botão +/−)
+  // mas NÃO enquanto o usuário está digitando (o input está focado)
+  useEffect(() => {
+    if (document.activeElement !== ref.current) {
+      setTxt(String(Math.round(value)));
     }
-  }, [disabled, val]);
+  }, [value]);
 
   const confirmar = useCallback(() => {
     const n = parseFloat(txt.replace(',', '.'));
-    if (!isNaN(n) && n >= 0) onChange(Math.round(n));
-    setEditando(false);
-  }, [txt, onChange]);
+    if (!isNaN(n) && n >= 0) {
+      onChange(Math.round(n));
+      setTxt(String(Math.round(n)));
+    } else {
+      setTxt(String(val)); // reverte se inválido
+    }
+  }, [txt, onChange, val]);
 
-  const dec = useCallback((e) => { e.stopPropagation(); if (!disabled) onChange(Math.max(0, val - 1)); }, [disabled, val, onChange]);
-  const inc = useCallback((e) => { e.stopPropagation(); if (!disabled) onChange(val + 1); }, [disabled, val, onChange]);
+  const dec = useCallback((e) => {
+    e.stopPropagation();
+    if (!disabled) {
+      const novo = Math.max(0, val - 1);
+      onChange(novo);
+      setTxt(String(novo));
+    }
+  }, [disabled, val, onChange]);
+
+  const inc = useCallback((e) => {
+    e.stopPropagation();
+    if (!disabled) {
+      const novo = val + 1;
+      onChange(novo);
+      setTxt(String(novo));
+    }
+  }, [disabled, val, onChange]);
+
+  // Seleciona tudo ao focar — facilita digitar novo valor sem apagar manualmente
+  const onFocus = useCallback((e) => {
+    e.target.select();
+  }, []);
 
   return (
     <div className="flex flex-col items-center justify-between bg-black rounded-2xl py-2 px-1 min-w-0 h-full">
@@ -325,26 +346,25 @@ const NumInput = memo(({ label, value, onChange, disabled }) => {
           className="btn w-10 h-10 bg-zinc-800 active:bg-zinc-700 rounded-xl text-white text-xl flex items-center justify-center disabled:opacity-20 select-none flex-shrink-0">
           −
         </button>
-        <div className="flex-1 flex justify-center min-w-0 relative">
+        <div className="flex-1 flex justify-center min-w-0">
           <input
             ref={ref}
             type="number"
-            inputMode="decimal"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={txt}
+            disabled={disabled}
             onChange={e => setTxt(e.target.value)}
             onBlur={confirmar}
-            onKeyDown={e => e.key === 'Enter' && confirmar()}
-            style={{ display: editando ? 'block' : 'none' }}
-            className="w-full text-center text-xl font-black text-white bg-transparent outline-none border-b-2 border-[#c8f542] num"
+            onFocus={onFocus}
+            onKeyDown={e => e.key === 'Enter' && ref.current?.blur()}
+            className={`w-full text-center text-xl font-black bg-transparent outline-none border-b-2 num
+              ${disabled
+                ? 'text-zinc-600 border-transparent'
+                : 'text-white border-transparent focus:border-[#c8f542]'
+              }`}
+            style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
           />
-          {!editando && (
-            <button
-              onPointerDown={abrirEdit}
-              disabled={disabled}
-              className={`btn text-xl font-black num min-w-0 w-full text-center rounded-xl py-1 px-1 active:bg-zinc-800 ${disabled ? 'text-zinc-600' : 'text-white'}`}>
-              {val}
-            </button>
-          )}
         </div>
         <button onClick={inc} disabled={disabled}
           className="btn w-10 h-10 bg-zinc-800 active:bg-zinc-700 rounded-xl text-white text-xl flex items-center justify-center disabled:opacity-20 select-none flex-shrink-0">
@@ -415,7 +435,8 @@ function TelaAuth({ onLogin, mostrarToast }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-6 py-10">
+    <div className="fixed inset-0 bg-[#0a0a0a] flex flex-col items-center justify-center px-6 overflow-hidden"
+      style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="w-full max-w-sm slide-up">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#c8f542]/10 border border-[#c8f542]/20 rounded-2xl mb-4 text-[#c8f542]"><IconDumbbell/></div>
@@ -569,7 +590,10 @@ const IconDrag = memo(() => (
 
 // ─── TELA GERENCIAR SPLITS ────────────────────────────────────────────────────
 function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast }) {
-  const [lista, setLista]       = useState(() => splits.map(s => ({...s})));
+  const [lista, setLista] = useState(() =>
+    // Garante que splits antigos (sem nomeHistorico) herdam o nome atual como identificador estável
+    splits.map(s => ({ ...s, nomeHistorico: s.nomeHistorico || s.nome }))
+  );
   const [saving, setSaving]     = useState(false);
   const [dragging, setDragging] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
@@ -579,11 +603,18 @@ function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast
   const listRef    = useRef(null);
 
   const adicionar = useCallback(() =>
-    setLista(l => [...l, { id:`split_${Date.now()}`, id_usuario:usuario.id, nome:'', ultimo_treino:null }])
+    // nomeHistorico fica vazio até o usuário digitar e salvar pela primeira vez
+    setLista(l => [...l, { id:`split_${Date.now()}`, id_usuario:usuario.id, nome:'', nomeHistorico:'', ultimo_treino:null }])
   , [usuario.id]);
 
   const renomear = useCallback((id, nome) =>
-    setLista(l => l.map(s => s.id === id ? {...s, nome} : s))
+    setLista(l => l.map(s => s.id === id ? {
+      ...s,
+      nome,
+      // nomeHistorico só é definido uma vez — na primeira vez que o usuário digita o nome.
+      // Depois disso nunca muda, mesmo que renomeie, garantindo que o histórico continue achável.
+      nomeHistorico: s.nomeHistorico || nome,
+    } : s))
   , []);
 
   const remover = useCallback((id) =>
@@ -1016,9 +1047,22 @@ const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
 function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, mostrarToast }) {
   const [exerciciosInicializados, setExerciciosInicializados] = useState(false);
 
-  const idTreinoSessao = useRef(
-    `${split.nome}_${usuario.id}_${new Date().toISOString().slice(0,10)}_${Date.now()}`
-  );
+  // ── ID DA SESSÃO DE TREINO ────────────────────────────────────────────────
+  // Persiste no localStorage com chave baseada em (split + usuário + dia).
+  // Se o usuário sair e voltar ao mesmo split no mesmo dia, continua a mesma
+  // sessão (mesmo id_treino) em vez de criar uma duplicata.
+  const idTreinoSessao = useRef((() => {
+    const hoje  = new Date().toISOString().slice(0, 10);
+    // Chave baseada em split.id (estável) — não muda ao renomear o grupo.
+    const chave = `fitapp_sessao_${split.id}_${usuario.id}_${hoje}`;
+    const salvo = sessionStorage.getItem(chave);
+    if (salvo) return salvo;
+    // O prefixo do ID usa split.id para ser imutável.
+    // O backend busca por split_id (novo) com fallback para nome (registros antigos).
+    const novo = `${split.id}_${usuario.id}_${hoje}_${Date.now()}`;
+    sessionStorage.setItem(chave, novo);
+    return novo;
+  })());
 
   const [exercicios, setExercicios] = useState([]);
 
@@ -1967,7 +2011,13 @@ export default function App() {
       carregarSplitsInterno(sessaoSalva.usuario.id);
       // Se estava no treino, recarrega histórico em background também
       if (sessaoSalva.tela === 'treino' && sessaoSalva.splitAtivo) {
-        apiFetch(`${R.historico}?id_usuario=${sessaoSalva.usuario.id}&nome_treino=${encodeURIComponent(sessaoSalva.splitAtivo.nome)}`)
+        const sa = sessaoSalva.splitAtivo;
+        const nomeParaBusca = sa.nomeHistorico || sa.nome;
+        apiFetch(
+          `${R.historico}?id_usuario=${sessaoSalva.usuario.id}` +
+          `&split_id=${encodeURIComponent(sa.id)}` +
+          `&nome_treino=${encodeURIComponent(nomeParaBusca)}`
+        )
           .then(r => setHistorico(r.series || []))
           .catch(() => {});
       }
@@ -2009,10 +2059,17 @@ export default function App() {
 
   const onSelecionarSplit = useCallback(async split => {
     setSplitAtivo(split);
-    setHistorico([]); 
+    setHistorico([]);
     setTela('treino');
     try {
-      const r = await apiFetch(`${R.historico}?id_usuario=${usuarioRef.current.id}&nome_treino=${encodeURIComponent(split.nome)}`);
+      // split_id: busca registros novos (prefixo com split.id)
+      // nome_treino: fallback para registros antigos (prefixo com split.nome/nomeHistorico)
+      const nomeParaBusca = split.nomeHistorico || split.nome;
+      const r = await apiFetch(
+        `${R.historico}?id_usuario=${usuarioRef.current.id}` +
+        `&split_id=${encodeURIComponent(split.id)}` +
+        `&nome_treino=${encodeURIComponent(nomeParaBusca)}`
+      );
       setHistorico(r.series || []);
     } catch { }
   }, []);

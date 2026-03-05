@@ -213,6 +213,7 @@ class SplitItem(BaseModel):
     id: str
     id_usuario: str
     nome: str
+    nomeHistorico: Optional[str] = None
     ultimo_treino: Optional[str] = None
 
 class SalvarSplitsRequest(BaseModel):
@@ -377,23 +378,19 @@ def atualizar_nome_serie(req: AtualizarNomeSerie):
 def buscar_historico(
     id_usuario:  str = Query(...),
     nome_treino: str = Query(...),
+    split_id:    Optional[str] = Query(None),
 ):
     """
     Busca as séries do ÚLTIMO treino do usuário naquele split.
 
-    BUG CORRIGIDO:
-    O código anterior fazia split("_")[-1] para extrair a data, mas isso
-    retornava o TIMESTAMP (último segmento), não a data.
-    Resultado: a chave montada era "{prefixo}{timestamp}" em vez de
-    "{prefixo}{data}_{timestamp}", e o filtro não encontrava nada.
+    Aceita dois identificadores para compatibilidade retroativa:
+      - split_id:    prefixo novo (split.id_usuario), imutável ao renomear o grupo.
+      - nome_treino: prefixo antigo (nome do split), usado por registros já gravados.
 
-    Correção: a função extrair_data_de_id_treino() procura o padrão
-    YYYY-MM-DD em qualquer posição do ID_Treino, sem depender de índice fixo.
-    Isso funciona mesmo quando o nome do split tem espaços/underscores.
+    Busca pelos dois prefixos e retorna o treino mais recente da união.
+    Isso garante que renomear um grupo muscular NÃO apaga o histórico.
     """
     try:
-        prefixo = f"{nome_treino}_{id_usuario}_"
-
         # Arquivamento lazy — não bloqueia
         try:
             arquivar_series_antigas()
@@ -403,10 +400,18 @@ def buscar_historico(
         # Leitura completa da aba
         todas = com_retry(lambda: get_ws("Series_Exercicios").get_all_records())
 
-        # Filtra registros deste usuário + split
+        # Monta lista de prefixos para busca
+        prefixos = []
+        if split_id:
+            prefixos.append(f"{split_id}_{id_usuario}_")
+        # Sempre inclui o prefixo por nome (fallback para registros antigos)
+        if nome_treino:
+            prefixos.append(f"{nome_treino}_{id_usuario}_")
+
+        # Filtra registros que batem com qualquer prefixo
         registros = [
             r for r in todas
-            if str(r.get("ID_Treino", "")).startswith(prefixo)
+            if any(str(r.get("ID_Treino", "")).startswith(p) for p in prefixos)
         ]
 
         if not registros:
@@ -428,7 +433,7 @@ def buscar_historico(
             )
             return (data, timestamp)
 
-        id_ultimo  = max(mapa_treinos.keys(), key=chave_ordenacao)
+        id_ultimo   = max(mapa_treinos.keys(), key=chave_ordenacao)
         data_ultimo = extrair_data_de_id_treino(id_ultimo)
 
         # Checa cache da sessão
