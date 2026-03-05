@@ -13,27 +13,29 @@ def login():
 
     try:
         body  = request.get_json(force=True) or {}
-        email = str(body.get('email', '')).strip()
+        login = str(body.get('email', '') or body.get('nome', '')).strip()
         senha = str(body.get('senha', '')).strip()
 
-        if not email or not senha:
-            return _cors(jsonify({'detail': 'E-mail e senha obrigatórios.'}), 400)
+        if not login or not senha:
+            return _cors(jsonify({'detail': 'E-mail ou nome e senha obrigatórios.'}), 400)
 
         ws        = get_sheet().worksheet('Usuarios')
         registros = ws.get_all_records()
 
         for user in registros:
-            if str(user.get('Email', '')).strip() == email:
+            email_user = str(user.get('Email', '')).strip()
+            nome_user  = str(user.get('Nome',  '')).strip()
+            if email_user == login or nome_user.lower() == login.lower():
                 if str(user.get('Senha_Hash', '')).strip() == senha:
                     uid  = str(user.get('ID_Usuario', ''))
                     nome = str(user.get('Nome', ''))
                     return _cors(jsonify({
                         'status':  'sucesso',
-                        'token':   gerar_token(uid, nome),   # ← JWT retornado aqui
+                        'token':   gerar_token(uid, nome),
                         'usuario': {
                             'id':    uid,
                             'nome':  nome,
-                            'email': str(user.get('Email', '')),
+                            'email': email_user,
                         },
                     }), 200)
                 return _cors(jsonify({'detail': 'Senha incorreta.'}), 401)

@@ -23,7 +23,8 @@ function TelaAuth({ onLogin, mostrarToast }) {
     if (!email || !senha) { mostrarToast('Preencha e-mail ou nome de usuário e senha.', 'erro'); return; }
     setLoading(true);
     try {
-      const r = await apiFetch(R.login, { method: 'POST', body: { login: email, senha } });
+      const isEmail = email.includes('@');
+      const r = await apiFetch(R.login, { method: 'POST', body: isEmail ? { email, senha } : { nome: email, senha } });
       if (r.token) setAuthToken(r.token);
       onLogin(r.usuario);
       limpar();
@@ -126,7 +127,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
 
         {modo === 'cadastro' && (
           <form onSubmit={cadastro} className="flex flex-col gap-3">
-            <input type="text" placeholder="Nome completo" value={nome} onChange={e=>setNome(e.target.value)} className={inp}/>
+            <input type="text" placeholder="Nome" value={nome} onChange={e=>setNome(e.target.value)} className={inp}/>
             <input type="email" placeholder="E-mail" value={email} onChange={e=>setEmail(e.target.value)} className={inp} autoComplete="email"/>
             <input type="password" placeholder="Senha" value={senha} onChange={e=>setSenha(e.target.value)} className={inp}/>
             <div className="relative">
