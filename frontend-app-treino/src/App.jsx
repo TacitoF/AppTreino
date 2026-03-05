@@ -28,6 +28,7 @@ const R = {
   serie:       '/api/treino/serie',
   serieNome:   '/api/treino/serie/nome',
   historico:   '/api/treino/historico',
+  cardio:      '/api/cardio',
 };
 
 // ─── AUTH TOKEN — armazenado em memória, não no bundle ───────────────────────
@@ -40,7 +41,7 @@ function clearAuthToken()  { try { localStorage.removeItem(TOKEN_KEY); localStor
 function getAuthToken()    { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } }
 function salvarSessao(u, tela, split) {
   try {
-    const t = ['grupamentos','treino','rank','gerenciar-splits'].includes(tela) ? tela : 'grupamentos';
+    const t = ['grupamentos','treino','rank','gerenciar-splits','cardio'].includes(tela) ? tela : 'grupamentos';
     localStorage.setItem(SESSAO_KEY, JSON.stringify({ usuario: u, tela: t, splitAtivo: split || null }));
   } catch {}
 }
@@ -130,6 +131,20 @@ export const IconTrophy = memo(() => (
 export const IconStop = memo(() => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
     <rect x="5" y="5" width="14" height="14" rx="2"/>
+  </svg>
+));
+
+export const IconCardio = memo(() => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-7 h-7">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 8.5C3.5 5.46 5.96 3 9 3c1.67 0 3.17.75 4.2 1.94A5.5 5.5 0 0120.5 8.5c0 5.5-7.5 10.5-9.5 10.5S3.5 14 3.5 8.5z"/>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2 12h3l2-4 3 8 2-5 2 3 1-2h4"/>
+  </svg>
+));
+
+export const IconFlame = memo(() => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+    <path d="M12 2C9 6 7 8 7 11a5 5 0 0010 0c0-1-.3-2-.8-3C14.5 10 13 10 12 8c0 0 1.5-2 0-6z"/>
+    <path d="M12 14a2 2 0 100 4 2 2 0 000-4z" opacity=".6"/>
   </svg>
 ));
 
@@ -516,7 +531,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
 }
 
 // ─── TELA GRUPAMENTOS ─────────────────────────────────────────────────────────
-function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onRank, onLogout }) {
+function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onRank, onCardio, onLogout }) {
   const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
@@ -557,6 +572,13 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
               </button>
             ))}
             <div className="grid grid-cols-2 gap-3 mt-1">
+              <button onClick={onCardio}
+                className="btn bg-[#f97316]/8 border border-[#f97316]/25 active:bg-[#f97316]/15 rounded-2xl p-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-[#f97316]/15 flex items-center justify-center text-[#f97316]">
+                  <IconCardio/>
+                </div>
+                <span className="text-[#f97316] text-xs font-semibold text-center leading-tight">Cardio<br/>& Calorias</span>
+              </button>
               <button onClick={onGerenciar}
                 className="btn bg-zinc-900 border border-zinc-800 active:bg-zinc-800 rounded-2xl p-4 flex flex-col items-center gap-2">
                 <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400">
@@ -565,11 +587,11 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                 <span className="text-zinc-400 text-xs font-semibold text-center leading-tight">Gerenciar<br/>grupos musculares</span>
               </button>
               <button onClick={onRank}
-                className="btn bg-[#c8f542]/8 border border-[#c8f542]/25 active:bg-[#c8f542]/15 rounded-2xl p-4 flex flex-col items-center gap-2">
+                className="btn col-span-2 bg-[#c8f542]/8 border border-[#c8f542]/25 active:bg-[#c8f542]/15 rounded-2xl p-4 flex items-center justify-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#c8f542]/15 flex items-center justify-center text-[#c8f542]">
                   <IconTrophy/>
                 </div>
-                <span className="text-[#c8f542] text-xs font-semibold text-center leading-tight">Ranking<br/>com amigos</span>
+                <span className="text-[#c8f542] text-sm font-semibold">Ranking com amigos</span>
               </button>
             </div>
           </>
@@ -1975,6 +1997,367 @@ const IOSInstallBanner = memo(() => {
   );
 });
 
+// ─── TELA CARDIO ─────────────────────────────────────────────────────────────
+// Cálculo por MET (Metabolic Equivalent of Task) × peso(kg) × horas
+// Fonte: Compendium of Physical Activities (Ainsworth et al.)
+const ATIVIDADES_CARDIO = [
+  { id: 'corrida',      label: 'Corrida',        emoji: '🏃',  met: { leve: 7.0, moderado: 9.8,  intenso: 14.5 } },
+  { id: 'bike',         label: 'Bicicleta',       emoji: '🚴',  met: { leve: 5.8, moderado: 8.0,  intenso: 11.0 } },
+  { id: 'eliptico',     label: 'Elíptico',        emoji: '⚡',  met: { leve: 4.6, moderado: 7.0,  intenso: 9.5  } },
+  { id: 'esteira',      label: 'Esteira (caminhada)', emoji: '🚶', met: { leve: 3.5, moderado: 5.0, intenso: 6.5 } },
+  { id: 'pular_corda',  label: 'Corda',           emoji: '🪢',  met: { leve: 8.8, moderado: 11.8, intenso: 14.0 } },
+  { id: 'natacao',      label: 'Natação',         emoji: '🏊',  met: { leve: 5.8, moderado: 8.3,  intenso: 10.0 } },
+  { id: 'remo',         label: 'Remo',            emoji: '🚣',  met: { leve: 4.5, moderado: 7.0,  intenso: 10.5 } },
+  { id: 'hiit',         label: 'HIIT',            emoji: '🔥',  met: { leve: 7.0, moderado: 10.0, intenso: 14.0 } },
+  { id: 'stairmaster',  label: 'Escada',          emoji: '🪜',  met: { leve: 4.0, moderado: 6.0,  intenso: 9.0  } },
+  { id: 'caminhada',    label: 'Caminhada',       emoji: '👟',  met: { leve: 2.5, moderado: 3.5,  intenso: 4.5  } },
+];
+
+const INTENSIDADE = [
+  { id: 'leve',     label: 'Leve',     desc: 'Respira normal, conversa fácil',    cor: '#60a5fa' },
+  { id: 'moderado', label: 'Moderado', desc: 'Leve falta de ar, ainda conversa',  cor: '#c8f542' },
+  { id: 'intenso',  label: 'Intenso',  desc: 'Difícil conversar, muito suado',    cor: '#f97316' },
+];
+
+function calcularKcal(met, pesoKg, minutos) {
+  return Math.round(met * pesoKg * (minutos / 60));
+}
+
+const PESO_KEY = 'fitapp_peso_corporal';
+
+function TelaCardio({ usuario, onVoltar, mostrarToast }) {
+  const [etapa, setEtapa]             = useState('escolha');
+  const [atividadeId, setAtividadeId] = useState(null);
+  const [intensidade, setIntensidade] = useState('moderado');
+  const [peso, setPeso]               = useState(() => {
+    // Prioridade: localStorage (editado pelo usuário) > cadastro > 70
+    try { return localStorage.getItem(PESO_KEY) || String(usuario.peso_atual || '70'); }
+    catch { return String(usuario.peso_atual || '70'); }
+  });
+  const [minutos, setMinutos]         = useState(30);
+  const [cronAtivo, setCronAtivo]     = useState(false);
+  const [cronSeg, setCronSeg]         = useState(0);
+  const [salvando, setSalvando]       = useState(false);
+  const [historico, setHistorico]     = useState([]);
+  const [loadingHist, setLoadingHist] = useState(true);
+  const intervalRef                   = useRef(null);
+  const inicioRef                     = useRef(null);
+
+  const atividade = ATIVIDADES_CARDIO.find(a => a.id === atividadeId);
+  const pesoNum   = parseFloat(peso) || 70;
+  const met       = atividade ? atividade.met[intensidade] : 0;
+  const kcal      = atividade ? calcularKcal(met, pesoNum, minutos) : 0;
+
+  // Carrega histórico de cardios ao abrir
+  useEffect(() => {
+    apiFetch(`${R.cardio}?id_usuario=${usuario.id}&limite=5`)
+      .then(r => setHistorico(r.registros || []))
+      .catch(() => {})
+      .finally(() => setLoadingHist(false));
+  }, []);
+
+  // Cronômetro
+  useEffect(() => {
+    if (cronAtivo) {
+      inicioRef.current = Date.now() - cronSeg * 1000;
+      intervalRef.current = setInterval(() => {
+        const seg = Math.floor((Date.now() - inicioRef.current) / 1000);
+        setCronSeg(seg);
+        setMinutos(Math.max(1, Math.round(seg / 60)));
+      }, 500);
+    } else {
+      clearInterval(intervalRef.current);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [cronAtivo]);
+
+  const iniciarCron = () => { setCronSeg(0); setMinutos(1); setCronAtivo(true); setEtapa('cronometro'); };
+  const pararCron   = () => { setCronAtivo(false); setEtapa('resultado'); };
+
+  const salvar = async () => {
+    if (!atividade) return;
+    setSalvando(true);
+    try {
+      await apiFetch(R.cardio, {
+        method: 'POST',
+        body: {
+          id_registro: `C${Date.now()}`,
+          id_usuario:  usuario.id,
+          data:        new Date().toISOString().slice(0, 10),
+          atividade:   atividade.id,
+          label:       atividade.label,
+          intensidade,
+          minutos,
+          peso_kg:     pesoNum,
+          kcal,
+          met,
+        },
+      });
+      mostrarToast(`${kcal} kcal registradas! 🔥`, 'sucesso');
+      onVoltar();
+    } catch {
+      mostrarToast('Erro ao salvar. Tente novamente.', 'erro');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  const intAtual = INTENSIDADE.find(i => i.id === intensidade);
+
+  // ── ETAPA: ESCOLHA DA ATIVIDADE ────────────────────────────────────────────
+  if (etapa === 'escolha') {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
+        <div className="px-5 pt-14 pb-4 flex items-center gap-3 border-b border-zinc-900">
+          <button onClick={onVoltar}
+            className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
+            <IconBack/>
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-white">Cardio</h1>
+            <p className="text-zinc-500 text-xs mt-0.5">Escolha a atividade</p>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6">
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {ATIVIDADES_CARDIO.map(a => (
+              <button key={a.id} onClick={() => { setAtividadeId(a.id); setEtapa('config'); }}
+                className="btn bg-zinc-900 border border-zinc-800 active:border-zinc-600 active:bg-zinc-800 rounded-2xl p-4 flex flex-col items-start gap-2 text-left">
+                <span className="text-2xl">{a.emoji}</span>
+                <span className="text-white font-bold text-sm leading-tight">{a.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Histórico recente */}
+          {!loadingHist && historico.length > 0 && (
+            <div>
+              <p className="text-zinc-600 text-xs font-semibold uppercase tracking-wider mb-3">Últimos registros</p>
+              <div className="flex flex-col gap-2">
+                {historico.map((h, i) => (
+                  <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{ATIVIDADES_CARDIO.find(a=>a.id===h.atividade)?.emoji || '🏃'}</span>
+                      <div>
+                        <div className="text-white text-sm font-semibold">{h.label}</div>
+                        <div className="text-zinc-500 text-xs">{h.minutos} min · {h.intensidade}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[#f97316] font-black text-base num">{h.kcal}</div>
+                      <div className="text-zinc-600 text-xs">kcal</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── ETAPA: CONFIG (intensidade + tempo + peso) ────────────────────────────
+  if (etapa === 'config') {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
+        <div className="px-5 pt-14 pb-4 flex items-center gap-3 border-b border-zinc-900">
+          <button onClick={() => setEtapa('escolha')}
+            className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
+            <IconBack/>
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-white">{atividade.emoji} {atividade.label}</h1>
+            <p className="text-zinc-500 text-xs mt-0.5">Configure a sessão</p>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 pt-5 pb-32 flex flex-col gap-6">
+
+          {/* Intensidade */}
+          <div>
+            <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-3">Intensidade</p>
+            <div className="flex flex-col gap-2">
+              {INTENSIDADE.map(it => (
+                <button key={it.id} onClick={() => setIntensidade(it.id)}
+                  className={`btn rounded-2xl px-4 py-4 flex items-center gap-4 border transition-all ${
+                    intensidade === it.id
+                      ? 'border-transparent'
+                      : 'bg-zinc-900 border-zinc-800 active:bg-zinc-800'
+                  }`}
+                  style={intensidade === it.id ? { background: `${it.cor}15`, borderColor: `${it.cor}40` } : {}}>
+                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: it.cor }}/>
+                  <div className="flex-1 text-left">
+                    <div className="text-white font-bold text-sm">{it.label}</div>
+                    <div className="text-zinc-500 text-xs mt-0.5">{it.desc}</div>
+                  </div>
+                  {intensidade === it.id && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} className="w-5 h-5 flex-shrink-0" style={{ color: it.cor }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tempo */}
+          <div>
+            <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-3">Tempo</p>
+            <div className="grid grid-cols-4 gap-2 mb-3">
+              {[15, 20, 30, 45, 60, 90].map(m => (
+                <button key={m} onClick={() => setMinutos(m)}
+                  className={`btn py-4 rounded-2xl font-bold text-sm ${
+                    minutos === m ? 'bg-[#c8f542] text-black' : 'bg-zinc-900 border border-zinc-800 text-zinc-400 active:bg-zinc-800'
+                  }`}>
+                  {m < 60 ? `${m}min` : `${m/60}h`}
+                </button>
+              ))}
+            </div>
+            {/* Entrada manual */}
+            <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3">
+              <span className="text-zinc-500 text-sm">Ou digite:</span>
+              <input
+                type="number" inputMode="numeric" pattern="[0-9]*"
+                value={minutos}
+                onChange={e => setMinutos(Math.max(1, parseInt(e.target.value) || 1))}
+                className="flex-1 bg-transparent text-white font-bold text-base outline-none text-right"
+              />
+              <span className="text-zinc-500 text-sm">min</span>
+            </div>
+          </div>
+
+          {/* Peso corporal */}
+          <div>
+            <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-3">Seu peso</p>
+            <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-4">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 text-zinc-500 flex-shrink-0">
+                <path strokeLinecap="round" d="M12 4a4 4 0 100 8 4 4 0 000-8zM6 20v-1a6 6 0 0112 0v1"/>
+              </svg>
+              <input
+                type="number" inputMode="decimal"
+                value={peso}
+                onChange={e => setPeso(e.target.value)}
+                onBlur={e => {
+                  const v = e.target.value.trim();
+                  if (v && parseFloat(v) > 0) {
+                    try { localStorage.setItem(PESO_KEY, v); } catch {}
+                  }
+                }}
+                className="flex-1 bg-transparent text-white font-bold text-base outline-none"
+              />
+              <span className="text-zinc-500 text-sm">kg</span>
+            </div>
+          </div>
+
+          {/* Preview de kcal */}
+          <div className="bg-[#f97316]/10 border border-[#f97316]/25 rounded-2xl px-5 py-4 flex items-center justify-between">
+            <div>
+              <div className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Estimativa</div>
+              <div className="text-zinc-300 text-sm mt-1">{minutos}min · {intAtual.label} · {pesoNum}kg</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <IconFlame/>
+              <span className="text-[#f97316] font-black text-3xl num">{kcal}</span>
+              <span className="text-zinc-500 text-sm">kcal</span>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Botões fixos */}
+        <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-3 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/98 to-transparent flex flex-col gap-3">
+          <button onClick={iniciarCron}
+            className="btn w-full py-5 bg-zinc-800 border border-zinc-700 active:bg-zinc-700 text-white font-bold text-base rounded-2xl flex items-center justify-center gap-3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+              <circle cx="12" cy="13" r="8"/><path strokeLinecap="round" d="M12 9v4l2.5 2.5M9.5 2.5h5M12 2.5V5"/>
+            </svg>
+            Usar cronômetro
+          </button>
+          <button onClick={salvar} disabled={salvando}
+            className="btn w-full py-5 bg-[#f97316] active:bg-[#ea6c0c] text-white font-bold text-base rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
+            <IconFlame/>
+            {salvando ? 'Salvando...' : `Salvar ${kcal} kcal`}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── ETAPA: CRONÔMETRO ──────────────────────────────────────────────────────
+  if (etapa === 'cronometro') {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-6">
+        <div className="text-center mb-12">
+          <div className="text-7xl mb-4">{atividade.emoji}</div>
+          <div className="text-zinc-500 text-sm font-semibold uppercase tracking-wider mb-2">{atividade.label} · {intAtual.label}</div>
+          <div className="text-white font-black text-7xl num tracking-tight">{fmt(cronSeg)}</div>
+          <div className="text-zinc-600 text-sm mt-3">{minutos} min · estimativa atual</div>
+        </div>
+
+        {/* Preview kcal ao vivo */}
+        <div className="bg-[#f97316]/10 border border-[#f97316]/25 rounded-3xl px-8 py-6 flex items-center gap-4 mb-10 w-full max-w-xs">
+          <IconFlame/>
+          <div>
+            <div className="text-zinc-500 text-xs uppercase tracking-wider">Queimando</div>
+            <div className="text-[#f97316] font-black text-4xl num leading-none">{kcal}</div>
+            <div className="text-zinc-500 text-sm">kcal</div>
+          </div>
+        </div>
+
+        <button onClick={pararCron}
+          className="btn w-full max-w-xs py-6 bg-[#f97316] active:bg-[#ea6c0c] text-white font-bold text-lg rounded-3xl flex items-center justify-center gap-3">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+            <rect x="5" y="5" width="14" height="14" rx="2"/>
+          </svg>
+          Parar e salvar
+        </button>
+        <button onClick={() => { setCronAtivo(false); setEtapa('config'); }}
+          className="mt-4 text-zinc-600 text-sm active:text-zinc-400">
+          Cancelar
+        </button>
+      </div>
+    );
+  }
+
+  // ── ETAPA: RESULTADO ───────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-6 slide-up">
+      <div className="text-center w-full max-w-sm">
+        <div className="text-6xl mb-6">{atividade.emoji}</div>
+        <h1 className="text-3xl font-black text-white mb-1">Sessão concluída</h1>
+        <p className="text-zinc-500 mb-8">{atividade.label} · {intAtual.label}</p>
+
+        <div className="grid grid-cols-3 gap-3 mb-8">
+          {[
+            { v: fmt(cronSeg), l: 'Duração' },
+            { v: minutos,      l: 'Minutos' },
+            { v: kcal,         l: 'kcal',   destaque: true },
+          ].map(x => (
+            <div key={x.l} className={`rounded-2xl p-4 text-center border ${
+              x.destaque ? 'bg-[#f97316]/10 border-[#f97316]/25' : 'bg-zinc-900 border-zinc-800'
+            }`}>
+              <div className={`font-black text-2xl num ${x.destaque ? 'text-[#f97316]' : 'text-white'}`}>{x.v}</div>
+              <div className="text-zinc-600 text-xs mt-1">{x.l}</div>
+            </div>
+          ))}
+        </div>
+
+        <button onClick={salvar} disabled={salvando}
+          className="btn w-full py-5 bg-[#f97316] active:bg-[#ea6c0c] text-white font-bold text-base rounded-2xl disabled:opacity-60 mb-3 flex items-center justify-center gap-2">
+          <IconFlame/>
+          {salvando ? 'Salvando...' : 'Salvar registro'}
+        </button>
+        <button onClick={onVoltar} className="text-zinc-600 text-sm active:text-zinc-400">
+          Descartar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
   // Restaura sessão salva (evita voltar ao login quando iOS descarrega a página)
@@ -2086,11 +2469,12 @@ export default function App() {
       <Toast data={toast}/>
       <IOSInstallBanner/>
       {tela==='auth'             && <TelaAuth onLogin={onLogin} mostrarToast={mostrarToast}/>}
-      {tela==='grupamentos'      && usuario && <TelaGrupamentos usuario={usuario} splits={splits} loadingSplits={loadingSplits} onSelecionarSplit={onSelecionarSplit} onGerenciar={()=>setTela('gerenciar-splits')} onRank={()=>setTela('rank')} onLogout={onLogout}/>}
+      {tela==='grupamentos'      && usuario && <TelaGrupamentos usuario={usuario} splits={splits} loadingSplits={loadingSplits} onSelecionarSplit={onSelecionarSplit} onGerenciar={()=>setTela('gerenciar-splits')} onRank={()=>setTela('rank')} onCardio={()=>setTela('cardio')} onLogout={onLogout}/>}
       {tela==='gerenciar-splits' && usuario && <TelaGerenciarSplits usuario={usuario} splits={splits} onSalvar={l=>{setSplits(l);setTela('grupamentos');}} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
       {tela==='treino'           && splitAtivo && <TelaTreino usuario={usuario} split={splitAtivo} historicoAnterior={historico} onFinalizar={onFinalizar} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
       {tela==='resumo'           && resultado && <TelaResumo resultado={resultado} onVoltar={()=>setTela('grupamentos')}/>}
       {tela==='rank'             && usuario && <TelaRank usuario={usuario} mostrarToast={mostrarToast} onVoltar={()=>setTela('grupamentos')}/>}
+      {tela==='cardio'           && usuario && <TelaCardio usuario={usuario} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
     </>
   );
 }

@@ -224,6 +224,18 @@ class AtualizarNomeSerie(BaseModel):
     ids: List[str]
     nome_exercicio: str
 
+class RegistroCardio(BaseModel):
+    id_registro: str
+    id_usuario:  str
+    data:        str
+    atividade:   str
+    label:       str
+    intensidade: str
+    minutos:     int
+    peso_kg:     float
+    kcal:        int
+    met:         float
+
 
 # ── AUTH ──────────────────────────────────────────────────────────────────────
 @app.post("/login")
@@ -474,6 +486,62 @@ def registrar_dieta(registro: RegistroDieta):
             registro.check_whey, registro.check_creatina,
         ]))
         return {"status": "sucesso"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── CARDIO ────────────────────────────────────────────────────────────────────
+@app.post("/cardio")
+def registrar_cardio(registro: RegistroCardio):
+    try:
+        com_retry(lambda: get_ws("Cardio").append_row([
+            registro.id_registro,
+            registro.id_usuario,
+            registro.data,
+            registro.atividade,
+            registro.label,
+            registro.intensidade,
+            registro.minutos,
+            registro.peso_kg,
+            registro.kcal,
+            registro.met,
+        ]))
+        return {"status": "sucesso"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/cardio")
+def buscar_cardio(
+    id_usuario: str = Query(...),
+    limite:     int = Query(5),
+):
+    """Retorna os últimos N registros de cardio do usuário, do mais recente ao mais antigo."""
+    try:
+        ws     = get_ws("Cardio")
+        todas  = com_retry(lambda: ws.get_all_records())
+        # Filtra pelo usuário e ordena por data desc (data é YYYY-MM-DD, ordem lexicográfica funciona)
+        meus = [
+            r for r in todas
+            if str(r.get("ID_Usuario", "")) == id_usuario.strip()
+        ]
+        meus.sort(key=lambda r: (str(r.get("Data", "")), str(r.get("ID_Registro", ""))), reverse=True)
+        registros = []
+        for r in meus[:limite]:
+            try:
+                registros.append({
+                    "id_registro": str(r.get("ID_Registro", "")),
+                    "data":        str(r.get("Data", "")),
+                    "atividade":   str(r.get("Atividade", "")),
+                    "label":       str(r.get("Label", "")),
+                    "intensidade": str(r.get("Intensidade", "")),
+                    "minutos":     int(r.get("Minutos", 0)),
+                    "peso_kg":     float(r.get("Peso_kg", 0)),
+                    "kcal":        int(r.get("Kcal", 0)),
+                })
+            except (ValueError, TypeError):
+                continue
+        return {"registros": registros}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
