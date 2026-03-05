@@ -76,9 +76,15 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
     finally { setLoading(false); }
   };
 
+  const [menuAberto, setMenuAberto] = useState(false);
+
   const copiarLink = (cod) => {
     const url = `${window.location.origin}?lobby=${cod}`;
-    navigator.clipboard.writeText(url).then(() => mostrarToast('Link copiado!', 'sucesso'));
+    navigator.clipboard.writeText(url).then(() => { mostrarToast('Link copiado!', 'sucesso'); setMenuAberto(false); });
+  };
+
+  const copiarCodigo = (cod) => {
+    navigator.clipboard.writeText(cod).then(() => { mostrarToast('Código copiado!', 'sucesso'); setMenuAberto(false); });
   };
 
   const encerrado = lobbyAtivo && new Date(lobbyAtivo.data_fim) < new Date();
@@ -99,10 +105,27 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
             </div>
             <div className="text-white font-bold text-lg truncate">{lobbyAtivo.nome}</div>
           </div>
-          <button onClick={() => copiarLink(lobbyAtivo.codigo)}
-            className="btn flex items-center gap-2 px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-300 text-sm active:bg-zinc-800">
-            <IconLink/><span className="text-xs font-semibold">{lobbyAtivo.codigo}</span>
-          </button>
+          <div className="relative">
+            <button onClick={() => setMenuAberto(v => !v)}
+              className="btn flex items-center gap-2 px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-300 text-sm active:bg-zinc-800">
+              <IconLink/><span className="text-xs font-semibold tracking-widest">{lobbyAtivo.codigo}</span>
+            </button>
+            {menuAberto && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuAberto(false)}/>
+                <div className="absolute right-0 top-full mt-2 z-50 bg-zinc-900 border border-zinc-700 rounded-2xl overflow-hidden shadow-xl w-48">
+                  <button onClick={() => copiarCodigo(lobbyAtivo.codigo)}
+                    className="btn w-full flex items-center gap-3 px-4 py-3.5 text-left text-white text-sm font-semibold active:bg-zinc-800 border-b border-zinc-800">
+                    <span className="text-base">🔢</span> Copiar código
+                  </button>
+                  <button onClick={() => copiarLink(lobbyAtivo.codigo)}
+                    className="btn w-full flex items-center gap-3 px-4 py-3.5 text-left text-white text-sm font-semibold active:bg-zinc-800">
+                    <span className="text-base">🔗</span> Copiar link
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="px-4 pt-6 pb-10 flex flex-col gap-3">
