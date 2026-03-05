@@ -109,7 +109,9 @@ export const IconHistory = memo(() => (
 ));
 export const IconDumbbell = memo(() => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-7 h-7">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6 5v14M18 5v14M3 8h3M3 16h3M18 8h3M18 16h3M6 9h12M6 15h12"/>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.5 8v8M17.5 8v8M4 9.5v5M20 9.5v5M6.5 12h11"/>
+    <rect x="3.5" y="9" width="3" height="6" rx="1.5"/>
+    <rect x="17.5" y="9" width="3" height="6" rx="1.5"/>
   </svg>
 ));
 export const IconSettings = memo(() => (
@@ -454,7 +456,11 @@ function TelaAuth({ onLogin, mostrarToast }) {
       style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="w-full max-w-sm slide-up">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#c8f542]/10 border border-[#c8f542]/20 rounded-2xl mb-4 text-[#c8f542]"><IconDumbbell/></div>
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#c8f542]/10 border border-[#c8f542]/20 rounded-2xl mb-4 text-[#c8f542]">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
+              <path d="M13 2L4.5 13.5H11L10 22L19.5 10.5H13L13 2Z"/>
+            </svg>
+          </div>
           <h1 className="text-4xl font-black text-white">Volt</h1>
           <p className="text-zinc-500 text-sm mt-1 font-medium">Seu diário de treino</p>
         </div>
@@ -1306,9 +1312,9 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
         {exercicios.length === 0 && (
           <div className="flex flex-col items-center justify-center py-14 gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600">
+            <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 border-dashed flex items-center justify-center text-zinc-600">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 5v14M18 5v14M3 8h3M3 16h3M18 8h3M18 16h3M6 9h12M6 15h12"/>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14"/>
               </svg>
             </div>
             <div className="text-center">
