@@ -151,7 +151,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
                 <option value="Manutencao" className="bg-zinc-900 text-white">Manter peso</option>
               </select>
             </div>
-            <button type="submit" disabled={loading || (senhaConfirm !== '' && senha !== senhaConfirm)} className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black text-base font-bold rounded-2xl mt-2 disabled:opacity-50">
+            <button type="submit" disabled={loading} className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black text-base font-bold rounded-2xl mt-2 disabled:opacity-50">
               {loading ? 'Criando...' : 'Criar conta'}
             </button>
           </form>
