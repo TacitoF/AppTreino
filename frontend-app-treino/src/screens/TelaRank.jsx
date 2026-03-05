@@ -38,7 +38,7 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
     try {
       const r = await apiFetch('/api/rank/criar', {
         method: 'POST',
-        body: { id_usuario: usuario.id, nome: nomeLobby.trim(), data_fim: dataFim },
+        body: { id_usuario: usuario.id, nome_usuario: usuario.nome, nome: nomeLobby.trim(), data_fim: dataFim },
       });
       mostrarToast('Lobby criado!', 'sucesso');
       setNomeLobby(''); setDataFim('');
