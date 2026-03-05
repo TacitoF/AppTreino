@@ -49,9 +49,19 @@ function TelaAuth({ onLogin, mostrarToast }) {
     } finally { setLoading(false); }
   };
 
+  const senhaRequisitos = {
+    maiuscula:  /[A-Z]/.test(senha),
+    minuscula:  /[a-z]/.test(senha),
+    numero:     /[0-9]/.test(senha),
+    especial:   /[^A-Za-z0-9]/.test(senha),
+    minimo:     senha.length >= 8,
+  };
+  const senhaValida = Object.values(senhaRequisitos).every(Boolean);
+
   const cadastro = async e => {
     e.preventDefault();
     if (!nome || !email || !senha) { mostrarToast('Preencha nome, e-mail e senha.', 'erro'); return; }
+    if (!senhaValida) { mostrarToast('A senha não atende aos requisitos.', 'erro'); return; }
     if (senha !== senhaConfirm) { mostrarToast('As senhas não coincidem.', 'erro'); return; }
     if (!peso) { mostrarToast('Informe seu peso atual.', 'erro'); return; }
     if (!obj) { mostrarToast('Selecione seu objetivo.', 'erro'); return; }
@@ -129,9 +139,29 @@ function TelaAuth({ onLogin, mostrarToast }) {
 
         {modo === 'cadastro' && (
           <form onSubmit={cadastro} className="flex flex-col gap-3">
-            <input type="text" placeholder="Nome" value={nome} onChange={e=>setNome(e.target.value)} className={inp}/>
+            <input type="text" placeholder="Nome de usuário" value={nome} onChange={e=>setNome(e.target.value)} className={inp}/>
             <input type="email" placeholder="E-mail" value={email} onChange={e=>setEmail(e.target.value)} className={inp} autoComplete="email"/>
             <input type="password" placeholder="Senha" value={senha} onChange={e=>setSenha(e.target.value)} className={inp}/>
+            {senha.length > 0 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex flex-col gap-2">
+                <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-0.5">Requisitos da senha</p>
+                {[
+                  [senhaRequisitos.minimo,    'Mínimo 8 caracteres'],
+                  [senhaRequisitos.maiuscula, '1 letra maiúscula'],
+                  [senhaRequisitos.minuscula, '1 letra minúscula'],
+                  [senhaRequisitos.numero,    '1 número'],
+                  [senhaRequisitos.especial,  '1 caractere especial (!@#$...)'],
+                ].map(([ok, label]) => (
+                  <div key={label} className="flex items-center gap-2">
+                    {ok
+                      ? <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2.5} className="w-3.5 h-3.5 flex-shrink-0"><path d="M20 6L9 17l-5-5"/></svg>
+                      : <svg viewBox="0 0 24 24" fill="none" stroke="#52525b" strokeWidth={2.5} className="w-3.5 h-3.5 flex-shrink-0"><circle cx="12" cy="12" r="9"/></svg>
+                    }
+                    <span className={`text-xs ${ok ? 'text-[#c8f542]' : 'text-zinc-500'}`}>{label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="relative">
               <input type="password" placeholder="Confirmar senha" value={senhaConfirm} onChange={e=>setSenhaConfirm(e.target.value)}
                 className={`${inp} ${senhaConfirm && senha !== senhaConfirm ? 'border-red-500 focus:border-red-500' : senhaConfirm && senha === senhaConfirm ? 'border-[#c8f542]' : ''}`}/>
