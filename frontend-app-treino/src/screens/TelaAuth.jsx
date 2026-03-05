@@ -53,9 +53,11 @@ function TelaAuth({ onLogin, mostrarToast }) {
     e.preventDefault();
     if (!nome || !email || !senha) { mostrarToast('Preencha nome, e-mail e senha.', 'erro'); return; }
     if (senha !== senhaConfirm) { mostrarToast('As senhas não coincidem.', 'erro'); return; }
+    if (!peso) { mostrarToast('Informe seu peso atual.', 'erro'); return; }
+    if (!obj) { mostrarToast('Selecione seu objetivo.', 'erro'); return; }
     setLoading(true);
     try {
-      await apiFetch(R.registro, { method: 'POST', body: { nome, email, senha, peso_atual: peso || '0', objetivo: obj || 'Hipertrofia' } });
+      await apiFetch(R.registro, { method: 'POST', body: { nome, email, senha, peso_atual: peso, objetivo: obj } });
       mostrarToast('Conta criada. Faça login.', 'sucesso');
       setModo('login'); limpar();
     } catch (err) {
