@@ -2400,10 +2400,7 @@ export default function App() {
   const onSelecionarSplit = useCallback(async split => {
     setSplitAtivo(split);
     setHistorico([]);
-    setTela('treino');
     try {
-      // split_id: busca registros novos (prefixo com split.id)
-      // nome_treino: fallback para registros antigos (prefixo com split.nome/nomeHistorico)
       const nomeParaBusca = split.nomeHistorico || split.nome;
       const r = await apiFetch(
         `${R.historico}?id_usuario=${usuarioRef.current.id}` +
@@ -2412,6 +2409,7 @@ export default function App() {
       );
       setHistorico(r.series || []);
     } catch { }
+    setTela('treino');
   }, []);
 
   const onFinalizar = useCallback(res => {
