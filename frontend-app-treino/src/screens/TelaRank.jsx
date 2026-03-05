@@ -91,7 +91,7 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
   const hoje      = new Date().toISOString().slice(0, 10);
 
   if (aba === 'lobby' && lobbyAtivo) {
-    const medalhas = ['🥇','🥈','🥉'];
+    const medalhas = ['1°','2°','3°'];
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
         <div className="sticky top-0 z-30 bg-[#0a0a0a]/96 backdrop-blur-md border-b border-zinc-900 px-5 pt-12 pb-4 flex items-center gap-3">
@@ -116,11 +116,12 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
                 <div className="absolute right-0 top-full mt-2 z-50 bg-zinc-900 border border-zinc-700 rounded-2xl overflow-hidden shadow-xl w-48">
                   <button onClick={() => copiarCodigo(lobbyAtivo.codigo)}
                     className="btn w-full flex items-center gap-3 px-4 py-3.5 text-left text-white text-sm font-semibold active:bg-zinc-800 border-b border-zinc-800">
-                    <span className="text-base">🔢</span> Copiar código
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 flex-shrink-0"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"/></svg>
+                    Copiar código
                   </button>
                   <button onClick={() => copiarLink(lobbyAtivo.codigo)}
                     className="btn w-full flex items-center gap-3 px-4 py-3.5 text-left text-white text-sm font-semibold active:bg-zinc-800">
-                    <span className="text-base">🔗</span> Copiar link
+                    <IconLink/> Copiar link
                   </button>
                 </div>
               </>
@@ -131,7 +132,7 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
         <div className="px-4 pt-6 pb-10 flex flex-col gap-3">
           {encerrado && (
             <div className="bg-amber-400/10 border border-amber-400/20 rounded-2xl px-4 py-3 text-center mb-2">
-              <p className="text-amber-400 font-bold text-sm">🏆 Lobby encerrado — resultado final</p>
+              <p className="text-amber-400 font-bold text-sm">Lobby encerrado — resultado final</p>
             </div>
           )}
 
@@ -259,17 +260,21 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
               onClick={criarLobby}
               disabled={loading || !nomeLobby.trim() || !dataFim}
               className="btn w-full py-5 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold text-base rounded-2xl disabled:opacity-40">
-              {loading ? 'Criando...' : 'Criar lobby 🚀'}
+              {loading ? 'Criando...' : 'Criar lobby'}
             </button>
 
             <div className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-4 flex flex-col gap-2">
               <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider text-center mb-1">Como funciona</p>
               <div className="flex items-center gap-3">
-                <span className="text-lg">✅</span>
+                <div className="w-6 h-6 rounded-lg bg-[#c8f542]/15 flex items-center justify-center flex-shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2.5} className="w-3.5 h-3.5"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
                 <span className="text-zinc-300 text-sm">Treinou hoje → <span className="text-[#c8f542] font-bold">+1 ponto</span></span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-lg">❌</span>
+                <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth={2.5} className="w-3.5 h-3.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </div>
                 <span className="text-zinc-300 text-sm">Não treinou hoje → <span className="text-zinc-500 font-bold">0 pontos</span></span>
               </div>
             </div>
