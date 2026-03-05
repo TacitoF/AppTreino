@@ -40,7 +40,11 @@ _ws_cache: dict = {}
 
 def get_ws(nome: str):
     if nome not in _ws_cache:
-        _ws_cache[nome] = planilha.worksheet(nome)
+        try:
+            _ws_cache[nome] = planilha.worksheet(nome)
+        except Exception as e:
+            logger.error(f"[get_ws] Aba '{nome}' não encontrada: {e}")
+            raise
     return _ws_cache[nome]
 
 
@@ -493,8 +497,9 @@ def registrar_dieta(registro: RegistroDieta):
 # ── CARDIO ────────────────────────────────────────────────────────────────────
 @app.post("/cardio")
 def registrar_cardio(registro: RegistroCardio):
+    logger.info(f"[cardio POST] Recebido: usuario={registro.id_usuario} atividade={registro.atividade} kcal={registro.kcal}")
     try:
-        com_retry(lambda: get_ws("Cardio").append_row([
+        linha = [
             registro.id_registro,
             registro.id_usuario,
             registro.data,
@@ -505,10 +510,16 @@ def registrar_cardio(registro: RegistroCardio):
             registro.peso_kg,
             registro.kcal,
             registro.met,
-        ]))
+        ]
+        logger.info(f"[cardio POST] Gravando linha: {linha}")
+        # Invalida cache da aba para forçar re-lookup caso tenha falhado antes
+        _ws_cache.pop("Cardio", None)
+        com_retry(lambda: get_ws("Cardio").append_row(linha))
+        logger.info(f"[cardio POST] Gravado com sucesso: {registro.id_registro}")
         return {"status": "sucesso"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"[cardio POST] ERRO: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {str(e)}")
 
 
 @app.get("/cardio")

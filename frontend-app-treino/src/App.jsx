@@ -2031,8 +2031,8 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
       });
       mostrarToast(`${kcal} kcal registradas! 🔥`, 'sucesso');
       onVoltar();
-    } catch {
-      mostrarToast('Erro ao salvar. Tente novamente.', 'erro');
+    } catch (e) {
+      mostrarToast(`Erro: ${e.message || 'Tente novamente'}`, 'erro');
     } finally {
       setSalvando(false);
     }
