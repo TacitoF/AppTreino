@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { apiFetch } from '../auth';
+import { apiFetch, setAuthToken } from '../auth';
 import { R } from '../config';
 
 // ─── TELA AUTH ────────────────────────────────────────────────────────────────
