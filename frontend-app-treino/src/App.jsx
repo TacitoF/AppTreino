@@ -769,120 +769,38 @@ function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast
   );
 }
 
+// ─── ÍCONES DE MÚSCULO ───────────────────────────────────────────────────────
+const MuscPeito      = memo(() => <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full"><path d="M12 20 Q 20 10 31 18 L 31 40 Q 20 46 12 36 Z"/><path d="M52 20 Q 44 10 33 18 L 33 40 Q 44 46 52 36 Z"/></svg>);
+const MuscCostas     = memo(() => <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full"><path d="M 12 12 Q 24 16 31 20 L 31 52 Q 20 52 14 34 Z"/><path d="M 52 12 Q 40 16 33 20 L 33 52 Q 44 52 50 34 Z"/></svg>);
+const MuscOmbro      = memo(() => <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full"><path d="M 12 32 C 12 14 26 14 26 32 Z"/><path d="M 52 32 C 52 14 38 14 38 32 Z"/></svg>);
+const MuscBiceps     = memo(() => <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full"><rect x="14" y="12" width="14" height="40" rx="7"/><rect x="36" y="12" width="14" height="40" rx="7"/></svg>);
+const MuscTriceps    = memo(() => <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full"><path d="M 18 10 C 24 10 26 40 20 54 C 14 48 12 10 18 10 Z"/><path d="M 46 10 C 40 10 38 40 44 54 C 50 48 52 10 46 10 Z"/></svg>);
+const MuscAbdomen    = memo(() => <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full"><rect x="18" y="10" width="12" height="12" rx="4"/><rect x="34" y="10" width="12" height="12" rx="4"/><rect x="18" y="26" width="12" height="12" rx="4"/><rect x="34" y="26" width="12" height="12" rx="4"/><rect x="18" y="42" width="12" height="12" rx="4"/><rect x="34" y="42" width="12" height="12" rx="4"/></svg>);
+const MuscQuad       = memo(() => <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full"><path d="M 22 10 C 32 10 32 46 24 54 C 14 54 12 10 22 10 Z"/><path d="M 42 10 C 32 10 32 46 40 54 C 50 54 52 10 42 10 Z"/></svg>);
+const MuscPost       = memo(() => <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full"><path d="M 26 12 C 30 12 30 50 26 52 C 14 50 14 12 26 12 Z"/><path d="M 38 12 C 34 12 34 50 38 52 C 50 50 50 12 38 12 Z"/></svg>);
+const MuscGluteo     = memo(() => <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full"><circle cx="22" cy="32" r="16"/><circle cx="42" cy="32" r="16"/></svg>);
+const MuscPanturr    = memo(() => <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full"><path d="M 22 12 C 28 12 28 40 24 52 C 18 48 16 12 22 12 Z"/><path d="M 42 12 C 36 12 36 40 40 52 C 46 48 48 12 42 12 Z"/></svg>);
+
 // ─── BANCO DE EXERCÍCIOS ─────────────────────────────────────────────────────
 const EXERCICIOS_DB = {
   superior: {
     label: 'Superior',
     musculos: {
-      peito: {
-        label: 'Peito', cor: '#ef4444',
-        svg: (
-          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
-            <path d="M12 20 Q 20 10 31 18 L 31 40 Q 20 46 12 36 Z" />
-            <path d="M52 20 Q 44 10 33 18 L 33 40 Q 44 46 52 36 Z" />
-          </svg>
-        ),
-        exercicios: ['Supino reto','Supino inclinado','Supino declinado','Crucifixo','Crossover','Flexão de braço','Peck deck','Pull-over'],
-      },
-      costas: {
-        label: 'Costas', cor: '#3b82f6',
-        svg: (
-          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
-            <path d="M 12 12 Q 24 16 31 20 L 31 52 Q 20 52 14 34 Z" />
-            <path d="M 52 12 Q 40 16 33 20 L 33 52 Q 44 52 50 34 Z" />
-          </svg>
-        ),
-        exercicios: ['Puxada frontal','Puxada posterior','Remada curvada','Remada unilateral','Serrote','Levantamento terra','Pulldown','Remada cavalinho'],
-      },
-      ombro: {
-        label: 'Ombro', cor: '#a855f7',
-        svg: (
-          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
-            <path d="M 12 32 C 12 14 26 14 26 32 Z" />
-            <path d="M 52 32 C 52 14 38 14 38 32 Z" />
-          </svg>
-        ),
-        exercicios: ['Desenvolvimento militar','Elevação lateral','Elevação frontal','Crucifixo invertido','Desenvolvimento','Arnold press','Remada alta','Face pull','Encolhimento'],
-      },
-      biceps: {
-        label: 'Bíceps', cor: '#f59e0b',
-        svg: (
-          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
-            <rect x="14" y="12" width="14" height="40" rx="7" />
-            <rect x="36" y="12" width="14" height="40" rx="7" />
-          </svg>
-        ),
-        exercicios: ['Rosca direta','Rosca alternada','Rosca martelo','Rosca concentrada','Rosca scott','Rosca 21','Rosca cabo','Rosca inversa'],
-      },
-      triceps: {
-        label: 'Tríceps', cor: '#ec4899',
-        svg: (
-          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
-            <path d="M 18 10 C 24 10 26 40 20 54 C 14 48 12 10 18 10 Z" />
-            <path d="M 46 10 C 40 10 38 40 44 54 C 50 48 52 10 46 10 Z" />
-          </svg>
-        ),
-        exercicios: ['Tríceps pulley','Tríceps testa','Tríceps francês','Mergulho','Tríceps coice','Tríceps corda','Tríceps banco','Fechado'],
-      },
-      abdomen: {
-        label: 'Abdômen', cor: '#6366f1',
-        svg: (
-          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
-            <rect x="18" y="10" width="12" height="12" rx="4" />
-            <rect x="34" y="10" width="12" height="12" rx="4" />
-            <rect x="18" y="26" width="12" height="12" rx="4" />
-            <rect x="34" y="26" width="12" height="12" rx="4" />
-            <rect x="18" y="42" width="12" height="12" rx="4" />
-            <rect x="34" y="42" width="12" height="12" rx="4" />
-          </svg>
-        ),
-        exercicios: ['Abdominal crunch','Prancha','Abdominal bicicleta','Elevação de pernas','Abdominal oblíquo','Rollout','Dragon flag','Abdominal infra'],
-      },
+      peito:       { label: 'Peito',      cor: '#ef4444', Svg: MuscPeito,   exercicios: ['Supino reto','Supino inclinado','Supino declinado','Crucifixo','Crossover','Flexão de braço','Peck deck','Pull-over'] },
+      costas:      { label: 'Costas',     cor: '#3b82f6', Svg: MuscCostas,  exercicios: ['Puxada frontal','Puxada posterior','Remada curvada','Remada unilateral','Serrote','Levantamento terra','Pulldown','Remada cavalinho'] },
+      ombro:       { label: 'Ombro',      cor: '#a855f7', Svg: MuscOmbro,   exercicios: ['Desenvolvimento militar','Elevação lateral','Elevação frontal','Crucifixo invertido','Desenvolvimento','Arnold press','Remada alta','Face pull','Encolhimento'] },
+      biceps:      { label: 'Bíceps',     cor: '#f59e0b', Svg: MuscBiceps,  exercicios: ['Rosca direta','Rosca alternada','Rosca martelo','Rosca concentrada','Rosca scott','Rosca 21','Rosca cabo','Rosca inversa'] },
+      triceps:     { label: 'Tríceps',    cor: '#ec4899', Svg: MuscTriceps, exercicios: ['Tríceps pulley','Tríceps testa','Tríceps francês','Mergulho','Tríceps coice','Tríceps corda','Tríceps banco','Fechado'] },
+      abdomen:     { label: 'Abdômen',    cor: '#6366f1', Svg: MuscAbdomen, exercicios: ['Abdominal crunch','Prancha','Abdominal bicicleta','Elevação de pernas','Abdominal oblíquo','Rollout','Dragon flag','Abdominal infra'] },
     },
   },
   inferior: {
     label: 'Inferior',
     musculos: {
-      quadriceps: {
-        label: 'Quadríceps', cor: '#10b981',
-        svg: (
-          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
-            <path d="M 22 10 C 32 10 32 46 24 54 C 14 54 12 10 22 10 Z" />
-            <path d="M 42 10 C 32 10 32 46 40 54 C 50 54 52 10 42 10 Z" />
-          </svg>
-        ),
-        exercicios: ['Agachamento livre','Leg press','Extensora','Hack squat','Agachamento búlgaro','Avanço','Afundo','Agachamento sumô'],
-      },
-      posterior: {
-        label: 'Posterior', cor: '#06b6d4',
-        svg: (
-          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
-            <path d="M 26 12 C 30 12 30 50 26 52 C 14 50 14 12 26 12 Z" />
-            <path d="M 38 12 C 34 12 34 50 38 52 C 50 50 50 12 38 12 Z" />
-          </svg>
-        ),
-        exercicios: ['Mesa flexora','Cadeira flexora','Stiff','Levantamento terra romeno','Bom dia','Leg curl','Flexão nórdica','Ponte'],
-      },
-      gluteo: {
-        label: 'Glúteo', cor: '#f97316',
-        svg: (
-          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
-            <circle cx="22" cy="32" r="16" />
-            <circle cx="42" cy="32" r="16" />
-          </svg>
-        ),
-        exercicios: ['Agachamento','Hip thrust','Elevação pélvica','Glúteo no cabo','Abdução','Passada','Agachamento sumô','Extensão quadril'],
-      },
-      panturrilha: {
-        label: 'Panturrilha', cor: '#84cc16',
-        svg: (
-          <svg viewBox="0 0 64 64" fill="currentColor" className="w-full h-full">
-            <path d="M 22 12 C 28 12 28 40 24 52 C 18 48 16 12 22 12 Z" />
-            <path d="M 42 12 C 36 12 36 40 40 52 C 46 48 48 12 42 12 Z" />
-          </svg>
-        ),
-        exercicios: ['Elevação de calcanhar em pé','Elevação de calcanhar sentado','Leg press panturrilha','Donkey calf raise','Panturrilha unilateral'],
-      },
+      quadriceps:  { label: 'Quadríceps', cor: '#10b981', Svg: MuscQuad,    exercicios: ['Agachamento livre','Leg press','Extensora','Hack squat','Agachamento búlgaro','Avanço','Afundo','Agachamento sumô'] },
+      posterior:   { label: 'Posterior',  cor: '#06b6d4', Svg: MuscPost,    exercicios: ['Mesa flexora','Cadeira flexora','Stiff','Levantamento terra romeno','Bom dia','Leg curl','Flexão nórdica','Ponte'] },
+      gluteo:      { label: 'Glúteo',     cor: '#f97316', Svg: MuscGluteo,  exercicios: ['Agachamento','Hip thrust','Elevação pélvica','Glúteo no cabo','Abdução','Passada','Agachamento sumô','Extensão quadril'] },
+      panturrilha: { label: 'Panturrilha',cor: '#84cc16', Svg: MuscPanturr, exercicios: ['Elevação de calcanhar em pé','Elevação de calcanhar sentado','Leg press panturrilha','Donkey calf raise','Panturrilha unilateral'] },
     },
   },
 };
@@ -1004,7 +922,7 @@ const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
                 className="btn bg-zinc-900 border border-zinc-800 active:border-zinc-600 rounded-2xl p-4 flex flex-col items-center gap-3 active:scale-95 transition-transform">
                 <div className="w-full h-20 rounded-xl flex items-center justify-center"
                   style={{ color: m.cor, background: m.cor + '18' }}>
-                  {m.svg}
+                  <m.Svg/>
                 </div>
                 <span className="text-white font-bold text-sm">{m.label}</span>
               </button>
@@ -1019,7 +937,7 @@ const ModalExercicio = memo(({ onSelecionar, onFechar }) => {
           <div className="px-4 pt-3 pb-3 flex gap-3 items-center border-b border-zinc-900">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
               style={{ color: db[regiao].musculos[musculo].cor, background: db[regiao].musculos[musculo].cor + '18' }}>
-              {db[regiao].musculos[musculo].svg}
+              {(() => { const S = db[regiao].musculos[musculo].Svg; return <S/>; })()}
             </div>
             <input
               type="text"
@@ -2000,17 +1918,29 @@ const IOSInstallBanner = memo(() => {
 // ─── TELA CARDIO ─────────────────────────────────────────────────────────────
 // Cálculo por MET (Metabolic Equivalent of Task) × peso(kg) × horas
 // Fonte: Compendium of Physical Activities (Ainsworth et al.)
+// ─── ÍCONES DE CARDIO ────────────────────────────────────────────────────────
+const CardCorrida    = memo(() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 4a1 1 0 100-2 1 1 0 000 2zM5 17l2-5 3 2 3-4 4 1M5 17l-1 3M19 10l-3-2"/></svg>);
+const CardBike       = memo(() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><circle cx="6" cy="16" r="3"/><circle cx="18" cy="16" r="3"/><path strokeLinecap="round" strokeLinejoin="round" d="M6 16l4-8h4l2 8M10 8l2 3h4"/></svg>);
+const CardEliptico   = memo(() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v4M8 7l4 4 4-4M8 17l4-4 4 4M12 17v4"/><ellipse cx="12" cy="12" rx="4" ry="2"/></svg>);
+const CardEsteira    = memo(() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 17h18M6 17V9l3-3 3 3v5M15 9h3l1 4M12 6a1 1 0 100-2 1 1 0 000 2z"/></svg>);
+const CardCorda      = memo(() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6a1 1 0 100-2 1 1 0 000 2zM12 20a1 1 0 100-2 1 1 0 000 2zM5 8c1 3 2 4 7 4s6-1 7-4M5 16c1-3 2-4 7-4s6 1 7 4"/></svg>);
+const CardNatacao    = memo(() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M2 18c2-2 4-2 6 0s4 2 6 0 4-2 6 0M2 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0M14 8l-4-4M10 4l6 2-2 4"/></svg>);
+const CardRemo       = memo(() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 17l5-5 4 2 4-4 5 5M15 6a1 1 0 100-2 1 1 0 000 2zM9 10l3-4 3 2"/></svg>);
+const CardHIIT       = memo(() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 2L4.5 13.5H12L11 22l8.5-11.5H12L13 2z"/></svg>);
+const CardEscada     = memo(() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h4v-4h4v-4h4v-4h4V5"/></svg>);
+const CardCaminhada  = memo(() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 4a1 1 0 100-2 1 1 0 000 2zM9 21l1-5 3 2 2-6M7 9l2-2 4 2 3-2M17 21l-2-5"/></svg>);
+
 const ATIVIDADES_CARDIO = [
-  { id: 'corrida',      label: 'Corrida',        emoji: '🏃',  met: { leve: 7.0, moderado: 9.8,  intenso: 14.5 } },
-  { id: 'bike',         label: 'Bicicleta',       emoji: '🚴',  met: { leve: 5.8, moderado: 8.0,  intenso: 11.0 } },
-  { id: 'eliptico',     label: 'Elíptico',        emoji: '⚡',  met: { leve: 4.6, moderado: 7.0,  intenso: 9.5  } },
-  { id: 'esteira',      label: 'Esteira (caminhada)', emoji: '🚶', met: { leve: 3.5, moderado: 5.0, intenso: 6.5 } },
-  { id: 'pular_corda',  label: 'Corda',           emoji: '🪢',  met: { leve: 8.8, moderado: 11.8, intenso: 14.0 } },
-  { id: 'natacao',      label: 'Natação',         emoji: '🏊',  met: { leve: 5.8, moderado: 8.3,  intenso: 10.0 } },
-  { id: 'remo',         label: 'Remo',            emoji: '🚣',  met: { leve: 4.5, moderado: 7.0,  intenso: 10.5 } },
-  { id: 'hiit',         label: 'HIIT',            emoji: '🔥',  met: { leve: 7.0, moderado: 10.0, intenso: 14.0 } },
-  { id: 'stairmaster',  label: 'Escada',          emoji: '🪜',  met: { leve: 4.0, moderado: 6.0,  intenso: 9.0  } },
-  { id: 'caminhada',    label: 'Caminhada',       emoji: '👟',  met: { leve: 2.5, moderado: 3.5,  intenso: 4.5  } },
+  { id: 'corrida',     label: 'Corrida',   cor: '#ef4444', Svg: CardCorrida,   met: { leve: 7.0, moderado: 9.8,  intenso: 14.5 } },
+  { id: 'bike',        label: 'Bicicleta', cor: '#3b82f6', Svg: CardBike,      met: { leve: 5.8, moderado: 8.0,  intenso: 11.0 } },
+  { id: 'eliptico',    label: 'Elíptico',  cor: '#a855f7', Svg: CardEliptico,  met: { leve: 4.6, moderado: 7.0,  intenso: 9.5  } },
+  { id: 'esteira',     label: 'Esteira',   cor: '#06b6d4', Svg: CardEsteira,   met: { leve: 3.5, moderado: 5.0,  intenso: 6.5  } },
+  { id: 'pular_corda', label: 'Corda',     cor: '#f59e0b', Svg: CardCorda,     met: { leve: 8.8, moderado: 11.8, intenso: 14.0 } },
+  { id: 'natacao',     label: 'Natação',   cor: '#0ea5e9', Svg: CardNatacao,   met: { leve: 5.8, moderado: 8.3,  intenso: 10.0 } },
+  { id: 'remo',        label: 'Remo',      cor: '#14b8a6', Svg: CardRemo,      met: { leve: 4.5, moderado: 7.0,  intenso: 10.5 } },
+  { id: 'hiit',        label: 'HIIT',      cor: '#f97316', Svg: CardHIIT,      met: { leve: 7.0, moderado: 10.0, intenso: 14.0 } },
+  { id: 'escada',      label: 'Escada',    cor: '#84cc16', Svg: CardEscada,    met: { leve: 4.0, moderado: 6.0,  intenso: 9.0  } },
+  { id: 'caminhada',   label: 'Caminhada', cor: '#10b981', Svg: CardCaminhada, met: { leve: 2.5, moderado: 3.5,  intenso: 4.5  } },
 ];
 
 const INTENSIDADE = [
@@ -2124,8 +2054,11 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
           <div className="grid grid-cols-2 gap-3 mb-6">
             {ATIVIDADES_CARDIO.map(a => (
               <button key={a.id} onClick={() => { setAtividadeId(a.id); setEtapa('config'); }}
-                className="btn bg-zinc-900 border border-zinc-800 active:border-zinc-600 active:bg-zinc-800 rounded-2xl p-4 flex flex-col items-start gap-2 text-left">
-                <span className="text-2xl">{a.emoji}</span>
+                className="btn bg-zinc-900 border border-zinc-800 active:border-zinc-600 active:bg-zinc-800 rounded-2xl p-4 flex flex-col items-start gap-3 text-left">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: `${a.cor}20`, color: a.cor }}>
+                  <a.Svg/>
+                </div>
                 <span className="text-white font-bold text-sm leading-tight">{a.label}</span>
               </button>
             ))}
@@ -2139,7 +2072,12 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
                 {historico.map((h, i) => (
                   <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="text-xl">{ATIVIDADES_CARDIO.find(a=>a.id===h.atividade)?.emoji || '🏃'}</span>
+                      {(() => { const at = ATIVIDADES_CARDIO.find(a => a.id === h.atividade); return (
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                          style={{ background: at ? `${at.cor}20` : '#f9731620', color: at?.cor || '#f97316' }}>
+                          {at ? <at.Svg/> : <IconCardio/>}
+                        </div>
+                      ); })()}
                       <div>
                         <div className="text-white text-sm font-semibold">{h.label}</div>
                         <div className="text-zinc-500 text-xs">{h.minutos} min · {h.intensidade}</div>
@@ -2169,7 +2107,7 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
             <IconBack/>
           </button>
           <div>
-            <h1 className="text-xl font-bold text-white">{atividade.emoji} {atividade.label}</h1>
+            <h1 className="text-xl font-bold text-white">{atividade.label}</h1>
             <p className="text-zinc-500 text-xs mt-0.5">Configure a sessão</p>
           </div>
         </div>
@@ -2254,7 +2192,7 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
           {/* Divisor */}
           <div className="border-t border-zinc-900"/>
 
-          {/* Estimativa — fim do scroll, visível ao rolar até o fundo */}
+          {/* Estimativa — fim do scroll, sempre visível ao rolar */}
           <div className="bg-[#f97316]/10 border border-[#f97316]/25 rounded-2xl px-5 py-5 flex items-center justify-between">
             <div>
               <div className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-1">Estimativa de gasto</div>
@@ -2266,7 +2204,7 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
             </div>
           </div>
 
-          {/* Botão principal: Começar com cronômetro */}
+          {/* Botão principal — Começar com cronômetro */}
           <button onClick={iniciarCron}
             className="btn w-full py-7 bg-[#f97316] active:bg-[#ea6c0c] text-white font-black text-2xl rounded-2xl flex items-center justify-center gap-3">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-7 h-7">
@@ -2275,7 +2213,7 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
             Começar
           </button>
 
-          {/* Ação secundária: salvar diretamente sem cronômetro */}
+          {/* Ação secundária — salvar sem cronômetro */}
           <button onClick={salvar} disabled={salvando}
             className="btn w-full py-3 text-zinc-500 text-sm font-medium active:text-zinc-300 disabled:opacity-40 flex items-center justify-center gap-2">
             {salvando ? 'Salvando...' : `Salvar ${kcal} kcal sem cronômetro`}
@@ -2291,7 +2229,10 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-6">
         <div className="text-center mb-12">
-          <div className="text-7xl mb-4">{atividade.emoji}</div>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
+            style={{ background: `${atividade.cor}20`, color: atividade.cor }}>
+            <div className="scale-150"><atividade.Svg/></div>
+          </div>
           <div className="text-zinc-500 text-sm font-semibold uppercase tracking-wider mb-2">{atividade.label} · {intAtual.label}</div>
           <div className="text-white font-black text-7xl num tracking-tight">{fmt(cronSeg)}</div>
           <div className="text-zinc-600 text-sm mt-3">{minutos} min · estimativa atual</div>
@@ -2326,7 +2267,10 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-6 slide-up">
       <div className="text-center w-full max-w-sm">
-        <div className="text-6xl mb-6">{atividade.emoji}</div>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+          style={{ background: `${atividade.cor}20`, color: atividade.cor }}>
+          <div className="scale-150"><atividade.Svg/></div>
+        </div>
         <h1 className="text-3xl font-black text-white mb-1">Sessão concluída</h1>
         <p className="text-zinc-500 mb-8">{atividade.label} · {intAtual.label}</p>
 
