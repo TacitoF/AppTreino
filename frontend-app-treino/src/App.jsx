@@ -1,18 +1,3 @@
-// App.jsx — versão otimizada
-// Principais mudanças:
-//  1. axios removido → fetch nativo (elimina ~50kb do bundle)
-//  2. GlobalStyles removido → CSS agora em src/index.css (não re-injeta a cada render)
-//  3. Ícones SVG com React.memo (zero re-render desnecessário)
-//  4. NumInput com React.memo (evita re-render ao digitar em outras séries)
-//  5. Timer: useRef para o intervalo, sem dependência de timerAtivo no effect
-//  6. mostrarToast: cleanup correto do setTimeout (sem vazamento de memória)
-//  7. onSelecionarSplit: navega para treino ANTES de esperar o histórico (feedback imediato),
-//     histórico chega de forma assíncrona
-//  8. alternarSerie: useRef para tempoConfig (fecha sobre o valor atual sem violar Rules of Hooks)
-//  9. BarraDescanso e ModalConfigDescanso com React.memo
-// 10. Cálculos de totalEnv/totalSer com useMemo na TelaTreino
-// 11. NOVOS SVGS CLEAN E MINIMALISTAS APLICADOS
-
 import React, {
   useState, useEffect, useRef, useCallback, useMemo, memo,
 } from 'react';
@@ -455,7 +440,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
       <div className="w-full max-w-sm slide-up">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#c8f542]/10 border border-[#c8f542]/20 rounded-2xl mb-4 text-[#c8f542]"><IconDumbbell/></div>
-          <h1 className="text-4xl font-black text-white">FitApp</h1>
+          <h1 className="text-4xl font-black text-white">Volt</h1>
           <p className="text-zinc-500 text-sm mt-1 font-medium">Seu diário de treino</p>
         </div>
 
@@ -1969,7 +1954,7 @@ const IOSInstallBanner = memo(() => {
             </svg>
           </div>
           <h2 className="text-white font-black text-lg">Adicione à tela inicial</h2>
-          <p className="text-zinc-500 text-sm mt-1">Use o FitApp como um app nativo no seu iPhone</p>
+          <p className="text-zinc-500 text-sm mt-1">Use o Volt como um app nativo no seu iPhone</p>
         </div>
 
         <div className="flex flex-col gap-3 mb-6">
@@ -2001,16 +1986,36 @@ const IOSInstallBanner = memo(() => {
 // Cálculo por MET (Metabolic Equivalent of Task) × peso(kg) × horas
 // Fonte: Compendium of Physical Activities (Ainsworth et al.)
 const ATIVIDADES_CARDIO = [
-  { id: 'corrida',      label: 'Corrida',        emoji: '🏃',  met: { leve: 7.0, moderado: 9.8,  intenso: 14.5 } },
-  { id: 'bike',         label: 'Bicicleta',       emoji: '🚴',  met: { leve: 5.8, moderado: 8.0,  intenso: 11.0 } },
-  { id: 'eliptico',     label: 'Elíptico',        emoji: '⚡',  met: { leve: 4.6, moderado: 7.0,  intenso: 9.5  } },
-  { id: 'esteira',      label: 'Esteira (caminhada)', emoji: '🚶', met: { leve: 3.5, moderado: 5.0, intenso: 6.5 } },
-  { id: 'pular_corda',  label: 'Corda',           emoji: '🪢',  met: { leve: 8.8, moderado: 11.8, intenso: 14.0 } },
-  { id: 'natacao',      label: 'Natação',         emoji: '🏊',  met: { leve: 5.8, moderado: 8.3,  intenso: 10.0 } },
-  { id: 'remo',         label: 'Remo',            emoji: '🚣',  met: { leve: 4.5, moderado: 7.0,  intenso: 10.5 } },
-  { id: 'hiit',         label: 'HIIT',            emoji: '🔥',  met: { leve: 7.0, moderado: 10.0, intenso: 14.0 } },
-  { id: 'stairmaster',  label: 'Escada',          emoji: '🪜',  met: { leve: 4.0, moderado: 6.0,  intenso: 9.0  } },
-  { id: 'caminhada',    label: 'Caminhada',       emoji: '👟',  met: { leve: 2.5, moderado: 3.5,  intenso: 4.5  } },
+  { id: 'corrida',     label: 'Corrida',     cor: '#ef4444',
+    svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 4a1 1 0 100-2 1 1 0 000 2zM5 17l2-5 3 2 3-4 4 1M5 17l-1 3M19 10l-3-2"/></svg>,
+    met: { leve: 7.0, moderado: 9.8,  intenso: 14.5 } },
+  { id: 'bike',        label: 'Bicicleta',   cor: '#3b82f6',
+    svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><circle cx="6" cy="16" r="3"/><circle cx="18" cy="16" r="3"/><path strokeLinecap="round" strokeLinejoin="round" d="M6 16l4-8h4l2 8M10 8l2 3h4"/></svg>,
+    met: { leve: 5.8, moderado: 8.0,  intenso: 11.0 } },
+  { id: 'eliptico',    label: 'Elíptico',    cor: '#a855f7',
+    svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v4M8 7l4 4 4-4M8 17l4-4 4 4M12 17v4"/><ellipse cx="12" cy="12" rx="4" ry="2"/></svg>,
+    met: { leve: 4.6, moderado: 7.0,  intenso: 9.5  } },
+  { id: 'esteira',     label: 'Esteira',     cor: '#06b6d4',
+    svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 17h18M6 17V9l3-3 3 3v5M15 9h3l1 4M12 6a1 1 0 100-2 1 1 0 000 2z"/></svg>,
+    met: { leve: 3.5, moderado: 5.0,  intenso: 6.5  } },
+  { id: 'pular_corda', label: 'Corda',       cor: '#f59e0b',
+    svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6a1 1 0 100-2 1 1 0 000 2zM12 20a1 1 0 100-2 1 1 0 000 2zM5 8c1 3 2 4 7 4s6-1 7-4M5 16c1-3 2-4 7-4s6 1 7 4"/></svg>,
+    met: { leve: 8.8, moderado: 11.8, intenso: 14.0 } },
+  { id: 'natacao',     label: 'Natação',     cor: '#0ea5e9',
+    svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M2 18c2-2 4-2 6 0s4 2 6 0 4-2 6 0M2 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0M14 8l-4-4M10 4l6 2-2 4"/></svg>,
+    met: { leve: 5.8, moderado: 8.3,  intenso: 10.0 } },
+  { id: 'remo',        label: 'Remo',        cor: '#14b8a6',
+    svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 17l5-5 4 2 4-4 5 5M15 6a1 1 0 100-2 1 1 0 000 2zM9 10l3-4 3 2"/></svg>,
+    met: { leve: 4.5, moderado: 7.0,  intenso: 10.5 } },
+  { id: 'hiit',        label: 'HIIT',        cor: '#f97316',
+    svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 2L4.5 13.5H12L11 22l8.5-11.5H12L13 2z"/></svg>,
+    met: { leve: 7.0, moderado: 10.0, intenso: 14.0 } },
+  { id: 'escada',      label: 'Escada',      cor: '#84cc16',
+    svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h4v-4h4v-4h4v-4h4V5"/></svg>,
+    met: { leve: 4.0, moderado: 6.0,  intenso: 9.0  } },
+  { id: 'caminhada',   label: 'Caminhada',   cor: '#10b981',
+    svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 4a1 1 0 100-2 1 1 0 000 2zM9 21l1-5 3 2 2-6M7 9l2-2 4 2 3-2M17 21l-2-5"/></svg>,
+    met: { leve: 2.5, moderado: 3.5,  intenso: 4.5  } },
 ];
 
 const INTENSIDADE = [
@@ -2124,8 +2129,11 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
           <div className="grid grid-cols-2 gap-3 mb-6">
             {ATIVIDADES_CARDIO.map(a => (
               <button key={a.id} onClick={() => { setAtividadeId(a.id); setEtapa('config'); }}
-                className="btn bg-zinc-900 border border-zinc-800 active:border-zinc-600 active:bg-zinc-800 rounded-2xl p-4 flex flex-col items-start gap-2 text-left">
-                <span className="text-2xl">{a.emoji}</span>
+                className="btn bg-zinc-900 border border-zinc-800 active:border-zinc-600 active:bg-zinc-800 rounded-2xl p-4 flex flex-col items-start gap-3 text-left">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: `${a.cor}20`, color: a.cor }}>
+                  {a.svg}
+                </div>
                 <span className="text-white font-bold text-sm leading-tight">{a.label}</span>
               </button>
             ))}
@@ -2136,21 +2144,27 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
             <div>
               <p className="text-zinc-600 text-xs font-semibold uppercase tracking-wider mb-3">Últimos registros</p>
               <div className="flex flex-col gap-2">
-                {historico.map((h, i) => (
-                  <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{ATIVIDADES_CARDIO.find(a=>a.id===h.atividade)?.emoji || '🏃'}</span>
-                      <div>
-                        <div className="text-white text-sm font-semibold">{h.label}</div>
-                        <div className="text-zinc-500 text-xs">{h.minutos} min · {h.intensidade}</div>
+                {historico.map((h, i) => {
+                  const at = ATIVIDADES_CARDIO.find(a => a.id === h.atividade);
+                  return (
+                    <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                          style={{ background: at ? `${at.cor}20` : '#f9731620', color: at?.cor || '#f97316' }}>
+                          {at?.svg || <IconCardio/>}
+                        </div>
+                        <div>
+                          <div className="text-white text-sm font-semibold">{h.label}</div>
+                          <div className="text-zinc-500 text-xs">{h.minutos} min · {h.intensidade}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[#f97316] font-black text-base num">{h.kcal}</div>
+                        <div className="text-zinc-600 text-xs">kcal</div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-[#f97316] font-black text-base num">{h.kcal}</div>
-                      <div className="text-zinc-600 text-xs">kcal</div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -2168,13 +2182,20 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
             className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
             <IconBack/>
           </button>
-          <div>
-            <h1 className="text-xl font-bold text-white">{atividade.emoji} {atividade.label}</h1>
-            <p className="text-zinc-500 text-xs mt-0.5">Configure a sessão</p>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: `${atividade.cor}20`, color: atividade.cor }}>
+              {atividade.svg}
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">{atividade.label}</h1>
+              <p className="text-zinc-500 text-xs mt-0.5">Configure a sessão</p>
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 pt-5 pb-32 flex flex-col gap-6">
+        {/* Scroll só para intensidade + tempo + peso — estimativa fica no rodapé */}
+        <div className="flex-1 overflow-y-auto px-4 pt-5 pb-4 flex flex-col gap-6">
 
           {/* Intensidade */}
           <div>
@@ -2183,9 +2204,7 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
               {INTENSIDADE.map(it => (
                 <button key={it.id} onClick={() => setIntensidade(it.id)}
                   className={`btn rounded-2xl px-4 py-4 flex items-center gap-4 border transition-all ${
-                    intensidade === it.id
-                      ? 'border-transparent'
-                      : 'bg-zinc-900 border-zinc-800 active:bg-zinc-800'
+                    intensidade === it.id ? 'border-transparent' : 'bg-zinc-900 border-zinc-800 active:bg-zinc-800'
                   }`}
                   style={intensidade === it.id ? { background: `${it.cor}15`, borderColor: `${it.cor}40` } : {}}>
                   <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: it.cor }}/>
@@ -2216,7 +2235,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
                 </button>
               ))}
             </div>
-            {/* Entrada manual */}
             <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3">
               <span className="text-zinc-500 text-sm">Ou digite:</span>
               <input
@@ -2252,35 +2270,35 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
             </div>
           </div>
 
-          {/* Preview de kcal */}
-          <div className="bg-[#f97316]/10 border border-[#f97316]/25 rounded-2xl px-5 py-4 flex items-center justify-between">
+        </div>
+
+        {/* Rodapé fixo: estimativa sempre visível + botões de ação */}
+        <div className="px-4 pb-8 pt-3 border-t border-zinc-900 bg-[#0a0a0a] flex flex-col gap-3">
+          {/* Estimativa — sempre visível, nunca escondida pelo scroll */}
+          <div className="bg-[#f97316]/10 border border-[#f97316]/25 rounded-2xl px-4 py-3 flex items-center justify-between">
             <div>
-              <div className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Estimativa</div>
-              <div className="text-zinc-300 text-sm mt-1">{minutos}min · {intAtual.label} · {pesoNum}kg</div>
+              <div className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Estimativa</div>
+              <div className="text-zinc-400 text-xs mt-0.5">{minutos}min · {intAtual.label} · {pesoNum}kg</div>
             </div>
-            <div className="flex items-center gap-2">
-              <IconFlame/>
+            <div className="flex items-baseline gap-1.5">
               <span className="text-[#f97316] font-black text-3xl num">{kcal}</span>
               <span className="text-zinc-500 text-sm">kcal</span>
             </div>
           </div>
-
-        </div>
-
-        {/* Botões fixos */}
-        <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-3 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/98 to-transparent flex flex-col gap-3">
-          <button onClick={iniciarCron}
-            className="btn w-full py-5 bg-zinc-800 border border-zinc-700 active:bg-zinc-700 text-white font-bold text-base rounded-2xl flex items-center justify-center gap-3">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-              <circle cx="12" cy="13" r="8"/><path strokeLinecap="round" d="M12 9v4l2.5 2.5M9.5 2.5h5M12 2.5V5"/>
-            </svg>
-            Usar cronômetro
-          </button>
-          <button onClick={salvar} disabled={salvando}
-            className="btn w-full py-5 bg-[#f97316] active:bg-[#ea6c0c] text-white font-bold text-base rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
-            <IconFlame/>
-            {salvando ? 'Salvando...' : `Salvar ${kcal} kcal`}
-          </button>
+          <div className="flex gap-3">
+            <button onClick={iniciarCron}
+              className="btn flex-1 py-4 bg-zinc-800 border border-zinc-700 active:bg-zinc-700 text-white font-bold text-sm rounded-2xl flex items-center justify-center gap-2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+                <circle cx="12" cy="13" r="8"/><path strokeLinecap="round" d="M12 9v4l2.5 2.5M9.5 2.5h5M12 2.5V5"/>
+              </svg>
+              Cronômetro
+            </button>
+            <button onClick={salvar} disabled={salvando}
+              className="btn flex-1 py-4 bg-[#f97316] active:bg-[#ea6c0c] text-white font-bold text-sm rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
+              <IconFlame/>
+              {salvando ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -2290,25 +2308,31 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
   if (etapa === 'cronometro') {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-6">
-        <div className="text-center mb-12">
-          <div className="text-7xl mb-4">{atividade.emoji}</div>
-          <div className="text-zinc-500 text-sm font-semibold uppercase tracking-wider mb-2">{atividade.label} · {intAtual.label}</div>
+        <div className="text-center mb-10">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
+            style={{ background: `${atividade.cor}20`, color: atividade.cor }}>
+            <div className="scale-150">{atividade.svg}</div>
+          </div>
+          <div className="text-zinc-500 text-sm font-semibold uppercase tracking-wider mb-3">
+            {atividade.label} · {intAtual.label}
+          </div>
           <div className="text-white font-black text-7xl num tracking-tight">{fmt(cronSeg)}</div>
-          <div className="text-zinc-600 text-sm mt-3">{minutos} min · estimativa atual</div>
         </div>
 
         {/* Preview kcal ao vivo */}
-        <div className="bg-[#f97316]/10 border border-[#f97316]/25 rounded-3xl px-8 py-6 flex items-center gap-4 mb-10 w-full max-w-xs">
-          <IconFlame/>
+        <div className="bg-[#f97316]/10 border border-[#f97316]/25 rounded-2xl px-6 py-4 flex items-center justify-between w-full max-w-xs mb-10">
           <div>
-            <div className="text-zinc-500 text-xs uppercase tracking-wider">Queimando</div>
-            <div className="text-[#f97316] font-black text-4xl num leading-none">{kcal}</div>
-            <div className="text-zinc-500 text-sm">kcal</div>
+            <div className="text-zinc-500 text-xs uppercase tracking-wider font-semibold">Queimando</div>
+            <div className="text-zinc-400 text-xs mt-0.5">{minutos} min estimados</div>
+          </div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[#f97316] font-black text-4xl num">{kcal}</span>
+            <span className="text-zinc-500 text-sm">kcal</span>
           </div>
         </div>
 
         <button onClick={pararCron}
-          className="btn w-full max-w-xs py-6 bg-[#f97316] active:bg-[#ea6c0c] text-white font-bold text-lg rounded-3xl flex items-center justify-center gap-3">
+          className="btn w-full max-w-xs py-5 bg-[#f97316] active:bg-[#ea6c0c] text-white font-bold text-base rounded-2xl flex items-center justify-center gap-3">
           <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
             <rect x="5" y="5" width="14" height="14" rx="2"/>
           </svg>
@@ -2326,7 +2350,10 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-6 slide-up">
       <div className="text-center w-full max-w-sm">
-        <div className="text-6xl mb-6">{atividade.emoji}</div>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+          style={{ background: `${atividade.cor}20`, color: atividade.cor }}>
+          <div className="scale-150">{atividade.svg}</div>
+        </div>
         <h1 className="text-3xl font-black text-white mb-1">Sessão concluída</h1>
         <p className="text-zinc-500 mb-8">{atividade.label} · {intAtual.label}</p>
 
