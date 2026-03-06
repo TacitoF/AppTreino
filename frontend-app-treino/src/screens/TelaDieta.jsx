@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { apiFetch } from '../auth';
 import { ALIMENTOS_DB } from '../data/alimentosDB';
 
-// Ícones Inline para manter o padrão visual limpo (Volt)
 const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
 const IconSearch = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>;
 const IconPlus = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>;
@@ -21,7 +20,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
 
   const hoje = new Date().toISOString().slice(0, 10);
 
-  // ─── CARREGAR REFEIÇÕES DO DIA ──────────────────────────────────────────────
   useEffect(() => {
     apiFetch(`/api/dieta/registro?id_usuario=${usuario.id}&data=${hoje}`)
       .then(r => setRefeicoes(r.registros || []))
@@ -29,37 +27,30 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
       .finally(() => setLoading(false));
   }, [usuario.id, hoje, mostrarToast]);
 
-  // ─── CÁLCULO INTELIGENTE (Taxa Metabólica Basal) ────────────────────────────
   const metas = useMemo(() => {
-    // Fallbacks de segurança para contas antigas que não tinham esses dados
     const peso   = parseFloat(usuario.peso_atual) || 70;
     const altura = parseFloat(usuario.altura) || 170;
     const idade  = parseInt(usuario.idade) || 25;
     const genero = usuario.genero === 'F' ? 'F' : 'M';
     const obj    = usuario.objetivo || 'Manutencao';
 
-    // Fórmula de Mifflin-St Jeor
     let tmb = (10 * peso) + (6.25 * altura) - (5 * idade);
     tmb += (genero === 'M') ? 5 : -161;
 
-    // Fator de atividade física (consideramos 1.55 para quem treina regularmente)
     let gastoTotal = tmb * 1.55;
 
-    // Ajuste pelo Objetivo
     let metaKcal = gastoTotal;
-    if (obj === 'Emagrecimento') metaKcal -= 500;  // Défice Calórico
-    if (obj === 'Hipertrofia') metaKcal += 500;    // Superávit Calórico
+    if (obj === 'Emagrecimento') metaKcal -= 500; 
+    if (obj === 'Hipertrofia') metaKcal += 500;    
 
     return {
       kcal: Math.round(metaKcal),
-      proteina: Math.round(peso * 2.0), // 2g de proteína por kg corporal (padrão ouro)
+      proteina: Math.round(peso * 2.0), 
     };
   }, [usuario]);
 
-  // ─── SOMA DO QUE JÁ FOI COMIDO ──────────────────────────────────────────────
   const consumido = useMemo(() => {
     return refeicoes.reduce((acc, ref) => ({
-      // Garantimos compatibilidade com letras maiúsculas/minúsculas do Google Sheets
       kcal: acc.kcal + (parseInt(ref.Calorias || ref.calorias) || 0),
       proteina: acc.proteina + (parseFloat(ref.Proteinas_g || ref.proteinas_g) || 0),
     }), { kcal: 0, proteina: 0 });
@@ -68,7 +59,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   const progressoKcal = Math.min((consumido.kcal / metas.kcal) * 100, 100);
   const progressoProt = Math.min((consumido.proteina / metas.proteina) * 100, 100);
 
-  // ─── SALVAR NOVA REFEIÇÃO ───────────────────────────────────────────────────
   const salvarRefeicao = async () => {
     const g = parseFloat(gramas);
     if (!g || g <= 0) return mostrarToast('Digite uma quantidade válida.', 'erro');
@@ -93,7 +83,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     try {
       await apiFetch('/api/dieta/registro', { method: 'POST', body: novaRefeicao });
       
-      // Atualiza a tela imediatamente (Optimistic UI)
       setRefeicoes(prev => [...prev, {
         ID_Registro: novaRefeicao.id_registro,
         Tipo_Refeicao: novaRefeicao.tipo_refeicao,
@@ -118,7 +107,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col pb-24">
-      {/* ── HEADER ── */}
       <div className="px-5 pt-14 pb-4 flex items-center gap-3 border-b border-zinc-900">
         <button onClick={onVoltar} className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
           <IconBack/>
@@ -131,7 +119,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
 
       <div className="flex-1 overflow-y-auto px-5 pt-6 pb-10 flex flex-col gap-6">
         
-        {/* ── CARD: CALORIAS ── */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-lg">
           <div className="flex justify-between items-end mb-4">
             <div>
@@ -156,7 +143,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
           </div>
         </div>
 
-        {/* ── CARD: PROTEÍNAS ── */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-lg">
           <div className="flex justify-between items-end mb-4">
             <div>
@@ -175,12 +161,10 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
           </div>
         </div>
 
-        {/* ── BOTÃO ADICIONAR REFEIÇÃO ── */}
         <button onClick={() => setModalBusca(true)} className="btn w-full py-5 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold text-base rounded-2xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(200,245,66,0.1)]">
           <IconPlus /> Adicionar alimento
         </button>
 
-        {/* ── LISTA DE HOJE ── */}
         <div>
           <h2 className="text-white font-bold text-lg mb-4 mt-2">Consumido Hoje</h2>
           
@@ -209,7 +193,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
         </div>
       </div>
 
-      {/* ── MODAL: BUSCAR ALIMENTO ── */}
       {modalBusca && (
         <div className="fixed inset-0 z-50 bg-[#0a0a0a] flex flex-col slide-up" style={{paddingTop:'env(safe-area-inset-top)'}}>
           <div className="px-4 pt-4 pb-3 flex items-center gap-3 border-b border-zinc-900">
@@ -240,7 +223,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
             ))}
           </div>
 
-          {/* ── MODAL (BOTTOM SHEET): QUANTIDADE ── */}
           {alimentoSelecionado && (
             <div className="absolute inset-0 bg-black/80 flex items-end z-[60]" onClick={() => setAlimentoSelecionado(null)}>
               <div className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl p-6 slide-up" onClick={e => e.stopPropagation()}>
@@ -257,7 +239,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                   <span className="text-zinc-500 font-bold text-lg">gramas</span>
                 </div>
 
-                {/* Preview em tempo real */}
                 <div className="flex justify-between items-center bg-zinc-800/50 rounded-xl px-4 py-3 mb-6">
                   <span className="text-zinc-400 text-sm font-semibold">Adicionando:</span>
                   <div className="text-right">

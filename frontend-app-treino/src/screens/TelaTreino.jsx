@@ -5,22 +5,14 @@ import { IconBack, IconPlus, IconTrash, IconCheck, IconUndo, IconHistory } from 
 import { BarraDescanso, ModalConfigDescanso, RestEndBanner, NumInput } from '../components/ui';
 import { ModalExercicio } from '../components/ModalExercicio';
 
-// ─── TELA TREINO ──────────────────────────────────────────────────────────────
 function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, mostrarToast }) {
   const [exerciciosInicializados, setExerciciosInicializados] = useState(false);
 
-  // ── ID DA SESSÃO DE TREINO ────────────────────────────────────────────────
-  // Persiste no localStorage com chave baseada em (split + usuário + dia).
-  // Se o usuário sair e voltar ao mesmo split no mesmo dia, continua a mesma
-  // sessão (mesmo id_treino) em vez de criar uma duplicata.
   const idTreinoSessao = useRef((() => {
     const hoje  = new Date().toISOString().slice(0, 10);
-    // Chave baseada em split.id (estável) — não muda ao renomear o grupo.
     const chave = `fitapp_sessao_${split.id}_${usuario.id}_${hoje}`;
     const salvo = sessionStorage.getItem(chave);
     if (salvo) return salvo;
-    // O prefixo do ID usa split.id para ser imutável.
-    // O backend busca por split_id (novo) com fallback para nome (registros antigos).
     const novo = `${split.id}_${usuario.id}_${hoje}_${Date.now()}`;
     sessionStorage.setItem(chave, novo);
     return novo;
@@ -41,7 +33,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
     const exerciciosDoHistorico = Array.from(mapaExercicios.entries()).map(([nome, series], exIdx) => {
       const seriesOrdenadas = [...series].sort((a, b) => a.numero_serie - b.numero_serie);
-      // Detecta se o exercício foi salvo em modo placas (marcador [P] no nome)
       const usaPlacas = nome.startsWith('[P]');
       const nomeLimpo = usaPlacas ? nome.slice(3) : nome;
       return {
@@ -75,7 +66,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   const [showRestEnd, setShowRestEnd]     = useState(false);
 
   const intervalRef    = useRef(null);
-  const timerFimRef    = useRef(null); // timestamp absoluto — funciona mesmo com app em background
+  const timerFimRef    = useRef(null);
   const tempoConfigRef = useRef(tempoConfig);
   useEffect(() => { tempoConfigRef.current = tempoConfig; }, [tempoConfig]);
 
@@ -103,7 +94,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     return () => clearInterval(intervalRef.current);
   }, [timerAtivo, calcRestante, dispararFim]);
 
-  // Quando o app volta do background, recalcula imediatamente
   useEffect(() => {
     const onVisible = () => {
       if (!timerAtivo || !timerFimRef.current) return;
@@ -159,7 +149,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   const alternarModoPlacas = useCallback((exId) => {
     setExercicios(e => e.map(x => {
       if (x.id !== exId) return x;
-      // Não permite trocar se já tem séries enviadas
       if (x.series.some(s => s.enviada)) return x;
       return { ...x, usaPlacas: !x.usaPlacas };
     }));
@@ -253,7 +242,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       pendentesRef.current += 1;
       setSalvando(true);
 
-      // Salva "[P]" no nome quando é modo placas — permite detectar ao recarregar
       const nomeParaSalvar = ex.usaPlacas ? `[P]${ex.nome}` : ex.nome;
 
       try {
@@ -280,7 +268,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     const chave = (nomeOriginal || nome)?.trim().toLowerCase();
     if (!chave) return [];
     return historicoAnterior.filter(s => {
-      // Normaliza: remove [P] do nome salvo no banco antes de comparar
       const nomeNorm = (s.nome_exercicio || '').replace(/^\[P\]/, '').trim().toLowerCase();
       return nomeNorm === chave;
     });
@@ -360,7 +347,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                   </button>
                 </div>
 
-                {/* Toggle kg / Placas — visível e claro */}
                 <div className="flex items-center gap-2 mb-1">
                   <button
                     onClick={() => alternarModoPlacas(ex.id)}
@@ -370,7 +356,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                     }`}
                     style={{ padding: 0 }}
                   >
-                    {/* Opção kg */}
                     <span className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all ${
                       !ex.usaPlacas ? 'bg-[#c8f542] text-black' : 'bg-zinc-800 text-zinc-500'
                     }`}>
@@ -379,9 +364,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                       </svg>
                       kg
                     </span>
-                    {/* Divider */}
                     <span className="w-px h-full bg-zinc-700 flex-shrink-0"/>
-                    {/* Opção Placas */}
                     <span className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all ${
                       ex.usaPlacas ? 'bg-blue-500 text-white' : 'bg-zinc-800 text-zinc-500'
                     }`}>

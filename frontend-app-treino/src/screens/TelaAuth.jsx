@@ -13,7 +13,6 @@ function TelaAuth({ onLogin, mostrarToast }) {
   const [peso, setPeso]           = useState('');
   const [obj, setObj]             = useState('');
   
-  // NOVOS ESTADOS
   const [altura, setAltura]       = useState('');
   const [idade, setIdade]         = useState('');
   const [genero, setGenero]       = useState('');
@@ -190,7 +189,6 @@ function TelaAuth({ onLogin, mostrarToast }) {
               )}
             </div>
 
-            {/* NOVOS CAMPOS AGRUPADOS */}
             <div className="grid grid-cols-3 gap-3">
               <input type="number" placeholder="Peso (kg)" value={peso} onChange={e=>setPeso(e.target.value)} className={inp}/>
               <input type="number" placeholder="Alt (cm)" value={altura} onChange={e=>setAltura(e.target.value)} className={inp}/>

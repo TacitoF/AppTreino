@@ -9,7 +9,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
   const [atividadeId, setAtividadeId] = useState(null);
   const [intensidade, setIntensidade] = useState('moderado');
   const [peso, setPeso]               = useState(() => {
-    // Prioridade: localStorage (editado pelo usuário) > cadastro > 70
     try { return localStorage.getItem(PESO_KEY) || String(usuario.peso_atual || '70'); }
     catch { return String(usuario.peso_atual || '70'); }
   });
@@ -27,7 +26,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
   const met       = atividade ? atividade.met[intensidade] : 0;
   const kcal      = atividade ? calcularKcal(met, pesoNum, minutos) : 0;
 
-  // Carrega histórico de cardios ao abrir
   useEffect(() => {
     apiFetch(`${R.cardio}?id_usuario=${usuario.id}&limite=5`)
       .then(r => setHistorico(r.registros || []))
@@ -35,7 +33,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
       .finally(() => setLoadingHist(false));
   }, []);
 
-  // Cronômetro
   useEffect(() => {
     if (cronAtivo) {
       inicioRef.current = Date.now() - cronSeg * 1000;
@@ -84,7 +81,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
   const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
   const intAtual = INTENSIDADE.find(i => i.id === intensidade);
 
-  // ── ETAPA: ESCOLHA DA ATIVIDADE ────────────────────────────────────────────
   if (etapa === 'escolha') {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
@@ -113,7 +109,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
             ))}
           </div>
 
-          {/* Histórico recente */}
           {!loadingHist && historico.length > 0 && (
             <div>
               <p className="text-zinc-600 text-xs font-semibold uppercase tracking-wider mb-3">Últimos registros</p>
@@ -146,7 +141,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
     );
   }
 
-  // ── ETAPA: CONFIG (intensidade + tempo + peso) ────────────────────────────
   if (etapa === 'config') {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
@@ -163,7 +157,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
 
         <div className="flex-1 overflow-y-auto px-4 pt-5 pb-10 flex flex-col gap-6">
 
-          {/* Intensidade */}
           <div>
             <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-3">Intensidade</p>
             <div className="flex flex-col gap-2">
@@ -190,7 +183,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
             </div>
           </div>
 
-          {/* Tempo */}
           <div>
             <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-3">Tempo</p>
             <div className="grid grid-cols-4 gap-2 mb-3">
@@ -215,7 +207,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
             </div>
           </div>
 
-          {/* Peso corporal */}
           <div>
             <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-3">Seu peso</p>
             <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-4">
@@ -238,10 +229,8 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
             </div>
           </div>
 
-          {/* Divisor */}
           <div className="border-t border-zinc-900"/>
 
-          {/* Estimativa — fim do scroll, sempre visível ao rolar */}
           <div className="bg-[#f97316]/10 border border-[#f97316]/25 rounded-2xl px-5 py-5 flex items-center justify-between">
             <div>
               <div className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-1">Estimativa de gasto</div>
@@ -253,7 +242,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
             </div>
           </div>
 
-          {/* Botão principal — Começar com cronômetro */}
           <button onClick={iniciarCron}
             className="btn w-full py-7 bg-[#f97316] active:bg-[#ea6c0c] text-white font-black text-2xl rounded-2xl flex items-center justify-center gap-3">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-7 h-7">
@@ -262,7 +250,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
             Começar
           </button>
 
-          {/* Ação secundária — salvar sem cronômetro */}
           <button onClick={salvar} disabled={salvando}
             className="btn w-full py-3 text-zinc-500 text-sm font-medium active:text-zinc-300 disabled:opacity-40 flex items-center justify-center gap-2">
             {salvando ? 'Salvando...' : `Salvar ${kcal} kcal sem cronômetro`}
@@ -273,7 +260,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
     );
   }
 
-  // ── ETAPA: CRONÔMETRO ──────────────────────────────────────────────────────
   if (etapa === 'cronometro') {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-6">
@@ -287,7 +273,6 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
           <div className="text-zinc-600 text-sm mt-3">{minutos} min · estimativa atual</div>
         </div>
 
-        {/* Preview kcal ao vivo */}
         <div className="bg-[#f97316]/10 border border-[#f97316]/25 rounded-3xl px-8 py-6 flex items-center gap-4 mb-10 w-full max-w-xs">
           <IconFlame/>
           <div>
@@ -312,7 +297,7 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
     );
   }
 
-  // ── ETAPA: RESULTADO ───────────────────────────────────────────────────────
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-6 slide-up">
       <div className="text-center w-full max-w-sm">

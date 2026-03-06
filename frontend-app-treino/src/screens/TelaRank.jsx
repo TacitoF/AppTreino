@@ -3,7 +3,6 @@ import { apiFetch } from '../auth';
 import { IconBack, IconUsers, IconChevronRight, IconLink } from '../components/icons';
 import { Spinner } from '../components/ui';
 
-// ─── TELA RANK — LOBBY ────────────────────────────────────────────────────────
 function TelaRank({ usuario, mostrarToast, onVoltar }) {
   const [aba, setAba]           = useState('meus');   
   const [meusLobbies, setMeus]  = useState([]);
@@ -167,7 +166,6 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
     );
   }
 
-  // ── TELA PRINCIPAL RANK ─────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
       <div className="px-5 pt-14 pb-4 flex items-center gap-3 border-b border-zinc-900">

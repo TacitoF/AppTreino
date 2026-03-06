@@ -11,11 +11,9 @@ import TelaTreino           from './screens/TelaTreino';
 import TelaResumo           from './screens/TelaResumo';
 import TelaRank             from './screens/TelaRank';
 import TelaCardio           from './screens/TelaCardio';
-import TelaDieta            from './screens/TelaDieta'; // IMPORTAÇÃO DA DIETA
+import TelaDieta            from './screens/TelaDieta'; 
 
-// ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
-  // Restaura sessão salva (evita voltar ao login quando iOS descarrega a página)
   const sessaoSalva = carregarSessao();
   const tokenSalvo  = getAuthToken();
   const podeRestaurar = !!(sessaoSalva?.usuario && tokenSalvo);
@@ -30,7 +28,6 @@ export default function App() {
   const [toast, setToast]            = useState(null);
   const toastTimerRef                = useRef(null);
 
-  // Persiste sessão sempre que estado crítico muda
   const usuarioRef    = useRef(usuario);
   const telaRef       = useRef(tela);
   const splitAtivoRef = useRef(splitAtivo);
@@ -43,11 +40,9 @@ export default function App() {
     if (usuario) salvarSessao(usuario, tela, splitAtivo);
   }, [usuario, tela, splitAtivo]);
 
-  // Se restaurou sessão, recarrega splits em background sem bloquear a UI
   useEffect(() => {
     if (podeRestaurar && sessaoSalva.usuario) {
       carregarSplitsInterno(sessaoSalva.usuario.id);
-      // Se estava no treino, recarrega histórico em background também
       if (sessaoSalva.tela === 'treino' && sessaoSalva.splitAtivo) {
         const sa = sessaoSalva.splitAtivo;
         const nomeParaBusca = sa.nomeHistorico || sa.nome;
@@ -60,7 +55,6 @@ export default function App() {
           .catch(() => {});
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const mostrarToast = useCallback((mensagem, tipo='sucesso') => {
@@ -96,11 +90,9 @@ export default function App() {
   }, []);
 
   const onSelecionarSplit = useCallback(split => {
-    // Navega imediatamente para dar feedback visual ao usuário
     setSplitAtivo(split);
     setHistorico([]);
     setTela('treino');
-    // Busca histórico em background — TelaTreino reage quando historicoAnterior muda
     const nomeParaBusca = split.nomeHistorico || split.nome;
     apiFetch(
       `${R.historico}?id_usuario=${usuarioRef.current.id}` +
@@ -124,8 +116,7 @@ export default function App() {
       <IOSInstallBanner/>
       
       {tela==='auth'             && <TelaAuth onLogin={onLogin} mostrarToast={mostrarToast}/>}
-      
-      {/* ATENÇÃO: onDieta FOI ADICIONADO AQUI */}
+     
       {tela==='grupamentos'      && usuario && <TelaGrupamentos usuario={usuario} splits={splits} loadingSplits={loadingSplits} onSelecionarSplit={onSelecionarSplit} onGerenciar={()=>setTela('gerenciar-splits')} onRank={()=>setTela('rank')} onCardio={()=>setTela('cardio')} onDieta={()=>setTela('dieta')} onLogout={onLogout}/>}
       
       {tela==='gerenciar-splits' && usuario && <TelaGerenciarSplits usuario={usuario} splits={splits} onSalvar={l=>{setSplits(l);setTela('grupamentos');}} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
@@ -137,8 +128,7 @@ export default function App() {
       {tela==='rank'             && usuario && <TelaRank usuario={usuario} mostrarToast={mostrarToast} onVoltar={()=>setTela('grupamentos')}/>}
       
       {tela==='cardio'           && usuario && <TelaCardio usuario={usuario} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
-      
-      {/* ROTA DA DIETA ADICIONADA AQUI */}
+
       {tela==='dieta'            && usuario && <TelaDieta usuario={usuario} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
     </>
   );

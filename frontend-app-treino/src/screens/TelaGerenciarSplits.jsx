@@ -5,7 +5,6 @@ import { IconBack, IconPlus, IconTrash, IconDrag } from '../components/icons';
 
 function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast }) {
   const [lista, setLista] = useState(() =>
-    // Garante que splits antigos (sem nomeHistorico) herdam o nome atual como identificador estável
     splits.map(s => ({ ...s, nomeHistorico: s.nomeHistorico || s.nome }))
   );
   const [saving, setSaving]     = useState(false);
@@ -17,7 +16,6 @@ function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast
   const listRef    = useRef(null);
 
   const adicionar = useCallback(() =>
-    // nomeHistorico fica vazio até o usuário digitar e salvar pela primeira vez
     setLista(l => [...l, { id:`split_${Date.now()}`, id_usuario:usuario.id, nome:'', nomeHistorico:'', ultimo_treino:null }])
   , [usuario.id]);
 
@@ -25,8 +23,6 @@ function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast
     setLista(l => l.map(s => s.id === id ? {
       ...s,
       nome,
-      // nomeHistorico só é definido uma vez — na primeira vez que o usuário digita o nome.
-      // Depois disso nunca muda, mesmo que renomeie, garantindo que o histórico continue achável.
       nomeHistorico: s.nomeHistorico || nome,
     } : s))
   , []);

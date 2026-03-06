@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { IconTrophy } from '../components/icons';
 
-// ─── TELA RESUMO ──────────────────────────────────────────────────────────────
 function TelaResumo({ resultado, onVoltar }) {
   const { exercicios, split } = resultado;
   const { totalS, vol } = useMemo(() => ({
