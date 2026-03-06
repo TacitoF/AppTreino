@@ -11,7 +11,7 @@ import TelaTreino           from './screens/TelaTreino';
 import TelaResumo           from './screens/TelaResumo';
 import TelaRank             from './screens/TelaRank';
 import TelaCardio           from './screens/TelaCardio';
-import TelaDieta from './screens/TelaDieta';
+import TelaDieta            from './screens/TelaDieta'; // IMPORTAÇÃO DA DIETA
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
@@ -27,14 +27,14 @@ export default function App() {
   const [splitAtivo, setSplitAtivo]  = useState(podeRestaurar ? sessaoSalva.splitAtivo : null);
   const [historico, setHistorico]    = useState([]);
   const [resultado, setResultado]    = useState(null);
-  const [lobbyConvite, setLobbyConvite] = useState(null);
   const [toast, setToast]            = useState(null);
   const toastTimerRef                = useRef(null);
 
   // Persiste sessão sempre que estado crítico muda
-  const usuarioRef   = useRef(usuario);
-  const telaRef      = useRef(tela);
+  const usuarioRef    = useRef(usuario);
+  const telaRef       = useRef(tela);
   const splitAtivoRef = useRef(splitAtivo);
+  
   useEffect(() => { usuarioRef.current = usuario; }, [usuario]);
   useEffect(() => { telaRef.current = tela; }, [tela]);
   useEffect(() => { splitAtivoRef.current = splitAtivo; }, [splitAtivo]);
@@ -122,14 +122,24 @@ export default function App() {
     <>
       <Toast data={toast}/>
       <IOSInstallBanner/>
+      
       {tela==='auth'             && <TelaAuth onLogin={onLogin} mostrarToast={mostrarToast}/>}
-      {tela==='grupamentos'      && usuario && <TelaGrupamentos usuario={usuario} splits={splits} loadingSplits={loadingSplits} onSelecionarSplit={onSelecionarSplit} onGerenciar={()=>setTela('gerenciar-splits')} onRank={()=>setTela('rank')} onCardio={()=>setTela('cardio')} onLogout={onLogout}/>}
+      
+      {/* ATENÇÃO: onDieta FOI ADICIONADO AQUI */}
+      {tela==='grupamentos'      && usuario && <TelaGrupamentos usuario={usuario} splits={splits} loadingSplits={loadingSplits} onSelecionarSplit={onSelecionarSplit} onGerenciar={()=>setTela('gerenciar-splits')} onRank={()=>setTela('rank')} onCardio={()=>setTela('cardio')} onDieta={()=>setTela('dieta')} onLogout={onLogout}/>}
+      
       {tela==='gerenciar-splits' && usuario && <TelaGerenciarSplits usuario={usuario} splits={splits} onSalvar={l=>{setSplits(l);setTela('grupamentos');}} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
+      
       {tela==='treino'           && splitAtivo && <TelaTreino usuario={usuario} split={splitAtivo} historicoAnterior={historico} onFinalizar={onFinalizar} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
+      
       {tela==='resumo'           && resultado && <TelaResumo resultado={resultado} onVoltar={()=>setTela('grupamentos')}/>}
+      
       {tela==='rank'             && usuario && <TelaRank usuario={usuario} mostrarToast={mostrarToast} onVoltar={()=>setTela('grupamentos')}/>}
+      
       {tela==='cardio'           && usuario && <TelaCardio usuario={usuario} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
-      {tela==='dieta' && usuario && <TelaDieta usuario={usuario} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
+      
+      {/* ROTA DA DIETA ADICIONADA AQUI */}
+      {tela==='dieta'            && usuario && <TelaDieta usuario={usuario} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
     </>
   );
 }

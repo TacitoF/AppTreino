@@ -3,7 +3,7 @@ import { IconDumbbell, IconSettings, IconCardio, IconTrophy, IconChevronRight } 
 import { Spinner } from '../components/ui';
 
 // ─── TELA GRUPAMENTOS ─────────────────────────────────────────────────────────
-function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onRank, onCardio, onLogout }) {
+function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onRank, onCardio, onDieta, onLogout }) {
   const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
@@ -30,6 +30,7 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                 <button onClick={onGerenciar} className="btn px-6 py-4 bg-[#c8f542] text-black font-bold rounded-2xl">Configurar grupos</button>
               </div>
             )}
+            
             {splits.map(split => (
               <button key={split.id} onClick={() => onSelecionarSplit(split)}
                 className="btn w-full bg-zinc-900 border border-zinc-800 active:border-zinc-600 active:bg-zinc-800 rounded-2xl p-5 text-left flex items-center gap-4">
@@ -43,7 +44,20 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                 <div className="text-zinc-600"><IconChevronRight/></div>
               </button>
             ))}
+
+            {/* NOVA GRELHA COM 4 BOTÕES */}
             <div className="grid grid-cols-2 gap-3 mt-1">
+              
+              {/* BOTÃO DIETA */}
+              <button onClick={onDieta}
+                className="btn bg-blue-500/10 border border-blue-500/25 active:bg-blue-500/20 rounded-2xl p-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-500">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418"/></svg>
+                </div>
+                <span className="text-blue-500 text-xs font-semibold text-center leading-tight">Dieta<br/>& Macros</span>
+              </button>
+
+              {/* BOTÃO CARDIO */}
               <button onClick={onCardio}
                 className="btn bg-[#f97316]/8 border border-[#f97316]/25 active:bg-[#f97316]/15 rounded-2xl p-4 flex flex-col items-center gap-2">
                 <div className="w-10 h-10 rounded-xl bg-[#f97316]/15 flex items-center justify-center text-[#f97316]">
@@ -51,20 +65,25 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                 </div>
                 <span className="text-[#f97316] text-xs font-semibold text-center leading-tight">Cardio<br/>& Calorias</span>
               </button>
+
+              {/* BOTÃO GERENCIAR */}
               <button onClick={onGerenciar}
                 className="btn bg-zinc-900 border border-zinc-800 active:bg-zinc-800 rounded-2xl p-4 flex flex-col items-center gap-2">
                 <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400">
                   <IconSettings/>
                 </div>
-                <span className="text-zinc-400 text-xs font-semibold text-center leading-tight">Gerenciar<br/>grupos musculares</span>
+                <span className="text-zinc-400 text-xs font-semibold text-center leading-tight">Gerenciar<br/>grupos</span>
               </button>
+              
+              {/* BOTÃO RANKING */}
               <button onClick={onRank}
-                className="btn col-span-2 bg-[#c8f542]/8 border border-[#c8f542]/25 active:bg-[#c8f542]/15 rounded-2xl p-4 flex items-center justify-center gap-3">
+                className="btn bg-[#c8f542]/8 border border-[#c8f542]/25 active:bg-[#c8f542]/15 rounded-2xl p-4 flex flex-col items-center gap-2">
                 <div className="w-10 h-10 rounded-xl bg-[#c8f542]/15 flex items-center justify-center text-[#c8f542]">
                   <IconTrophy/>
                 </div>
-                <span className="text-[#c8f542] text-sm font-semibold">Ranking com amigos</span>
+                <span className="text-[#c8f542] text-xs font-semibold text-center leading-tight">Ranking<br/>com amigos</span>
               </button>
+
             </div>
           </>
         )}
@@ -73,5 +92,4 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
   );
 }
 
-// ─── ÍCONE DRAG HANDLE ───────────────────────────────────────────────────────
 export default TelaGrupamentos;
