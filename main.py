@@ -208,6 +208,9 @@ class RegistroUsuarioRequest(BaseModel):
     senha: str
     peso_atual: str
     objetivo: str
+    altura: str
+    idade: str
+    genero: str
 
 class SplitItem(BaseModel):
     id: str
@@ -269,9 +272,12 @@ def registrar_usuario(novo_user: RegistroUsuarioRequest):
             if str(user.get("Email", "")) == novo_user.email:
                 raise HTTPException(status_code=400, detail="E-mail já cadastrado")
         novo_id = f"U{len(usuarios) + 1:03d}"
+        
+        # Agora salvamos as 3 informações novas na planilha
         com_retry(lambda: get_ws("Usuarios").append_row([
             novo_id, novo_user.nome, novo_user.email, novo_user.senha,
             date.today().isoformat(), novo_user.peso_atual, novo_user.objetivo,
+            novo_user.altura, novo_user.idade, novo_user.genero
         ]))
         cache_del("Usuarios")
         return {"status": "sucesso", "mensagem": "Conta criada!"}

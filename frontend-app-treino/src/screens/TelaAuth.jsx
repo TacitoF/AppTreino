@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import React, { useState } from 'react';
 import { apiFetch, setAuthToken } from '../auth';
 import { R } from '../config';
 
-// ─── TELA AUTH ────────────────────────────────────────────────────────────────
 function TelaAuth({ onLogin, mostrarToast }) {
   const [modo, setModo]           = useState('login'); 
   const [resetAberto, setReset]   = useState(false);
@@ -13,9 +12,19 @@ function TelaAuth({ onLogin, mostrarToast }) {
   const [nome, setNome]           = useState('');
   const [peso, setPeso]           = useState('');
   const [obj, setObj]             = useState('');
+  
+  // NOVOS ESTADOS
+  const [altura, setAltura]       = useState('');
+  const [idade, setIdade]         = useState('');
+  const [genero, setGenero]       = useState('');
+  
   const [loading, setLoading]     = useState(false);
 
-  const limpar = () => { setEmail(''); setSenha(''); setNome(''); setPeso(''); setObj(''); setSenhaNova(''); setSenhaConfirm(''); };
+  const limpar = () => { 
+    setEmail(''); setSenha(''); setNome(''); setPeso(''); setObj(''); 
+    setSenhaNova(''); setSenhaConfirm(''); setAltura(''); setIdade(''); setGenero(''); 
+  };
+  
   const inp = "w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base placeholder-zinc-600";
 
   const login = async e => {
@@ -63,11 +72,15 @@ function TelaAuth({ onLogin, mostrarToast }) {
     if (!nome || !email || !senha) { mostrarToast('Preencha nome, e-mail e senha.', 'erro'); return; }
     if (!senhaValida) { mostrarToast('A senha não atende aos requisitos.', 'erro'); return; }
     if (senha !== senhaConfirm) { mostrarToast('As senhas não coincidem.', 'erro'); return; }
-    if (!peso) { mostrarToast('Informe seu peso atual.', 'erro'); return; }
+    if (!peso || !altura || !idade) { mostrarToast('Informe seu peso, altura e idade.', 'erro'); return; }
+    if (!genero) { mostrarToast('Selecione seu gênero biológico.', 'erro'); return; }
     if (!obj) { mostrarToast('Selecione seu objetivo.', 'erro'); return; }
     setLoading(true);
     try {
-      await apiFetch(R.registro, { method: 'POST', body: { nome, email, senha, peso_atual: peso, objetivo: obj } });
+      await apiFetch(R.registro, { 
+        method: 'POST', 
+        body: { nome, email, senha, peso_atual: peso, objetivo: obj, altura, idade, genero } 
+      });
       mostrarToast('Conta criada. Faça login.', 'sucesso');
       setModo('login'); limpar();
     } catch (err) {
@@ -79,8 +92,9 @@ function TelaAuth({ onLogin, mostrarToast }) {
   return (
     <div className="fixed inset-0 bg-[#0a0a0a] flex flex-col items-center justify-center px-6 overflow-hidden"
       style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className="w-full max-w-sm slide-up">
-        <div className="text-center mb-10">
+      <div className="w-full max-w-sm slide-up max-h-screen overflow-y-auto pb-10 no-scrollbar">
+        
+        <div className="text-center mb-8 mt-10">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#c8f542]/10 border border-[#c8f542]/20 rounded-2xl mb-4 text-[#c8f542]">
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
               <path d="M13 2L4.5 13.5H11L10 22L19.5 10.5H13L13 2Z"/>
@@ -141,6 +155,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
           <form onSubmit={cadastro} className="flex flex-col gap-3">
             <input type="text" placeholder="Nome de usuário" value={nome} onChange={e=>setNome(e.target.value)} className={inp}/>
             <input type="email" placeholder="E-mail" value={email} onChange={e=>setEmail(e.target.value)} className={inp} autoComplete="email"/>
+            
             <input type="password" placeholder="Senha" value={senha} onChange={e=>setSenha(e.target.value)} className={inp}/>
             {senha.length > 0 && (
               <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex flex-col gap-2">
@@ -174,15 +189,29 @@ function TelaAuth({ onLogin, mostrarToast }) {
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
+
+            {/* NOVOS CAMPOS AGRUPADOS */}
+            <div className="grid grid-cols-3 gap-3">
               <input type="number" placeholder="Peso (kg)" value={peso} onChange={e=>setPeso(e.target.value)} className={inp}/>
+              <input type="number" placeholder="Alt (cm)" value={altura} onChange={e=>setAltura(e.target.value)} className={inp}/>
+              <input type="number" placeholder="Idade" value={idade} onChange={e=>setIdade(e.target.value)} className={inp}/>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <select value={genero} onChange={e=>setGenero(e.target.value)} className={`${inp} cursor-pointer ${genero===''?'text-zinc-600':'text-white'}`}>
+                <option value="" disabled className="bg-zinc-900">Gênero Bio</option>
+                <option value="M" className="bg-zinc-900 text-white">Masculino</option>
+                <option value="F" className="bg-zinc-900 text-white">Feminino</option>
+              </select>
+              
               <select value={obj} onChange={e=>setObj(e.target.value)} className={`${inp} cursor-pointer ${obj===''?'text-zinc-600':'text-white'}`}>
                 <option value="" disabled className="bg-zinc-900">Objetivo</option>
                 <option value="Hipertrofia" className="bg-zinc-900 text-white">Hipertrofia</option>
                 <option value="Emagrecimento" className="bg-zinc-900 text-white">Emagrecer</option>
-                <option value="Manutencao" className="bg-zinc-900 text-white">Manter peso</option>
+                <option value="Manutencao" className="bg-zinc-900 text-white">Manter</option>
               </select>
             </div>
+
             <button type="submit" disabled={loading} className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black text-base font-bold rounded-2xl mt-2 disabled:opacity-50">
               {loading ? 'Criando...' : 'Criar conta'}
             </button>
