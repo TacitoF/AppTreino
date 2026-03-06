@@ -11,6 +11,7 @@ import TelaTreino           from './screens/TelaTreino';
 import TelaResumo           from './screens/TelaResumo';
 import TelaRank             from './screens/TelaRank';
 import TelaCardio           from './screens/TelaCardio';
+import TelaDieta from './screens/TelaDieta';
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
@@ -128,6 +129,7 @@ export default function App() {
       {tela==='resumo'           && resultado && <TelaResumo resultado={resultado} onVoltar={()=>setTela('grupamentos')}/>}
       {tela==='rank'             && usuario && <TelaRank usuario={usuario} mostrarToast={mostrarToast} onVoltar={()=>setTela('grupamentos')}/>}
       {tela==='cardio'           && usuario && <TelaCardio usuario={usuario} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
+      {tela==='dieta' && usuario && <TelaDieta usuario={usuario} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
     </>
   );
 }
