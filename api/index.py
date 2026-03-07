@@ -34,7 +34,16 @@ scopes = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive",
 ]
-credentials = Credentials.from_service_account_file("credentials.json", scopes=scopes)
+
+# CORREÇÃO VITAL: Tenta ler a Variável de Ambiente do Vercel primeiro.
+# Se não existir (por ex, no seu PC), usa o ficheiro credentials.json.
+raw_creds = os.environ.get("GOOGLE_CREDENTIALS")
+if raw_creds:
+    creds_dict = json.loads(raw_creds)
+    credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+else:
+    credentials = Credentials.from_service_account_file("credentials.json", scopes=scopes)
+
 gc = gspread.authorize(credentials)
 planilha = gc.open("App Treinos")
 
