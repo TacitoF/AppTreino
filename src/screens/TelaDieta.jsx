@@ -8,6 +8,8 @@ const IconSearch = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentCol
 const IconPlus = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>;
 const IconX = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>;
 const IconFlame = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 text-[#f97316]"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>;
+// NOVO: Ícone do lixo para excluir a refeição
+const IconTrash = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
 
 // ─── ÍCONES DAS CATEGORIAS ──────────────────────────────────────────────────
 const IconClock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4"><circle cx="12" cy="12" r="10"/><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2"/></svg>;
@@ -50,11 +52,11 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     };
 
     return [
-      { id: 'proteinas', nome: 'Proteínas',    Icone: IconProteina,  itens: buscar(['frango', 'ovo', 'patinho bovino', 'whey', 'peito de peru']) },
-      { id: 'carbos',    nome: 'Carboidratos', Icone: IconCarbo,     itens: buscar(['arroz branco', 'tapioca', 'batata doce', 'pão francês', 'aveia']) },
-      { id: 'gorduras',  nome: 'Gorduras',     Icone: IconGordura,   itens: buscar(['azeite de oliva', 'abacate', 'castanha', 'amendoim', 'manteiga']) },
-      { id: 'laticinios',nome: 'Laticínios',   Icone: IconLaticinios,itens: buscar(['leite integral', 'mussarela', 'iogurte', 'requeijão', 'queijo prato']) },
-      { id: 'frutas',    nome: 'Frutas',       Icone: IconFrutas,    itens: buscar(['banana', 'maçã', 'mamão', 'melancia', 'laranja']) },
+      { id: 'proteinas', nome: 'Proteínas', icone: <IconProteina/>, itens: buscar(['frango', 'ovo', 'patinho bovino', 'whey', 'peito de peru']) },
+      { id: 'carbos', nome: 'Carboidratos', icone: <IconCarbo/>, itens: buscar(['arroz branco', 'tapioca', 'batata doce', 'pão francês', 'aveia']) },
+      { id: 'gorduras', nome: 'Gorduras', icone: <IconGordura/>, itens: buscar(['azeite de oliva', 'abacate', 'castanha', 'amendoim', 'manteiga']) },
+      { id: 'laticinios', nome: 'Laticínios', icone: <IconLaticinios/>, itens: buscar(['leite integral', 'mussarela', 'iogurte', 'requeijão', 'queijo prato']) },
+      { id: 'frutas', nome: 'Frutas', icone: <IconFrutas/>, itens: buscar(['banana', 'maçã', 'mamão', 'melancia', 'laranja']) },
     ];
   }, []);
 
@@ -155,6 +157,18 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     }
   };
 
+  // ─── NOVO: FUNÇÃO DE EXCLUIR REFEIÇÃO ───────────────────────────────────────
+  const excluirRefeicao = async (id) => {
+    if(!window.confirm('Tem a certeza que deseja remover este alimento?')) return;
+    try {
+      await apiFetch(`/api/dieta/registro?id_registro=${id}`, { method: 'DELETE' });
+      setRefeicoes(prev => prev.filter(r => r.ID_Registro !== id && r.id_registro !== id));
+      mostrarToast('Alimento removido.', 'sucesso');
+    } catch {
+      mostrarToast('Erro ao remover.', 'erro');
+    }
+  };
+
   const fecharBusca = () => {
     setModalBusca(false);
     setAlimentoSelecionado(null);
@@ -243,7 +257,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
           <IconPlus /> Adicionar alimento
         </button>
 
-        {/* ── LISTA DE HOJE ── */}
+        {/* ── LISTA DE HOJE COM BOTÃO DE EXCLUIR ── */}
         <div>
           <h2 className="text-white font-bold text-lg mb-4 mt-2">Consumido Hoje</h2>
           
@@ -257,7 +271,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
             <div className="flex flex-col gap-3">
               {refeicoes.map((ref, i) => (
                 <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-4 flex items-center justify-between">
-                  <div className="flex-1 pr-4">
+                  <div className="flex-1 pr-2">
                     <p className="text-white font-semibold text-sm leading-tight mb-1">{ref.Tipo_Refeicao || ref.tipo_refeicao}</p>
                     <p className="text-blue-400 text-xs font-bold">{ref.Proteinas_g || ref.proteinas_g}g proteína</p>
                   </div>
@@ -265,6 +279,10 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                     <p className="text-[#c8f542] font-black text-xl num">{ref.Calorias || ref.calorias}</p>
                     <p className="text-zinc-600 text-xs font-semibold">kcal</p>
                   </div>
+                  {/* BOTÃO LIXO */}
+                  <button onClick={() => excluirRefeicao(ref.ID_Registro || ref.id_registro)} className="ml-4 w-10 h-10 bg-red-500/10 active:bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+                    <IconTrash/>
+                  </button>
                 </div>
               ))}
             </div>
@@ -299,34 +317,8 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
             </div>
           </div>
 
-          {/* BARRA DE ABAS — fora do scroll para overflow-x funcionar */}
-          {!termoBusca.trim() && (
-            <div
-              className="flex overflow-x-auto gap-2 px-4 py-3 border-b border-zinc-900 bg-[#0a0a0a] flex-shrink-0"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
-            >
-              {recentes.length > 0 && (
-                <button
-                  onClick={() => setAbaAtiva('recentes')}
-                  className={`flex-none whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === 'recentes' ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}
-                >
-                  <span className={`flex-shrink-0 ${abaAtiva === 'recentes' ? 'text-black' : 'text-zinc-500'}`}><IconClock/></span> Recentes
-                </button>
-              )}
-              {categoriasPopulares.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setAbaAtiva(cat.id)}
-                  className={`flex-none whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === cat.id ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}
-                >
-                  <span className={`flex-shrink-0 ${abaAtiva === cat.id ? 'text-black' : 'text-zinc-500'}`}><cat.Icone/></span> {cat.nome}
-                </button>
-              ))}
-            </div>
-          )}
-
           {/* CONTEÚDO DA BUSCA OU CATEGORIAS */}
-          <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto flex flex-col">
             
             {/* SE O USUÁRIO ESTÁ A DIGITAR (MODO BUSCA) */}
             {termoBusca.trim().length > 0 ? (
@@ -345,6 +337,22 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
             ) : (
               /* SE O CAMPO DE BUSCA ESTÁ VAZIO (MODO CATEGORIAS) */
               <>
+                {/* MENU DE ABAS DESLIZANTE HORIZONTAL */}
+                <div className="overflow-x-auto sticky top-0 bg-[#0a0a0a] z-10 border-b border-zinc-900 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+                  <div className="flex flex-nowrap w-max gap-2 px-4 py-3">
+                    {recentes.length > 0 && (
+                      <button onClick={() => setAbaAtiva('recentes')} className={`flex-none inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === 'recentes' ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
+                        <span className={`flex-shrink-0 ${abaAtiva === 'recentes' ? 'text-black' : 'text-zinc-500'}`}><IconClock/></span> Recentes
+                      </button>
+                    )}
+                    {categoriasPopulares.map(cat => (
+                      <button key={cat.id} onClick={() => setAbaAtiva(cat.id)} className={`flex-none inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === cat.id ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
+                        <span className={`flex-shrink-0 ${abaAtiva === cat.id ? 'text-black' : 'text-zinc-500'}`}>{cat.icone}</span> {cat.nome}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* LISTAGEM DOS ALIMENTOS DA ABA SELECIONADA */}
                 <div className="px-4 py-4 flex-1">
                   {abaAtiva === 'recentes' && (
@@ -359,14 +367,14 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                     </>
                   )}
                   
-                  {/* BLOCO VISUAL DE PESQUISA (TEXTO ATUALIZADO) */}
+                  {/* BLOCO VISUAL DE PESQUISA */}
                   <div className="mt-4 mb-8 bg-zinc-900/30 border border-zinc-800/50 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center">
                     <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center text-zinc-600 mb-3">
                       <IconSearch/>
                     </div>
                     <h4 className="text-white font-bold text-sm mb-1">Explore a base completa</h4>
                     <p className="text-zinc-500 text-xs mb-5 max-w-[240px]">
-                      Temos diversas opções cadastradas. Use a pesquisa para encontrar a opção exata.
+                      Temos diversas opções cadastradas. Use a pesquisa para encontrar o alimento exato.
                     </p>
                     <button onClick={() => inputBuscaRef.current?.focus()} className="btn px-6 py-3 bg-zinc-800 active:bg-zinc-700 text-white font-bold text-xs rounded-xl flex items-center gap-2">
                       Pesquisar alimento

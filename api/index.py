@@ -35,7 +35,7 @@ scopes = [
     "https://www.googleapis.com/auth/drive",
 ]
 
-# CORREÇÃO VITAL: Tenta ler a Variável de Ambiente do Vercel primeiro.
+# Tenta ler a Variável de Ambiente do Vercel primeiro.
 # Se não existir (por ex, no seu PC), usa o ficheiro credentials.json.
 raw_creds = os.environ.get("GOOGLE_CREDENTIALS")
 if raw_creds:
@@ -98,6 +98,7 @@ def extrair_data_de_id_treino(id_treino: str) -> str:
 # ── MODELOS ───────────────────────────────────────────────────────────────────
 class LoginReq(BaseModel): email: str; senha: str
 class RegReq(BaseModel): nome: str; email: str; senha: str; peso_atual: str; objetivo: str; altura: str; idade: str; genero: str
+class EditarUsuarioReq(BaseModel): id_usuario: str; nome: str; email: str; senha: str; peso_atual: str; objetivo: str; altura: str; idade: str; genero: str
 class ResetReq(BaseModel): email: str; senha_nova: str
 class SplitItem(BaseModel): id: str; id_usuario: str; nome: str; nomeHistorico: Optional[str] = None; ultimo_treino: Optional[str] = None
 class SalvarSplitsReq(BaseModel): id_usuario: str; splits: List[SplitItem]
@@ -115,16 +116,20 @@ def fazer_login(login: LoginReq):
         for user in get_records("Usuarios"):
             if str(user.get("Email", "")) == login.email or str(user.get("Nome", "")) == login.email:
                 if str(user.get("Senha_Hash", "")) == login.senha or str(user.get("Senha", "")) == login.senha:
-                    return {"status": "sucesso", "token": "sessao_ativa", "usuario": {
-                        "id":         str(user.get("ID_Usuario", "")),
-                        "nome":       str(user.get("Nome", "")),
-                        "email":      str(user.get("Email", "")),
-                        "peso_atual": str(user.get("Peso_Atual", "")),
-                        "altura":     str(user.get("Altura", "")),
-                        "idade":      str(user.get("Idade", "")),
-                        "genero":     str(user.get("Genero", "")),
-                        "objetivo":   str(user.get("Objetivo", "")),
-                    }}
+                    return {
+                        "status": "sucesso", 
+                        "token": "sessao_ativa", 
+                        "usuario": {
+                            "id": str(user.get("ID_Usuario", "")), 
+                            "nome": str(user.get("Nome", "")), 
+                            "email": str(user.get("Email", "")),
+                            "peso_atual": str(user.get("Peso_Atual", "")),
+                            "objetivo": str(user.get("Objetivo", "")),
+                            "altura": str(user.get("Altura", "")),
+                            "idade": str(user.get("Idade", "")),
+                            "genero": str(user.get("Genero", ""))
+                        }
+                    }
                 raise HTTPException(401, "Senha incorreta")
         raise HTTPException(404, "Usuário não encontrado")
     except HTTPException: raise
@@ -140,6 +145,33 @@ def registrar_usuario(req: RegReq):
         com_retry(lambda: get_ws("Usuarios").append_row([novo_id, req.nome, req.email, req.senha, date.today().isoformat(), req.peso_atual, req.objetivo, req.altura, req.idade, req.genero]))
         cache_del("Usuarios")
         return {"status": "sucesso"}
+    except HTTPException: raise
+    except Exception as e: raise HTTPException(500, str(e))
+
+@app.post("/api/usuario/editar")
+def editar_usuario(req: EditarUsuarioReq):
+    try:
+        usuarios = get_records("Usuarios")
+        ws = get_ws("Usuarios")
+        for i, user in enumerate(usuarios, start=2): # Linha 1 é o cabeçalho
+            if str(user.get("ID_Usuario", "")) == req.id_usuario:
+                updates = [
+                    {"range": f"B{i}", "values": [[req.nome]]},
+                    {"range": f"C{i}", "values": [[req.email]]},
+                    {"range": f"F{i}", "values": [[req.peso_atual]]},
+                    {"range": f"G{i}", "values": [[req.objetivo]]},
+                    {"range": f"H{i}", "values": [[req.altura]]},
+                    {"range": f"I{i}", "values": [[req.idade]]},
+                    {"range": f"J{i}", "values": [[req.genero]]},
+                ]
+                # Só atualiza a senha se o utilizador digitou algo novo
+                if req.senha.strip() != "":
+                    updates.append({"range": f"D{i}", "values": [[req.senha]]})
+                
+                com_retry(lambda: ws.batch_update(updates))
+                cache_del("Usuarios")
+                return {"status": "sucesso"}
+        raise HTTPException(404, "Usuário não encontrado")
     except HTTPException: raise
     except Exception as e: raise HTTPException(500, str(e))
 
@@ -246,6 +278,16 @@ def buscar_dieta(id_usuario: str = Query(...), data: str = Query(...)):
         meus = [r for r in com_retry(lambda: get_ws("Dieta_Suplementacao").get_all_records()) if str(r.get("ID_Usuario", "")) == id_usuario and str(r.get("Data", "")) == data]
         return {"registros": meus}
     except Exception as e: raise HTTPException(500, str(e))
+
+@app.delete("/api/dieta/registro")
+def deletar_dieta(id_registro: str = Query(...)):
+    try:
+        ws = get_ws("Dieta_Suplementacao")
+        cel = com_retry(lambda: ws.find(id_registro, in_column=1))
+        if not cel: return {"status": "ok"}
+        com_retry(lambda: ws.delete_rows(cel.row))
+        return {"status": "sucesso"}
+    except Exception: return {"status": "ok"}
 
 # ── CARDIO ────────────────────────────────────────────────────────────────────
 @app.post("/api/cardio")
