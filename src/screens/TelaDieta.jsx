@@ -9,7 +9,6 @@ const IconPlus = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const IconX = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>;
 const IconFlame = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 text-[#f97316]"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>;
 const IconMeat = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 text-blue-400"><path strokeLinecap="round" strokeLinejoin="round" d="M10.828 10.828L15.07 15.07m-9.9-9.9l4.243 4.243m.707 1.414l-4.243 4.243a2 2 0 000 2.828l2.828 2.828a2 2 0 002.828 0l4.243-4.243m-5.657-5.657l4.243-4.243a2 2 0 012.828 0l2.828 2.828a2 2 0 010 2.828l-4.243 4.243"/></svg>;
-const IconClock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4"><circle cx="12" cy="12" r="10"/><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2"/></svg>;
 
 export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   const [refeicoes, setRefeicoes] = useState([]);
@@ -23,13 +22,40 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   const [salvando, setSalvando] = useState(false);
   const inputBuscaRef = useRef(null);
 
-  // Histórico de Alimentos Recentes (Salvo no celular)
+  // Histórico de Alimentos Recentes
   const [recentes, setRecentes] = useState(() => {
     try { return JSON.parse(localStorage.getItem('alimentos_recentes')) || []; } 
     catch { return []; }
   });
 
+  const [abaAtiva, setAbaAtiva] = useState('recentes');
   const hoje = new Date().toISOString().slice(0, 10);
+
+  // ─── CATEGORIAS PRÉ-CARREGADAS (Para a tela inicial da busca) ────────────────
+  const categoriasPopulares = useMemo(() => {
+    const buscar = (termos) => {
+      const itens = [];
+      termos.forEach(termo => {
+        const encontrado = ALIMENTOS_DB.find(a => a.nome.toLowerCase().includes(termo.toLowerCase()));
+        if (encontrado && !itens.some(i => i.id === encontrado.id)) itens.push(encontrado);
+      });
+      return itens;
+    };
+
+    return [
+      { id: 'proteinas', nome: 'Proteínas', icone: '🥩', itens: buscar(['frango', 'ovo', 'patinho bovino', 'whey', 'peito de peru']) },
+      { id: 'carbos', nome: 'Carboidratos', icone: '🍚', itens: buscar(['arroz branco', 'tapioca', 'batata doce', 'pão francês', 'aveia']) },
+      { id: 'gorduras', nome: 'Gorduras', icone: '🥑', itens: buscar(['azeite de oliva', 'abacate', 'castanha', 'amendoim', 'manteiga']) },
+      { id: 'laticinios', nome: 'Laticínios', icone: '🧀', itens: buscar(['leite integral', 'mussarela', 'iogurte', 'requeijão', 'queijo prato']) },
+      { id: 'frutas', nome: 'Frutas', icone: '🍌', itens: buscar(['banana', 'maçã', 'mamão', 'melancia', 'laranja']) },
+    ];
+  }, []);
+
+  useEffect(() => {
+    if (modalBusca) {
+      setAbaAtiva(recentes.length > 0 ? 'recentes' : 'proteinas');
+    }
+  }, [modalBusca, recentes.length]);
 
   // ─── CARREGAR REFEIÇÕES DO DIA ──────────────────────────────────────────────
   useEffect(() => {
@@ -38,13 +64,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
       .catch(() => mostrarToast('Erro ao carregar dieta', 'erro'))
       .finally(() => setLoading(false));
   }, [usuario.id, hoje, mostrarToast]);
-
-  // Foca no input quando abre a busca (Usabilidade Mobile)
-  useEffect(() => {
-    if (modalBusca && !alimentoSelecionado) {
-      setTimeout(() => inputBuscaRef.current?.focus(), 100);
-    }
-  }, [modalBusca, alimentoSelecionado]);
 
   // ─── CÁLCULO DE METAS E MACROS ──────────────────────────────────────────────
   const metas = useMemo(() => {
@@ -77,12 +96,10 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   const progressoKcal = Math.min((consumido.kcal / metas.kcal) * 100, 100);
   const progressoProt = Math.min((consumido.proteina / metas.proteina) * 100, 100);
 
-  // ─── LÓGICA DE BUSCA OTIMIZADA (ANTI-LAG) ───────────────────────────────────
+  // ─── LÓGICA DE BUSCA OTIMIZADA ──────────────────────────────────────────────
   const resultadosBusca = useMemo(() => {
     const termo = termoBusca.trim().toLowerCase();
-    if (termo.length < 2) return []; // Só busca após 2 letras para não travar
-    
-    // Filtra e limita a 40 itens para manter a tela super rápida
+    if (termo.length < 2) return [];
     return ALIMENTOS_DB.filter(a => a.nome.toLowerCase().includes(termo)).slice(0, 40);
   }, [termoBusca]);
 
@@ -111,7 +128,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     try {
       await apiFetch('/api/dieta/registro', { method: 'POST', body: novaRefeicao });
       
-      // Adiciona aos recentes
       const novosRecentes = [alimentoSelecionado, ...recentes.filter(r => r.id !== alimentoSelecionado.id)].slice(0, 10);
       setRecentes(novosRecentes);
       localStorage.setItem('alimentos_recentes', JSON.stringify(novosRecentes));
@@ -142,17 +158,16 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   // ─── RENDERIZAÇÃO DE ITEM DA LISTA ──────────────────────────────────────────
   const renderizarAlimento = (a) => (
     <button key={a.id} onClick={() => setAlimentoSelecionado(a)} 
-      className="w-full text-left bg-zinc-900 border border-zinc-800 active:border-[#c8f542] active:bg-[#c8f542]/5 rounded-2xl p-4 mb-2 transition-all flex flex-col gap-2">
+      className="w-full text-left bg-zinc-900 border border-zinc-800 active:border-[#c8f542] active:bg-[#c8f542]/5 rounded-2xl p-4 mb-3 transition-all flex flex-col gap-2 shadow-sm">
       <div className="flex justify-between items-start">
         <p className="text-white font-bold text-sm leading-tight pr-4">{a.nome}</p>
-        <span className="text-zinc-600 flex-shrink-0"><IconPlus/></span>
+        <span className="text-zinc-600 flex-shrink-0 bg-zinc-800 rounded-full p-1"><IconPlus/></span>
       </div>
       <div className="flex items-center gap-3 text-xs font-semibold">
-        <span className="text-[#f97316]">{a.kcal} kcal</span>
-        <span className="text-zinc-700">•</span>
-        <span className="text-blue-400">{a.proteina}g P</span>
-        <span className="text-emerald-400">{a.carbo}g C</span>
-        <span className="text-amber-400">{a.gordura}g G</span>
+        <span className="text-[#f97316] bg-[#f97316]/10 px-2 py-0.5 rounded-md">{a.kcal} kcal</span>
+        <span className="text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md">{a.proteina}g P</span>
+        <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">{a.carbo}g C</span>
+        <span className="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">{a.gordura}g G</span>
       </div>
     </button>
   );
@@ -173,7 +188,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
       <div className="flex-1 overflow-y-auto px-5 pt-6 pb-10 flex flex-col gap-6">
         
         {/* ── CARD: CALORIAS ── */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-lg">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-lg relative overflow-hidden">
           <div className="flex justify-between items-end mb-4">
             <div>
               <div className="flex items-center gap-1.5 mb-1">
@@ -250,11 +265,12 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
         </div>
       </div>
 
-      {/* ── MODAL: BUSCAR ALIMENTO (TELA CHEIA) ── */}
+      {/* ── MODAL: BUSCAR / SELECIONAR ALIMENTO (TELA CHEIA) ── */}
       {modalBusca && (
         <div className="fixed inset-0 z-50 bg-[#0a0a0a] flex flex-col slide-up" style={{paddingTop:'env(safe-area-inset-top)'}}>
-          {/* HEADER DA BUSCA */}
-          <div className="px-4 pt-4 pb-3 flex items-center gap-3 border-b border-zinc-900 bg-[#0a0a0a] z-10">
+          
+          {/* HEADER DE BUSCA */}
+          <div className="px-4 pt-4 pb-3 flex items-center gap-3 bg-[#0a0a0a] z-10">
             <button onClick={fecharBusca} className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
               <IconBack/>
             </button>
@@ -276,50 +292,54 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
             </div>
           </div>
 
-          {/* LISTA DE RESULTADOS / RECENTES */}
-          <div className="flex-1 overflow-y-auto px-4 py-4">
+          {/* CONTEÚDO DA BUSCA OU CATEGORIAS */}
+          <div className="flex-1 overflow-y-auto flex flex-col">
             
-            {/* Se não digitou nada, mostra os Recentes */}
-            {termoBusca.trim().length === 0 && (
-              <>
-                {recentes.length > 0 ? (
-                  <div className="mb-6">
-                    <div className="flex items-center gap-2 mb-3 px-1">
-                      <span className="text-zinc-500"><IconClock/></span>
-                      <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Adicionados Recentemente</h3>
-                    </div>
-                    {recentes.map(renderizarAlimento)}
-                  </div>
-                ) : (
-                  <div className="text-center py-16 flex flex-col items-center">
-                    <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center text-zinc-700 mb-4">
-                      <IconSearch/>
-                    </div>
-                    <p className="text-white font-bold mb-1">Pesquise um alimento</p>
-                    <p className="text-zinc-500 text-sm">Digite acima para buscar na base.</p>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Avisa para digitar mais letras se digitou apenas 1 */}
-            {termoBusca.trim().length === 1 && (
-              <div className="text-center py-10 text-zinc-500 text-sm">
-                Digite pelo menos 2 letras...
-              </div>
-            )}
-
-            {/* Resultados Reais */}
-            {termoBusca.trim().length >= 2 && (
-              <>
-                {resultadosBusca.length === 0 ? (
+            {/* SE O USUÁRIO ESTÁ A DIGITAR (MODO BUSCA) */}
+            {termoBusca.trim().length > 0 ? (
+              <div className="px-4 py-4">
+                {termoBusca.trim().length === 1 ? (
+                  <div className="text-center py-10 text-zinc-500 text-sm">Digite pelo menos 2 letras...</div>
+                ) : resultadosBusca.length === 0 ? (
                   <div className="text-center py-10 text-zinc-500 text-sm">Alimento não encontrado.</div>
                 ) : (
                   <>
-                    <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3 px-1">Resultados</h3>
+                    <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3 px-1">Resultados da Busca</h3>
                     {resultadosBusca.map(renderizarAlimento)}
                   </>
                 )}
+              </div>
+            ) : (
+              /* SE O CAMPO DE BUSCA ESTÁ VAZIO (MODO CATEGORIAS) */
+              <>
+                {/* MENU DE ABAS DESLIZANTE HORIZONTAL */}
+                <div className="flex overflow-x-auto gap-2 px-4 py-3 border-b border-zinc-900 sticky top-0 bg-[#0a0a0a] z-10" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  {recentes.length > 0 && (
+                    <button onClick={() => setAbaAtiva('recentes')} className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === 'recentes' ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
+                      ⏱️ Recentes
+                    </button>
+                  )}
+                  {categoriasPopulares.map(cat => (
+                    <button key={cat.id} onClick={() => setAbaAtiva(cat.id)} className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === cat.id ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
+                      {cat.icone} {cat.nome}
+                    </button>
+                  ))}
+                </div>
+
+                {/* LISTAGEM DOS ALIMENTOS DA ABA SELECIONADA */}
+                <div className="px-4 py-4 flex-1">
+                  {abaAtiva === 'recentes' && (
+                    <>
+                      <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3 px-1">Adicionados Recentemente</h3>
+                      {recentes.map(renderizarAlimento)}
+                    </>
+                  )}
+                  {abaAtiva !== 'recentes' && (
+                    <>
+                      {categoriasPopulares.find(c => c.id === abaAtiva)?.itens.map(renderizarAlimento)}
+                    </>
+                  )}
+                </div>
               </>
             )}
           </div>
