@@ -398,16 +398,6 @@ def buscar_historico(
     nome_treino: str = Query(...),
     split_id:    Optional[str] = Query(None),
 ):
-    """
-    Busca as séries do ÚLTIMO treino do usuário naquele split.
-
-    Aceita dois identificadores para compatibilidade retroativa:
-      - split_id:    prefixo novo (split.id_usuario), imutável ao renomear o grupo.
-      - nome_treino: prefixo antigo (nome do split), usado por registros já gravados.
-
-    Busca pelos dois prefixos e retorna o treino mais recente da união.
-    Isso garante que renomear um grupo muscular NÃO apaga o histórico.
-    """
     try:
         # Arquivamento lazy — não bloqueia
         try:
@@ -495,6 +485,20 @@ def registrar_dieta(registro: RegistroDieta):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/dieta/registro")
+def buscar_dieta(id_usuario: str = Query(...), data: str = Query(...)):
+    try:
+        ws = get_ws("Dieta_Suplementacao")
+        todas = com_retry(lambda: ws.get_all_records())
+        # Filtra apenas os alimentos do utilizador e do dia específico
+        meus = [
+            r for r in todas
+            if str(r.get("ID_Usuario", "")) == id_usuario.strip() and str(r.get("Data", "")) == data.strip()
+        ]
+        return {"registros": meus}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ── CARDIO ────────────────────────────────────────────────────────────────────
 @app.post("/cardio")
@@ -554,6 +558,8 @@ def buscar_cardio(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ── HEALTH ────────────────────────────────────────────────────────────────────
 @app.get("/health")
 def health():
     return {
@@ -567,30 +573,3 @@ def health():
             if _ultimo_arquivamento else None
         ),
     }
-
-@app.post("/dieta/registro")
-def registrar_dieta(registro: RegistroDieta):
-    try:
-        com_retry(lambda: get_ws("Dieta_Suplementacao").append_row([
-            registro.id_registro, registro.id_usuario, registro.data,
-            registro.tipo_refeicao, registro.calorias, registro.proteinas_g,
-            registro.carbos_g, registro.gorduras_g, registro.check_agua,
-            registro.check_whey, registro.check_creatina,
-        ]))
-        return {"status": "sucesso"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/dieta/registro")
-def buscar_dieta(id_usuario: str = Query(...), data: str = Query(...)):
-    try:
-        ws = get_ws("Dieta_Suplementacao")
-        todas = com_retry(lambda: ws.get_all_records())
-        # Filtra apenas os alimentos do utilizador e do dia específico
-        meus = [
-            r for r in todas
-            if str(r.get("ID_Usuario", "")) == id_usuario.strip() and str(r.get("Data", "")) == data.strip()
-        ]
-        return {"registros": meus}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
