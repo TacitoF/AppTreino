@@ -319,18 +319,20 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
             ) : (
               /* SE O CAMPO DE BUSCA ESTÁ VAZIO (MODO CATEGORIAS) */
               <>
-                {/* MENU DE ABAS DESLIZANTE HORIZONTAL (flex-shrink-0 ADICIONADO AQUI) */}
-                <div className="flex overflow-x-auto gap-2 px-4 py-3 border-b border-zinc-900 sticky top-0 bg-[#0a0a0a] z-10" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                  {recentes.length > 0 && (
-                    <button onClick={() => setAbaAtiva('recentes')} className={`flex-shrink-0 whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === 'recentes' ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
-                      <span className={abaAtiva === 'recentes' ? 'text-black' : 'text-zinc-500'}><IconClock/></span> Recentes
-                    </button>
-                  )}
-                  {categoriasPopulares.map(cat => (
-                    <button key={cat.id} onClick={() => setAbaAtiva(cat.id)} className={`flex-shrink-0 whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === cat.id ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
-                      <span className={abaAtiva === cat.id ? 'text-black' : 'text-zinc-500'}>{cat.icone}</span> {cat.nome}
-                    </button>
-                  ))}
+                {/* MENU DE ABAS DESLIZANTE HORIZONTAL OTIMIZADO (COM w-max PARA NÃO QUEBRAR) */}
+                <div className="overflow-x-auto sticky top-0 bg-[#0a0a0a] z-10 border-b border-zinc-900" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  <div className="flex flex-nowrap w-max gap-2 px-4 py-3">
+                    {recentes.length > 0 && (
+                      <button onClick={() => setAbaAtiva('recentes')} className={`flex-none inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === 'recentes' ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
+                        <span className={abaAtiva === 'recentes' ? 'text-black' : 'text-zinc-500'}><IconClock/></span> Recentes
+                      </button>
+                    )}
+                    {categoriasPopulares.map(cat => (
+                      <button key={cat.id} onClick={() => setAbaAtiva(cat.id)} className={`flex-none inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === cat.id ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
+                        <span className={abaAtiva === cat.id ? 'text-black' : 'text-zinc-500'}>{cat.icone}</span> {cat.nome}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* LISTAGEM DOS ALIMENTOS DA ABA SELECIONADA */}
@@ -347,14 +349,14 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                     </>
                   )}
                   
-                  {/* BLOCO VISUAL DE PESQUISA (TEXTO ATUALIZADO) */}
+                  {/* NOVIDADE: BLOCO VISUAL DE PESQUISA (TEXTO ATUALIZADO) */}
                   <div className="mt-4 mb-8 bg-zinc-900/30 border border-zinc-800/50 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center">
                     <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center text-zinc-600 mb-3">
                       <IconSearch/>
                     </div>
-                    <h4 className="text-white font-bold text-sm mb-1">Explore nossa base completa</h4>
+                    <h4 className="text-white font-bold text-sm mb-1">Explore a base completa</h4>
                     <p className="text-zinc-500 text-xs mb-5 max-w-[240px]">
-                      Não encontrou o que queria nas sugestões acima? Use a pesquisa para encontrar a opção exata.
+                      Temos diversas opções cadastradas. Use a pesquisa para encontrar o alimento exato.
                     </p>
                     <button onClick={() => inputBuscaRef.current?.focus()} className="btn px-6 py-3 bg-zinc-800 active:bg-zinc-700 text-white font-bold text-xs rounded-xl flex items-center gap-2">
                       Pesquisar alimento
