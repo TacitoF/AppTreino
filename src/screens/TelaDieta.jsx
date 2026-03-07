@@ -50,11 +50,11 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     };
 
     return [
-      { id: 'proteinas', nome: 'Proteínas', icone: <IconProteina/>, itens: buscar(['frango', 'ovo', 'patinho bovino', 'whey', 'peito de peru']) },
-      { id: 'carbos', nome: 'Carboidratos', icone: <IconCarbo/>, itens: buscar(['arroz branco', 'tapioca', 'batata doce', 'pão francês', 'aveia']) },
-      { id: 'gorduras', nome: 'Gorduras', icone: <IconGordura/>, itens: buscar(['azeite de oliva', 'abacate', 'castanha', 'amendoim', 'manteiga']) },
-      { id: 'laticinios', nome: 'Laticínios', icone: <IconLaticinios/>, itens: buscar(['leite integral', 'mussarela', 'iogurte', 'requeijão', 'queijo prato']) },
-      { id: 'frutas', nome: 'Frutas', icone: <IconFrutas/>, itens: buscar(['banana', 'maçã', 'mamão', 'melancia', 'laranja']) },
+      { id: 'proteinas', nome: 'Proteínas',    Icone: IconProteina,  itens: buscar(['frango', 'ovo', 'patinho bovino', 'whey', 'peito de peru']) },
+      { id: 'carbos',    nome: 'Carboidratos', Icone: IconCarbo,     itens: buscar(['arroz branco', 'tapioca', 'batata doce', 'pão francês', 'aveia']) },
+      { id: 'gorduras',  nome: 'Gorduras',     Icone: IconGordura,   itens: buscar(['azeite de oliva', 'abacate', 'castanha', 'amendoim', 'manteiga']) },
+      { id: 'laticinios',nome: 'Laticínios',   Icone: IconLaticinios,itens: buscar(['leite integral', 'mussarela', 'iogurte', 'requeijão', 'queijo prato']) },
+      { id: 'frutas',    nome: 'Frutas',       Icone: IconFrutas,    itens: buscar(['banana', 'maçã', 'mamão', 'melancia', 'laranja']) },
     ];
   }, []);
 
@@ -338,7 +338,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                       onClick={() => setAbaAtiva(cat.id)} 
                       className={`flex-none whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === cat.id ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}
                     >
-                      <span className={`flex-shrink-0 ${abaAtiva === cat.id ? 'text-black' : 'text-zinc-500'}`}>{cat.icone}</span> {cat.nome}
+                      <span className={`flex-shrink-0 ${abaAtiva === cat.id ? 'text-black' : 'text-zinc-500'}`}><cat.Icone/></span> {cat.nome}
                     </button>
                   ))}
                 </div>
