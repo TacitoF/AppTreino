@@ -9,7 +9,7 @@ const IconPlus = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const IconX = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>;
 const IconFlame = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 text-[#f97316]"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>;
 
-// ─── ÍCONES DAS CATEGORIAS (Profissionais, sem emojis) ──────────────────────
+// ─── ÍCONES DAS CATEGORIAS ──────────────────────────────────────────────────
 const IconClock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4"><circle cx="12" cy="12" r="10"/><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2"/></svg>;
 const IconProteina = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M10.828 10.828L15.07 15.07m-9.9-9.9l4.243 4.243m.707 1.414l-4.243 4.243a2 2 0 000 2.828l2.828 2.828a2 2 0 002.828 0l4.243-4.243m-5.657-5.657l4.243-4.243a2 2 0 012.828 0l2.828 2.828a2 2 0 010 2.828l-4.243 4.243"/></svg>;
 const IconCarbo = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 22V12M12 12C12 6.5 16.5 2 22 2c0 5.5-4.5 10-10 10zM12 12C12 6.5 7.5 2 2 2c0 5.5 4.5 10 10 10z"/></svg>;
@@ -38,7 +38,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   const [abaAtiva, setAbaAtiva] = useState('recentes');
   const hoje = new Date().toISOString().slice(0, 10);
 
-  // ─── CATEGORIAS PRÉ-CARREGADAS (Sem emojis, usando SVGs) ────────────────────
+  // ─── CATEGORIAS PRÉ-CARREGADAS ──────────────────────────────────────────────
   const categoriasPopulares = useMemo(() => {
     const buscar = (termos) => {
       const itens = [];
@@ -319,15 +319,15 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
             ) : (
               /* SE O CAMPO DE BUSCA ESTÁ VAZIO (MODO CATEGORIAS) */
               <>
-                {/* MENU DE ABAS DESLIZANTE HORIZONTAL */}
+                {/* MENU DE ABAS DESLIZANTE HORIZONTAL (flex-shrink-0 ADICIONADO AQUI) */}
                 <div className="flex overflow-x-auto gap-2 px-4 py-3 border-b border-zinc-900 sticky top-0 bg-[#0a0a0a] z-10" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   {recentes.length > 0 && (
-                    <button onClick={() => setAbaAtiva('recentes')} className={`whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === 'recentes' ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
+                    <button onClick={() => setAbaAtiva('recentes')} className={`flex-shrink-0 whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === 'recentes' ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
                       <span className={abaAtiva === 'recentes' ? 'text-black' : 'text-zinc-500'}><IconClock/></span> Recentes
                     </button>
                   )}
                   {categoriasPopulares.map(cat => (
-                    <button key={cat.id} onClick={() => setAbaAtiva(cat.id)} className={`whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === cat.id ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
+                    <button key={cat.id} onClick={() => setAbaAtiva(cat.id)} className={`flex-shrink-0 whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === cat.id ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
                       <span className={abaAtiva === cat.id ? 'text-black' : 'text-zinc-500'}>{cat.icone}</span> {cat.nome}
                     </button>
                   ))}
@@ -347,14 +347,14 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                     </>
                   )}
                   
-                  {/* NOVIDADE: BLOCO VISUAL DE PESQUISA MAIS ALIMENTOS */}
+                  {/* BLOCO VISUAL DE PESQUISA (TEXTO ATUALIZADO) */}
                   <div className="mt-4 mb-8 bg-zinc-900/30 border border-zinc-800/50 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center">
                     <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center text-zinc-600 mb-3">
                       <IconSearch/>
                     </div>
-                    <h4 className="text-white font-bold text-sm mb-1">Mais de 6.000 alimentos</h4>
+                    <h4 className="text-white font-bold text-sm mb-1">Explore nossa base completa</h4>
                     <p className="text-zinc-500 text-xs mb-5 max-w-[240px]">
-                      Não encontrou o que queria nas sugestões acima? Pesquise para encontrar a opção exata.
+                      Não encontrou o que queria nas sugestões acima? Use a pesquisa para encontrar a opção exata.
                     </p>
                     <button onClick={() => inputBuscaRef.current?.focus()} className="btn px-6 py-3 bg-zinc-800 active:bg-zinc-700 text-white font-bold text-xs rounded-xl flex items-center gap-2">
                       Pesquisar alimento
