@@ -31,8 +31,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
     if (!email || !senha) { mostrarToast('Preencha e-mail ou nome de usuário e senha.', 'erro'); return; }
     setLoading(true);
     try {
-      const isEmail = email.includes('@');
-      const r = await apiFetch(R.login, { method: 'POST', body: isEmail ? { email, senha } : { nome: email, senha } });
+      const r = await apiFetch(R.login, { method: 'POST', body: { email, senha } });
       if (r.token) setAuthToken(r.token);
       onLogin(r.usuario);
       limpar();
