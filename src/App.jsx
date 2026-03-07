@@ -10,6 +10,7 @@ import TelaResumo           from './screens/TelaResumo';
 import TelaRank             from './screens/TelaRank';
 import TelaCardio           from './screens/TelaCardio';
 import TelaDieta            from './screens/TelaDieta';
+import TelaPerfil           from './screens/TelaPerfil';
 
 export default function App() {
   const sessaoSalva = carregarSessao();
@@ -97,7 +98,11 @@ export default function App() {
       <Toast data={toast}/>
       <IOSInstallBanner/>
       {tela==='auth'             && <TelaAuth onLogin={onLogin} mostrarToast={mostrarToast}/>}
-      {tela==='grupamentos'      && usuario && <TelaGrupamentos usuario={usuario} splits={splits} loadingSplits={loadingSplits} onSelecionarSplit={onSelecionarSplit} onGerenciar={()=>setTela('gerenciar-splits')} onRank={()=>setTela('rank')} onCardio={()=>setTela('cardio')} onDieta={()=>setTela('dieta')} onLogout={onLogout}/>}
+      
+      {/* CORREÇÃO: O onPerfil agora está aqui em baixo! */}
+      {tela==='grupamentos'      && usuario && <TelaGrupamentos usuario={usuario} splits={splits} loadingSplits={loadingSplits} onSelecionarSplit={onSelecionarSplit} onGerenciar={()=>setTela('gerenciar-splits')} onRank={()=>setTela('rank')} onCardio={()=>setTela('cardio')} onDieta={()=>setTela('dieta')} onPerfil={()=>setTela('perfil')} onLogout={onLogout}/>}
+      
+      {tela==='perfil'           && usuario && <TelaPerfil usuario={usuario} onSalvar={u => { setUsuario(u); setTela('grupamentos'); mostrarToast('Perfil atualizado!', 'sucesso'); }} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
       {tela==='gerenciar-splits' && usuario && <TelaGerenciarSplits usuario={usuario} splits={splits} onSalvar={l=>{setSplits(l);setTela('grupamentos');}} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
       {tela==='treino'           && splitAtivo && <TelaTreino usuario={usuario} split={splitAtivo} historicoAnterior={historico} onFinalizar={onFinalizar} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
       {tela==='resumo'           && resultado && <TelaResumo resultado={resultado} onVoltar={()=>setTela('grupamentos')}/>}

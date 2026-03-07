@@ -8,7 +8,6 @@ const IconSearch = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentCol
 const IconPlus = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>;
 const IconX = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>;
 const IconFlame = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 text-[#f97316]"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>;
-// NOVO: Ícone do lixo para excluir a refeição
 const IconTrash = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
 
 // ─── ÍCONES DAS CATEGORIAS ──────────────────────────────────────────────────
@@ -23,15 +22,17 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   const [refeicoes, setRefeicoes] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Estados do Modal de Busca
   const [modalBusca, setModalBusca] = useState(false);
   const [termoBusca, setTermoBusca] = useState('');
   const [alimentoSelecionado, setAlimentoSelecionado] = useState(null);
+  
+  // NOVO ESTADO: Controla qual item vai ser excluído
+  const [itemParaExcluir, setItemParaExcluir] = useState(null);
+
   const [gramas, setGramas] = useState('');
   const [salvando, setSalvando] = useState(false);
   const inputBuscaRef = useRef(null);
 
-  // Histórico de Alimentos Recentes
   const [recentes, setRecentes] = useState(() => {
     try { return JSON.parse(localStorage.getItem('alimentos_recentes')) || []; } 
     catch { return []; }
@@ -40,7 +41,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   const [abaAtiva, setAbaAtiva] = useState('recentes');
   const hoje = new Date().toISOString().slice(0, 10);
 
-  // ─── CATEGORIAS PRÉ-CARREGADAS ──────────────────────────────────────────────
   const categoriasPopulares = useMemo(() => {
     const buscar = (termos) => {
       const itens = [];
@@ -66,7 +66,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     }
   }, [modalBusca, recentes.length]);
 
-  // ─── CARREGAR REFEIÇÕES DO DIA ──────────────────────────────────────────────
   useEffect(() => {
     apiFetch(`/api/dieta/registro?id_usuario=${usuario.id}&data=${hoje}`)
       .then(r => setRefeicoes(r.registros || []))
@@ -74,7 +73,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
       .finally(() => setLoading(false));
   }, [usuario.id, hoje, mostrarToast]);
 
-  // ─── CÁLCULO DE METAS E MACROS ──────────────────────────────────────────────
   const metas = useMemo(() => {
     const peso   = parseFloat(usuario.peso_atual) || 70;
     const altura = parseFloat(usuario.altura) || 170;
@@ -105,14 +103,12 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   const progressoKcal = Math.min((consumido.kcal / metas.kcal) * 100, 100);
   const progressoProt = Math.min((consumido.proteina / metas.proteina) * 100, 100);
 
-  // ─── LÓGICA DE BUSCA OTIMIZADA ──────────────────────────────────────────────
   const resultadosBusca = useMemo(() => {
     const termo = termoBusca.trim().toLowerCase();
     if (termo.length < 2) return [];
     return ALIMENTOS_DB.filter(a => a.nome.toLowerCase().includes(termo)).slice(0, 40);
   }, [termoBusca]);
 
-  // ─── SALVAR REFEIÇÃO ────────────────────────────────────────────────────────
   const salvarRefeicao = async () => {
     const g = parseFloat(gramas);
     if (!g || g <= 0) return mostrarToast('Digite uma quantidade válida.', 'erro');
@@ -157,15 +153,19 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     }
   };
 
-  // ─── NOVO: FUNÇÃO DE EXCLUIR REFEIÇÃO ───────────────────────────────────────
-  const excluirRefeicao = async (id) => {
-    if(!window.confirm('Tem a certeza que deseja remover este alimento?')) return;
+  // ─── NOVA LÓGICA DE EXCLUSÃO ────────────────────────────────────────────────
+  const confirmarExclusao = async () => {
+    if (!itemParaExcluir) return;
+    const id = itemParaExcluir.ID_Registro || itemParaExcluir.id_registro;
+    
     try {
       await apiFetch(`/api/dieta/registro?id_registro=${id}`, { method: 'DELETE' });
       setRefeicoes(prev => prev.filter(r => r.ID_Registro !== id && r.id_registro !== id));
       mostrarToast('Alimento removido.', 'sucesso');
     } catch {
       mostrarToast('Erro ao remover.', 'erro');
+    } finally {
+      setItemParaExcluir(null); // Fecha o modal
     }
   };
 
@@ -176,7 +176,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     setGramas('');
   };
 
-  // ─── RENDERIZAÇÃO DE ITEM DA LISTA ──────────────────────────────────────────
   const renderizarAlimento = (a) => (
     <button key={a.id} onClick={() => setAlimentoSelecionado(a)} 
       className="w-full text-left bg-zinc-900 border border-zinc-800 active:border-[#c8f542] active:bg-[#c8f542]/5 rounded-2xl p-4 mb-3 transition-all flex flex-col gap-2 shadow-sm">
@@ -257,7 +256,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
           <IconPlus /> Adicionar alimento
         </button>
 
-        {/* ── LISTA DE HOJE COM BOTÃO DE EXCLUIR ── */}
+        {/* ── LISTA DE HOJE COM BOTÃO DE EXCLUIR ATUALIZADO ── */}
         <div>
           <h2 className="text-white font-bold text-lg mb-4 mt-2">Consumido Hoje</h2>
           
@@ -279,8 +278,8 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                     <p className="text-[#c8f542] font-black text-xl num">{ref.Calorias || ref.calorias}</p>
                     <p className="text-zinc-600 text-xs font-semibold">kcal</p>
                   </div>
-                  {/* BOTÃO LIXO */}
-                  <button onClick={() => excluirRefeicao(ref.ID_Registro || ref.id_registro)} className="ml-4 w-10 h-10 bg-red-500/10 active:bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+                  {/* AGORA ABRE O MODAL EM VEZ DO WINDOW.CONFIRM */}
+                  <button onClick={() => setItemParaExcluir(ref)} className="ml-4 w-10 h-10 bg-red-500/10 active:bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
                     <IconTrash/>
                   </button>
                 </div>
@@ -290,11 +289,29 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
         </div>
       </div>
 
+      {/* ── MODAL CONFIRMAÇÃO EXCLUSÃO (Mobile Friendly) ── */}
+      {itemParaExcluir && (
+        <div className="fixed inset-0 z-[70] bg-black/80 flex flex-col justify-end slide-up" onClick={() => setItemParaExcluir(null)}>
+          <div className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl p-6 pb-8" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto mb-6"/>
+            <h3 className="text-white font-black text-xl mb-2 text-center">Remover alimento?</h3>
+            <p className="text-zinc-400 text-sm mb-8 text-center leading-relaxed">
+              Tem certeza que deseja remover <br/>
+              <strong className="text-white">{itemParaExcluir.Tipo_Refeicao || itemParaExcluir.tipo_refeicao}</strong><br/>
+              do seu diário de hoje?
+            </p>
+            <div className="flex gap-3 pb-safe">
+              <button onClick={() => setItemParaExcluir(null)} className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-bold rounded-2xl">Cancelar</button>
+              <button onClick={confirmarExclusao} className="btn flex-1 py-4 bg-red-500/10 text-red-500 active:bg-red-500/20 font-bold rounded-2xl">Sim, remover</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── MODAL: BUSCAR / SELECIONAR ALIMENTO (TELA CHEIA) ── */}
       {modalBusca && (
         <div className="fixed inset-0 z-50 bg-[#0a0a0a] flex flex-col slide-up" style={{paddingTop:'env(safe-area-inset-top)'}}>
           
-          {/* HEADER DE BUSCA */}
           <div className="px-4 pt-4 pb-3 flex items-center gap-3 bg-[#0a0a0a] z-10">
             <button onClick={fecharBusca} className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
               <IconBack/>
@@ -317,10 +334,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
             </div>
           </div>
 
-          {/* CONTEÚDO DA BUSCA OU CATEGORIAS */}
           <div className="flex-1 overflow-y-auto flex flex-col">
-            
-            {/* SE O USUÁRIO ESTÁ A DIGITAR (MODO BUSCA) */}
             {termoBusca.trim().length > 0 ? (
               <div className="px-4 py-4">
                 {termoBusca.trim().length === 1 ? (
@@ -335,9 +349,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                 )}
               </div>
             ) : (
-              /* SE O CAMPO DE BUSCA ESTÁ VAZIO (MODO CATEGORIAS) */
               <>
-                {/* MENU DE ABAS DESLIZANTE HORIZONTAL */}
                 <div className="overflow-x-auto sticky top-0 bg-[#0a0a0a] z-10 border-b border-zinc-900 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
                   <div className="flex flex-nowrap w-max gap-2 px-4 py-3">
                     {recentes.length > 0 && (
@@ -353,7 +365,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                   </div>
                 </div>
 
-                {/* LISTAGEM DOS ALIMENTOS DA ABA SELECIONADA */}
                 <div className="px-4 py-4 flex-1">
                   {abaAtiva === 'recentes' && (
                     <>
@@ -367,14 +378,13 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                     </>
                   )}
                   
-                  {/* BLOCO VISUAL DE PESQUISA */}
                   <div className="mt-4 mb-8 bg-zinc-900/30 border border-zinc-800/50 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center">
                     <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center text-zinc-600 mb-3">
                       <IconSearch/>
                     </div>
                     <h4 className="text-white font-bold text-sm mb-1">Explore a base completa</h4>
                     <p className="text-zinc-500 text-xs mb-5 max-w-[240px]">
-                      Temos diversas opções cadastradas. Use a pesquisa para encontrar o alimento exato.
+                      Temos diversas opções cadastradas. Use a pesquisa para encontrar a opção exata.
                     </p>
                     <button onClick={() => inputBuscaRef.current?.focus()} className="btn px-6 py-3 bg-zinc-800 active:bg-zinc-700 text-white font-bold text-xs rounded-xl flex items-center gap-2">
                       Pesquisar alimento
@@ -386,7 +396,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
             )}
           </div>
 
-          {/* ── MODAL (BOTTOM SHEET): QUANTIDADE ── */}
           {alimentoSelecionado && (
             <div className="absolute inset-0 bg-black/80 flex flex-col justify-end z-[60]" onClick={() => setAlimentoSelecionado(null)}>
               <div className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl p-6 slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" onClick={e => e.stopPropagation()}>
@@ -404,7 +413,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                   <span className="text-zinc-500 font-bold text-lg">gramas</span>
                 </div>
 
-                {/* Preview em tempo real dos macros */}
                 <div className="bg-zinc-800/40 border border-zinc-800/80 rounded-2xl p-4 mb-6">
                   <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3">Total a adicionar</p>
                   <div className="flex justify-between items-center">
