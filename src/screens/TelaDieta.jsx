@@ -299,8 +299,34 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
             </div>
           </div>
 
+          {/* BARRA DE ABAS — fora do scroll para overflow-x funcionar */}
+          {!termoBusca.trim() && (
+            <div
+              className="flex overflow-x-auto gap-2 px-4 py-3 border-b border-zinc-900 bg-[#0a0a0a] flex-shrink-0"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+            >
+              {recentes.length > 0 && (
+                <button
+                  onClick={() => setAbaAtiva('recentes')}
+                  className={`flex-none whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === 'recentes' ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}
+                >
+                  <span className={`flex-shrink-0 ${abaAtiva === 'recentes' ? 'text-black' : 'text-zinc-500'}`}><IconClock/></span> Recentes
+                </button>
+              )}
+              {categoriasPopulares.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setAbaAtiva(cat.id)}
+                  className={`flex-none whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === cat.id ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}
+                >
+                  <span className={`flex-shrink-0 ${abaAtiva === cat.id ? 'text-black' : 'text-zinc-500'}`}><cat.Icone/></span> {cat.nome}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* CONTEÚDO DA BUSCA OU CATEGORIAS */}
-          <div className="flex-1 overflow-y-auto flex flex-col">
+          <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
             
             {/* SE O USUÁRIO ESTÁ A DIGITAR (MODO BUSCA) */}
             {termoBusca.trim().length > 0 ? (
@@ -319,30 +345,6 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
             ) : (
               /* SE O CAMPO DE BUSCA ESTÁ VAZIO (MODO CATEGORIAS) */
               <>
-                {/* MENU DE ABAS DESLIZANTE HORIZONTAL - FIX DEFINITIVO */}
-                <div 
-                  className="flex overflow-x-auto gap-2 px-4 py-3 sticky top-0 bg-[#0a0a0a] z-10 border-b border-zinc-900 [&::-webkit-scrollbar]:hidden" 
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
-                >
-                  {recentes.length > 0 && (
-                    <button 
-                      onClick={() => setAbaAtiva('recentes')} 
-                      className={`flex-none whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === 'recentes' ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}
-                    >
-                      <span className={`flex-shrink-0 ${abaAtiva === 'recentes' ? 'text-black' : 'text-zinc-500'}`}><IconClock/></span> Recentes
-                    </button>
-                  )}
-                  {categoriasPopulares.map(cat => (
-                    <button 
-                      key={cat.id} 
-                      onClick={() => setAbaAtiva(cat.id)} 
-                      className={`flex-none whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === cat.id ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}
-                    >
-                      <span className={`flex-shrink-0 ${abaAtiva === cat.id ? 'text-black' : 'text-zinc-500'}`}><cat.Icone/></span> {cat.nome}
-                    </button>
-                  ))}
-                </div>
-
                 {/* LISTAGEM DOS ALIMENTOS DA ABA SELECIONADA */}
                 <div className="px-4 py-4 flex-1">
                   {abaAtiva === 'recentes' && (
