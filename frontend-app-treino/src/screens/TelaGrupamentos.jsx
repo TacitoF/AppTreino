@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import React from 'react';
 import { IconDumbbell, IconSettings, IconCardio, IconTrophy, IconChevronRight } from '../components/icons';
 import { Spinner } from '../components/ui';
 
@@ -45,7 +45,7 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
             ))}
 
             <div className="grid grid-cols-2 gap-3 mt-1">
-              
+              {/* BOTÃO DIETA */}
               <button onClick={onDieta}
                 className="btn bg-blue-500/10 border border-blue-500/25 active:bg-blue-500/20 rounded-2xl p-4 flex flex-col items-center gap-2">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-500">
@@ -54,6 +54,7 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                 <span className="text-blue-500 text-xs font-semibold text-center leading-tight">Dieta<br/>& Macros</span>
               </button>
 
+              {/* BOTÃO CARDIO */}
               <button onClick={onCardio}
                 className="btn bg-[#f97316]/8 border border-[#f97316]/25 active:bg-[#f97316]/15 rounded-2xl p-4 flex flex-col items-center gap-2">
                 <div className="w-10 h-10 rounded-xl bg-[#f97316]/15 flex items-center justify-center text-[#f97316]">
@@ -62,6 +63,7 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                 <span className="text-[#f97316] text-xs font-semibold text-center leading-tight">Cardio<br/>& Calorias</span>
               </button>
 
+              {/* BOTÃO GERENCIAR */}
               <button onClick={onGerenciar}
                 className="btn bg-zinc-900 border border-zinc-800 active:bg-zinc-800 rounded-2xl p-4 flex flex-col items-center gap-2">
                 <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400">
@@ -70,6 +72,7 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                 <span className="text-zinc-400 text-xs font-semibold text-center leading-tight">Gerenciar<br/>grupos</span>
               </button>
               
+              {/* BOTÃO RANKING */}
               <button onClick={onRank}
                 className="btn bg-[#c8f542]/8 border border-[#c8f542]/25 active:bg-[#c8f542]/15 rounded-2xl p-4 flex flex-col items-center gap-2">
                 <div className="w-10 h-10 rounded-xl bg-[#c8f542]/15 flex items-center justify-center text-[#c8f542]">
