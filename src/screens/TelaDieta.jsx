@@ -26,7 +26,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   const [termoBusca, setTermoBusca] = useState('');
   const [alimentoSelecionado, setAlimentoSelecionado] = useState(null);
   
-  // NOVO ESTADO: Controla qual item vai ser excluído
+  // NOVO: Estado para controlar o modal de exclusão
   const [itemParaExcluir, setItemParaExcluir] = useState(null);
 
   const [gramas, setGramas] = useState('');
@@ -153,7 +153,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     }
   };
 
-  // ─── NOVA LÓGICA DE EXCLUSÃO ────────────────────────────────────────────────
+  // ─── NOVA LÓGICA DE EXCLUSÃO (SEM WINDOW.CONFIRM) ───────────────────────────
   const confirmarExclusao = async () => {
     if (!itemParaExcluir) return;
     const id = itemParaExcluir.ID_Registro || itemParaExcluir.id_registro;

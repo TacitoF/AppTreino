@@ -99,7 +99,7 @@ export default function App() {
       <IOSInstallBanner/>
       {tela==='auth'             && <TelaAuth onLogin={onLogin} mostrarToast={mostrarToast}/>}
       
-      {/* CORREÇÃO: O onPerfil agora está aqui em baixo! */}
+      {/* CORREÇÃO: O onPerfil={()=>setTela('perfil')} agora está aqui em baixo! */}
       {tela==='grupamentos'      && usuario && <TelaGrupamentos usuario={usuario} splits={splits} loadingSplits={loadingSplits} onSelecionarSplit={onSelecionarSplit} onGerenciar={()=>setTela('gerenciar-splits')} onRank={()=>setTela('rank')} onCardio={()=>setTela('cardio')} onDieta={()=>setTela('dieta')} onPerfil={()=>setTela('perfil')} onLogout={onLogout}/>}
       
       {tela==='perfil'           && usuario && <TelaPerfil usuario={usuario} onSalvar={u => { setUsuario(u); setTela('grupamentos'); mostrarToast('Perfil atualizado!', 'sucesso'); }} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
