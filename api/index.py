@@ -115,7 +115,16 @@ def fazer_login(login: LoginReq):
         for user in get_records("Usuarios"):
             if str(user.get("Email", "")) == login.email or str(user.get("Nome", "")) == login.email:
                 if str(user.get("Senha_Hash", "")) == login.senha or str(user.get("Senha", "")) == login.senha:
-                    return {"status": "sucesso", "token": "sessao_ativa", "usuario": {"id": str(user.get("ID_Usuario", "")), "nome": str(user.get("Nome", "")), "email": str(user.get("Email", ""))}}
+                    return {"status": "sucesso", "token": "sessao_ativa", "usuario": {
+                        "id":         str(user.get("ID_Usuario", "")),
+                        "nome":       str(user.get("Nome", "")),
+                        "email":      str(user.get("Email", "")),
+                        "peso_atual": str(user.get("Peso_Atual", "")),
+                        "altura":     str(user.get("Altura", "")),
+                        "idade":      str(user.get("Idade", "")),
+                        "genero":     str(user.get("Genero", "")),
+                        "objetivo":   str(user.get("Objetivo", "")),
+                    }}
                 raise HTTPException(401, "Senha incorreta")
         raise HTTPException(404, "Usuário não encontrado")
     except HTTPException: raise
