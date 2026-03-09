@@ -242,6 +242,47 @@ def atualizar_nome_serie(req: AtualizarNomeSerie):
         return {"status": "sucesso"}
     except Exception as e: raise HTTPException(500, str(e))
 
+@app.get("/api/treino/historico/todos")
+def buscar_historico_todos(id_usuario: str = Query(...)):
+    """Retorna TODAS as séries do usuário, enriquecidas com data e nome do split."""
+    try:
+        todas = com_retry(lambda: get_ws("Series_Exercicios").get_all_records())
+        # filtra pelo id_usuario que aparece no ID_Treino (formato: splitId_userId_data_ts)
+        minhas = [r for r in todas if f"_{id_usuario}_" in str(r.get("ID_Treino", ""))]
+
+        # Carrega splits para resolver nome do split pelo split_id
+        splits_data: dict = {}
+        try:
+            for row in com_retry(lambda: get_ws("Treinos").get_all_values()):
+                if row and len(row) > 1 and row[0].strip() == id_usuario.strip():
+                    for s in json.loads(row[1]):
+                        splits_data[s.get("id", "")] = s.get("nomeHistorico") or s.get("nome", "")
+        except Exception:
+            pass
+
+        series = []
+        for r in minhas:
+            id_treino = str(r.get("ID_Treino", ""))
+            data_treino = extrair_data_de_id_treino(id_treino)
+            # split_id é a primeira parte do ID_Treino antes do primeiro _userId_
+            partes = id_treino.split(f"_{id_usuario}_")
+            split_id_raw = partes[0] if partes else ""
+            nome_split = splits_data.get(split_id_raw, split_id_raw)
+            series.append({
+                "id_serie":       str(r.get("ID_Serie", "")),
+                "id_treino":      id_treino,
+                "nome_exercicio": str(r.get("Nome_Exercicio", "")),
+                "numero_serie":   int(r.get("Numero_da_Serie", 0)),
+                "repeticoes":     int(r.get("Repeticoes", 0)),
+                "carga_kg":       float(r.get("Carga_kg", 0)),
+                "data_treino":    data_treino,
+                "nome_split":     nome_split,
+            })
+        series.sort(key=lambda s: (s["data_treino"], s["id_treino"]))
+        return {"series": series}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
 @app.get("/api/treino/historico")
 def buscar_historico(id_usuario: str = Query(...), nome_treino: str = Query(...), split_id: Optional[str] = Query(None)):
     try:
