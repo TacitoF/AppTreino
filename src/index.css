@@ -234,7 +234,20 @@ html.tema-claro .bg-zinc-800.border-zinc-700 {
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
 }
 
+/* ── Variantes com opacidade do verde ────────────────────────────────────── */
+html.tema-claro .text-\[#c8f542\]\/60 { color: rgba(74, 120, 0, 0.75) !important; }
+html.tema-claro .border-\[#c8f542\]\/15 { border-color: rgba(74,120,0,0.20) !important; }
+html.tema-claro .border-\[#c8f542\]\/30 { border-color: rgba(74,120,0,0.35) !important; }
+html.tema-claro .border-\[#c8f542\]\/50 { border-color: rgba(74,120,0,0.50) !important; }
+html.tema-claro .bg-\[#c8f542\]\/20     { background: rgba(74,120,0,0.12) !important; }
+
 /* ── Scrollbar ──────────────────────────────────────────────────────────── */
 html.tema-claro ::-webkit-scrollbar       { width: 4px; }
 html.tema-claro ::-webkit-scrollbar-track { background: var(--bg-base); }
 html.tema-claro ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+/* ── SVGs com stroke/fill hardcoded em #c8f542 ──────────────────────────────
+   Atributos inline (stroke="#c8f542", fill="#c8f542") não são afetados por
+   classes CSS. Selecionamos diretamente pelo atributo no DOM.                */
+html.tema-claro [stroke="#c8f542"] { stroke: #4a7800 !important; }
+html.tema-claro [fill="#c8f542"]   { fill:   #4a7800 !important; }
