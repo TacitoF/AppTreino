@@ -55,7 +55,7 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
   const carregar = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await apiFetch(`${R.historico}?id_usuario=${usuario.id}&todos=1`);
+      const r = await apiFetch(`${R.historicoTodos}?id_usuario=${usuario.id}`);
       setTreinos(agruparTreinos(r.series || []));
     } catch {
       mostrarToast('Erro ao carregar histórico.', 'erro');

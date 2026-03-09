@@ -225,7 +225,7 @@ function TelaGraficos({ usuario, splitInicial, onVoltar, mostrarToast }) {
   const carregar = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await apiFetch(`${R.historico}?id_usuario=${usuario.id}&todos=1`);
+      const r = await apiFetch(`${R.historicoTodos}?id_usuario=${usuario.id}`);
       setSeries(r.series || []);
     } catch {
       mostrarToast('Erro ao carregar dados.', 'erro');
