@@ -80,28 +80,58 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     const genero = usuario.genero === 'F' ? 'F' : 'M';
     const obj    = usuario.objetivo || 'Manutencao';
 
+    // Mifflin-St Jeor
     let tmb = (10 * peso) + (6.25 * altura) - (5 * idade);
     tmb += (genero === 'M') ? 5 : -161;
-    let metaKcal = tmb * 1.55;
 
-    if (obj === 'Emagrecimento') metaKcal -= 500;
-    if (obj === 'Hipertrofia') metaKcal += 500;
+    // Fator de atividade baseado no dado informado pelo usuário (Harris-Benedict)
+    const fatoresAtividade = {
+      sedentario:  1.2,    // sem exercício
+      leve:        1.375,  // 1-2x/semana
+      moderado:    1.55,   // 3-4x/semana
+      ativo:       1.725,  // 5-6x/semana
+      muito_ativo: 1.9,    // 2x/dia ou trabalho físico intenso
+    };
+    const fatorAtiv = fatoresAtividade[usuario.atividade] || 1.375; // fallback: leve
+    let metaKcal = tmb * fatorAtiv;
+
+    if (obj === 'Emagrecimento') metaKcal -= 400; // deficit moderado (mais sustentavel que -500)
+    if (obj === 'Hipertrofia')   metaKcal += 300; // superavit limpo (minimiza ganho de gordura)
+
+    // Proteina ajustada por objetivo (evidencias atuais de nutricao esportiva)
+    // Emagrecimento: 2.2g/kg (maior saciedade + preservacao muscular)
+    // Hipertrofia:   2.0g/kg
+    // Manutencao:    1.8g/kg
+    const protPorKg    = obj === 'Emagrecimento' ? 2.2 : obj === 'Hipertrofia' ? 2.0 : 1.8;
+    const metaProteina = Math.round(peso * protPorKg);
+
+    // Gordura: ~1g/kg e carboidratos: resto das kcal
+    const metaGordura = Math.round(peso * 1.0);
+    const kcalProt    = metaProteina * 4;
+    const kcalGord    = metaGordura  * 9;
+    const metaCarbo   = Math.round((metaKcal - kcalProt - kcalGord) / 4);
 
     return {
-      kcal: Math.round(metaKcal),
-      proteina: Math.round(peso * 2.0),
+      kcal:     Math.round(metaKcal),
+      proteina: metaProteina,
+      carbo:    Math.max(metaCarbo, 50),
+      gordura:  metaGordura,
     };
   }, [usuario]);
 
   const consumido = useMemo(() => {
     return refeicoes.reduce((acc, ref) => ({
-      kcal: acc.kcal + (parseInt(ref.Calorias || ref.calorias) || 0),
+      kcal:     acc.kcal     + (parseInt(  ref.Calorias    || ref.calorias    ) || 0),
       proteina: acc.proteina + (parseFloat(ref.Proteinas_g || ref.proteinas_g) || 0),
-    }), { kcal: 0, proteina: 0 });
+      carbo:    acc.carbo    + (parseFloat(ref.Carbos_g    || ref.carbos_g    ) || 0),
+      gordura:  acc.gordura  + (parseFloat(ref.Gorduras_g  || ref.gorduras_g  ) || 0),
+    }), { kcal: 0, proteina: 0, carbo: 0, gordura: 0 });
   }, [refeicoes]);
 
-  const progressoKcal = Math.min((consumido.kcal / metas.kcal) * 100, 100);
+  const progressoKcal = Math.min((consumido.kcal     / metas.kcal)     * 100, 100);
   const progressoProt = Math.min((consumido.proteina / metas.proteina) * 100, 100);
+  const progressoCarb = Math.min((consumido.carbo    / metas.carbo)    * 100, 100);
+  const progressoGord = Math.min((consumido.gordura  / metas.gordura)  * 100, 100);
 
   const resultadosBusca = useMemo(() => {
     const termo = termoBusca.trim().toLowerCase();
@@ -125,8 +155,8 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
       tipo_refeicao: `${alimentoSelecionado.nome} (${g}g)`,
       calorias: kcalCalculada,
       proteinas_g: protCalculada,
-      carbos_g: Math.round(alimentoSelecionado.carbo * mult),
-      gorduras_g: Math.round(alimentoSelecionado.gordura * mult),
+      carbos_g:   Math.round(alimentoSelecionado.carbo    * mult * 10) / 10,
+      gorduras_g: Math.round(alimentoSelecionado.gordura  * mult * 10) / 10,
       check_agua: '', check_whey: '', check_creatina: ''
     };
 
@@ -140,8 +170,10 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
       setRefeicoes(prev => [...prev, {
         ID_Registro: novaRefeicao.id_registro,
         Tipo_Refeicao: novaRefeicao.tipo_refeicao,
-        Calorias: novaRefeicao.calorias,
-        Proteinas_g: novaRefeicao.proteinas_g
+        Calorias:    novaRefeicao.calorias,
+        Proteinas_g: novaRefeicao.proteinas_g,
+        Carbos_g:    novaRefeicao.carbos_g,
+        Gorduras_g:  novaRefeicao.gorduras_g,
       }]);
       
       mostrarToast('+ Refeição adicionada!', 'sucesso');
@@ -232,22 +264,56 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
           </div>
         </div>
 
-        {/* ── CARD: PROTEÍNAS ── */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-lg">
-          <div className="flex justify-between items-end mb-4">
-            <div>
-              <div className="flex items-center gap-1.5 mb-1">
+        {/* ── CARDS: MACROS (Proteína, Carbo, Gordura) ── */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-lg flex flex-col gap-4">
+          <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Macronutrientes</p>
+
+          {/* Proteína */}
+          <div>
+            <div className="flex justify-between items-baseline mb-2">
+              <div className="flex items-center gap-1.5">
                 <IconProteina/>
-                <p className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Proteínas</p>
+                <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Proteína</span>
               </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-white font-black text-3xl num tracking-tight">{Math.round(consumido.proteina)}</span>
-                <span className="text-zinc-500 text-sm font-semibold">/ {metas.proteina} g</span>
-              </div>
+              <span className="text-white font-black text-sm num">
+                {Math.round(consumido.proteina * 10) / 10}<span className="text-zinc-500 font-semibold"> / {metas.proteina} g</span>
+              </span>
+            </div>
+            <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-500 transition-all duration-1000 rounded-full" style={{ width: `${progressoProt}%` }}/>
             </div>
           </div>
-          <div className="w-full h-3.5 bg-zinc-800 rounded-full overflow-hidden">
-            <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${progressoProt}%` }}/>
+
+          {/* Carboidratos */}
+          <div>
+            <div className="flex justify-between items-baseline mb-2">
+              <div className="flex items-center gap-1.5">
+                <IconCarbo/>
+                <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Carboidratos</span>
+              </div>
+              <span className="text-white font-black text-sm num">
+                {Math.round(consumido.carbo * 10) / 10}<span className="text-zinc-500 font-semibold"> / {metas.carbo} g</span>
+              </span>
+            </div>
+            <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 transition-all duration-1000 rounded-full" style={{ width: `${progressoCarb}%` }}/>
+            </div>
+          </div>
+
+          {/* Gordura */}
+          <div>
+            <div className="flex justify-between items-baseline mb-2">
+              <div className="flex items-center gap-1.5">
+                <IconGordura/>
+                <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Gorduras</span>
+              </div>
+              <span className="text-white font-black text-sm num">
+                {Math.round(consumido.gordura * 10) / 10}<span className="text-zinc-500 font-semibold"> / {metas.gordura} g</span>
+              </span>
+            </div>
+            <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div className="h-full bg-amber-400 transition-all duration-1000 rounded-full" style={{ width: `${progressoGord}%` }}/>
+            </div>
           </div>
         </div>
 
@@ -269,19 +335,24 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
           ) : (
             <div className="flex flex-col gap-3">
               {refeicoes.map((ref, i) => (
-                <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-4 flex items-center justify-between">
-                  <div className="flex-1 pr-2">
-                    <p className="text-white font-semibold text-sm leading-tight mb-1">{ref.Tipo_Refeicao || ref.tipo_refeicao}</p>
-                    <p className="text-blue-400 text-xs font-bold">{ref.Proteinas_g || ref.proteinas_g}g proteína</p>
+                <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-white font-semibold text-sm leading-tight flex-1 pr-3">{ref.Tipo_Refeicao || ref.tipo_refeicao}</p>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="text-right">
+                        <p className="text-[#c8f542] font-black text-lg num leading-none">{ref.Calorias || ref.calorias}</p>
+                        <p className="text-zinc-600 text-xs font-semibold">kcal</p>
+                      </div>
+                      <button onClick={() => setItemParaExcluir(ref)} className="w-9 h-9 bg-red-500/10 active:bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+                        <IconTrash/>
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[#c8f542] font-black text-xl num">{ref.Calorias || ref.calorias}</p>
-                    <p className="text-zinc-600 text-xs font-semibold">kcal</p>
+                  <div className="flex gap-2 flex-wrap">
+                    <span className="text-blue-400 text-xs font-semibold bg-blue-500/10 px-2 py-0.5 rounded-lg">{ref.Proteinas_g || ref.proteinas_g}g P</span>
+                    <span className="text-emerald-400 text-xs font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-lg">{ref.Carbos_g || ref.carbos_g || 0}g C</span>
+                    <span className="text-amber-400 text-xs font-semibold bg-amber-500/10 px-2 py-0.5 rounded-lg">{ref.Gorduras_g || ref.gorduras_g || 0}g G</span>
                   </div>
-                  {/* AGORA ABRE O MODAL EM VEZ DO WINDOW.CONFIRM */}
-                  <button onClick={() => setItemParaExcluir(ref)} className="ml-4 w-10 h-10 bg-red-500/10 active:bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
-                    <IconTrash/>
-                  </button>
                 </div>
               ))}
             </div>

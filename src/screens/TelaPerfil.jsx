@@ -14,6 +14,7 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast }
   const [idade, setIdade]   = useState(usuario.idade || '');
   const [genero, setGenero] = useState(usuario.genero || '');
   const [obj, setObj]       = useState(usuario.objetivo || '');
+  const [atividade, setAtividade] = useState(usuario.atividade || '');
   const [salvando, setSalvando] = useState(false);
 
   const inp = "w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base placeholder-zinc-600";
@@ -23,11 +24,11 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast }
     try {
       const payload = {
         id_usuario: usuario.id,
-        nome, email, senha, peso_atual: peso, altura, idade, genero, objetivo: obj,
+        nome, email, senha, peso_atual: peso, altura, idade, genero, objetivo: obj, atividade,
       };
       // usa R.editarUsuario em vez de endpoint hard-coded
       await apiFetch(R.editarUsuario || '/api/usuario/editar', { method: 'POST', body: payload });
-      const usrAtualizado = { ...usuario, nome, email, peso_atual: peso, altura, idade, genero, objetivo: obj };
+      const usrAtualizado = { ...usuario, nome, email, peso_atual: peso, altura, idade, genero, objetivo: obj, atividade };
       onSalvar(usrAtualizado);
       mostrarToast('Perfil atualizado!', 'sucesso');
     } catch {
@@ -90,6 +91,23 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast }
             <option value="Emagrecimento">Emagrecimento</option>
             <option value="Manutencao">Manutenção</option>
           </select>
+        </div>
+
+        <div>
+          <label className="text-zinc-500 text-xs font-bold uppercase ml-1 mb-1 block">Nível de Atividade Física</label>
+          <select value={atividade} onChange={e => setAtividade(e.target.value)} className={`${inp} cursor-pointer`}>
+            <option value="">Selecione...</option>
+            <option value="sedentario">Sedentário (sem exercício)</option>
+            <option value="leve">Leve (1-2x por semana)</option>
+            <option value="moderado">Moderado (3-4x por semana)</option>
+            <option value="ativo">Ativo (5-6x por semana)</option>
+            <option value="muito_ativo">Muito ativo (2x por dia)</option>
+          </select>
+          {atividade && (
+            <p className="text-zinc-600 text-xs mt-1.5 px-1">
+              {({sedentario:"Trabalho de escritório, sem atividade regular.", leve:"Caminhadas ou academia ocasional.", moderado:"Academia ou esporte 3-4x/semana — o mais comum.", ativo:"Treino intenso quase todo dia.", muito_ativo:"Atleta ou trabalho físico pesado."})[atividade]}
+            </p>
+          )}
         </div>
 
         <button onClick={salvar} disabled={salvando}

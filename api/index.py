@@ -97,8 +97,8 @@ def extrair_data_de_id_treino(id_treino: str) -> str:
 
 # ── MODELOS ───────────────────────────────────────────────────────────────────
 class LoginReq(BaseModel): email: str; senha: str
-class RegReq(BaseModel): nome: str; email: str; senha: str; peso_atual: str; objetivo: str; altura: str; idade: str; genero: str
-class EditarUsuarioReq(BaseModel): id_usuario: str; nome: str; email: str; senha: str; peso_atual: str; objetivo: str; altura: str; idade: str; genero: str
+class RegReq(BaseModel): nome: str; email: str; senha: str; peso_atual: str; objetivo: str; altura: str; idade: str; genero: str; atividade: Optional[str] = ""
+class EditarUsuarioReq(BaseModel): id_usuario: str; nome: str; email: str; senha: str; peso_atual: str; objetivo: str; altura: str; idade: str; genero: str; atividade: Optional[str] = ""
 class ResetReq(BaseModel): email: str; senha_nova: str
 class SplitItem(BaseModel): id: str; id_usuario: str; nome: str; nomeHistorico: Optional[str] = None; ultimo_treino: Optional[str] = None
 class SalvarSplitsReq(BaseModel): id_usuario: str; splits: List[SplitItem]
@@ -127,7 +127,8 @@ def fazer_login(login: LoginReq):
                             "objetivo": str(user.get("Objetivo", "")),
                             "altura": str(user.get("Altura", "")),
                             "idade": str(user.get("Idade", "")),
-                            "genero": str(user.get("Genero", ""))
+                            "genero": str(user.get("Genero", "")),
+                            "atividade": str(user.get("Atividade", ""))
                         }
                     }
                 raise HTTPException(401, "Senha incorreta")
@@ -142,7 +143,7 @@ def registrar_usuario(req: RegReq):
         for user in usuarios:
             if str(user.get("Email", "")) == req.email: raise HTTPException(400, "E-mail já cadastrado")
         novo_id = f"U{len(usuarios) + 1:03d}"
-        com_retry(lambda: get_ws("Usuarios").append_row([novo_id, req.nome, req.email, req.senha, date.today().isoformat(), req.peso_atual, req.objetivo, req.altura, req.idade, req.genero]))
+        com_retry(lambda: get_ws("Usuarios").append_row([novo_id, req.nome, req.email, req.senha, date.today().isoformat(), req.peso_atual, req.objetivo, req.altura, req.idade, req.genero, req.atividade or ""]))
         cache_del("Usuarios")
         return {"status": "sucesso"}
     except HTTPException: raise
@@ -163,6 +164,7 @@ def editar_usuario(req: EditarUsuarioReq):
                     {"range": f"H{i}", "values": [[req.altura]]},
                     {"range": f"I{i}", "values": [[req.idade]]},
                     {"range": f"J{i}", "values": [[req.genero]]},
+                    {"range": f"K{i}", "values": [[req.atividade or ""]]},
                 ]
                 # Só atualiza a senha se o utilizador digitou algo novo
                 if req.senha.strip() != "":

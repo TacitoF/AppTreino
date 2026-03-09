@@ -16,12 +16,13 @@ function TelaAuth({ onLogin, mostrarToast }) {
   const [altura, setAltura]       = useState('');
   const [idade, setIdade]         = useState('');
   const [genero, setGenero]       = useState('');
+  const [atividade, setAtividade] = useState('');
   
   const [loading, setLoading]     = useState(false);
 
   const limpar = () => { 
     setEmail(''); setSenha(''); setNome(''); setPeso(''); setObj(''); 
-    setSenhaNova(''); setSenhaConfirm(''); setAltura(''); setIdade(''); setGenero(''); 
+    setSenhaNova(''); setSenhaConfirm(''); setAltura(''); setIdade(''); setGenero(''); setAtividade(''); 
   };
   
   const inp = "w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base placeholder-zinc-600";
@@ -73,11 +74,12 @@ function TelaAuth({ onLogin, mostrarToast }) {
     if (!peso || !altura || !idade) { mostrarToast('Informe seu peso, altura e idade.', 'erro'); return; }
     if (!genero) { mostrarToast('Selecione seu gênero biológico.', 'erro'); return; }
     if (!obj) { mostrarToast('Selecione seu objetivo.', 'erro'); return; }
+    if (!atividade) { mostrarToast('Selecione seu nível de atividade física.', 'erro'); return; }
     setLoading(true);
     try {
       await apiFetch(R.registro, { 
         method: 'POST', 
-        body: { nome, email, senha, peso_atual: peso, objetivo: obj, altura, idade, genero } 
+        body: { nome, email, senha, peso_atual: peso, objetivo: obj, altura, idade, genero, atividade } 
       });
       mostrarToast('Conta criada. Faça login.', 'sucesso');
       setModo('login'); limpar();
@@ -207,6 +209,30 @@ function TelaAuth({ onLogin, mostrarToast }) {
                 <option value="Emagrecimento" className="bg-zinc-900 text-white">Emagrecer</option>
                 <option value="Manutencao" className="bg-zinc-900 text-white">Manter</option>
               </select>
+            </div>
+
+            {/* Nível de atividade física */}
+            <div className="flex flex-col gap-1.5">
+              <select value={atividade} onChange={e=>setAtividade(e.target.value)}
+                className={`${inp} cursor-pointer ${atividade===''?'text-zinc-600':'text-white'}`}>
+                <option value="" disabled className="bg-zinc-900">Nível de atividade física</option>
+                <option value="sedentario"   className="bg-zinc-900 text-white">Sedentário (sem exercício)</option>
+                <option value="leve"         className="bg-zinc-900 text-white">Leve (1-2x por semana)</option>
+                <option value="moderado"     className="bg-zinc-900 text-white">Moderado (3-4x por semana)</option>
+                <option value="ativo"        className="bg-zinc-900 text-white">Ativo (5-6x por semana)</option>
+                <option value="muito_ativo"  className="bg-zinc-900 text-white">Muito ativo (2x por dia)</option>
+              </select>
+              {atividade && (
+                <p className="text-zinc-600 text-xs px-1">
+                  {{
+                    sedentario:  'Trabalho de escritório, sem atividade regular.',
+                    leve:        'Caminhadas ou academia ocasional.',
+                    moderado:    'Academia ou esporte 3-4x/semana — mais comum.',
+                    ativo:       'Treino intenso quase todo dia.',
+                    muito_ativo: 'Atleta ou trabalho físico pesado.',
+                  }[atividade]}
+                </p>
+              )}
             </div>
 
             <button type="submit" disabled={loading} className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black text-base font-bold rounded-2xl mt-2 disabled:opacity-50">
