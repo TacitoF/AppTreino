@@ -557,7 +557,29 @@ def buscar_pesos(id_usuario: str = Query(...)):
         registros = get_records("Peso_Corporal")
         meus = [r for r in registros if str(r.get("id_usuario","")) == id_usuario]
         meus.sort(key=lambda x: str(x.get("data","")))
-        return {"pesos": [{"data": r["data"], "peso_kg": float(r["peso_kg"])} for r in meus]}
+        return {"pesos": [
+            {"id_registro": r.get("id_registro", ""), "data": r["data"], "peso_kg": float(r["peso_kg"])}
+            for r in meus
+        ]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/peso")
+def deletar_peso(id_registro: str = Query(...)):
+    try:
+        ws = get_ws("Peso_Corporal")
+        todas = com_retry(lambda: ws.get_all_values())
+        for i, row in enumerate(todas):
+            if i == 0:
+                continue
+            if row and str(row[0]) == id_registro:
+                linha = i + 1
+                com_retry(lambda l=linha: ws.delete_rows(l))
+                cache_del("Peso_Corporal")
+                return {"ok": True}
+        raise HTTPException(status_code=404, detail="Registro nao encontrado.")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -17,9 +17,11 @@ import TelaRelatorio        from './screens/TelaRelatorio';
 import TelaPeso             from './screens/TelaPeso';
 import TelaProgressao       from './screens/TelaProgressao';
 
+const TEMA_KEY = 'volt_tema';
+
 export default function App() {
-  const sessaoSalva = carregarSessao();
-  const tokenSalvo  = getAuthToken();
+  const sessaoSalva   = carregarSessao();
+  const tokenSalvo    = getAuthToken();
   const podeRestaurar = !!(sessaoSalva?.usuario && tokenSalvo);
 
   const [usuario, setUsuario]        = useState(podeRestaurar ? sessaoSalva.usuario : null);
@@ -30,22 +32,41 @@ export default function App() {
   const [historico, setHistorico]    = useState([]);
   const [resultado, setResultado]    = useState(null);
   const [toast, setToast]            = useState(null);
-  // para navegar direto de histórico → gráficos filtrando por split
   const [splitGraficoPre, setSplitGraficoPre] = useState(null);
-  const toastTimerRef                = useRef(null);
+  const [tema, setTema]              = useState(() => {
+    try { return localStorage.getItem(TEMA_KEY) || 'escuro'; } catch { return 'escuro'; }
+  });
+  const toastTimerRef = useRef(null);
+  const usuarioRef    = useRef(usuario);
 
-  const usuarioRef = useRef(usuario);
+  // aplica classe de tema no <html>
+  useEffect(() => {
+    if (tema === 'claro') {
+      document.documentElement.classList.add('tema-claro');
+    } else {
+      document.documentElement.classList.remove('tema-claro');
+    }
+  }, [tema]);
 
-  // ─── auto-sync fila offline ao abrir o app ────────────────────────────────
+  const toggleTema = useCallback(() => {
+    setTema(t => {
+      const novo = t === 'escuro' ? 'claro' : 'escuro';
+      try { localStorage.setItem(TEMA_KEY, novo); } catch {}
+      return novo;
+    });
+  }, []);
+
+  // sync fila offline
   useEffect(() => {
     import('./auth').then(({ syncOfflineQueue, getOfflineQueue }) => {
       if (getOfflineQueue().length > 0 && navigator.onLine) {
         syncOfflineQueue().then(({ synced }) => {
-          if (synced > 0) mostrarToast(`${synced} série${synced>1?'s':''} sincronizada${synced>1?'s':''} (offline).`, 'sucesso');
+          if (synced > 0) mostrarToast(`${synced} série${synced > 1 ? 's' : ''} sincronizada${synced > 1 ? 's' : ''} (offline).`, 'sucesso');
         });
       }
     });
   }, []);
+
   useEffect(() => { usuarioRef.current = usuario; }, [usuario]);
 
   useEffect(() => {
@@ -111,19 +132,17 @@ export default function App() {
     mostrarToast('Treino finalizado.', 'sucesso');
   }, [mostrarToast]);
 
-  // navega para gráficos com split pré-filtrado (vindo do histórico)
-  const irParaGraficos = useCallback((splitNome) => {
+  const irParaGraficos = useCallback(splitNome => {
     setSplitGraficoPre(splitNome);
     setTela('graficos');
   }, []);
 
-  // Templates → preenche splits automaticamente e vai para gerenciar-splits
-  const usarTemplate = useCallback((template) => {
+  const usarTemplate = useCallback(template => {
     const novosSplits = template.splits.map((nome, i) => ({
-      id: `split_${Date.now()}_${i}`,
-      id_usuario: usuario?.id || '',
-      nome: nome.split(' —')[0].split(' (')[0],
-      nomeHistorico: nome.split(' —')[0].split(' (')[0],
+      id:           `split_${Date.now()}_${i}`,
+      id_usuario:   usuario?.id || '',
+      nome:         nome.split(' —')[0].split(' (')[0],
+      nomeHistorico:nome.split(' —')[0].split(' (')[0],
       ultimo_treino: null,
     }));
     setSplits(novosSplits);
@@ -164,6 +183,8 @@ export default function App() {
           onSalvar={u => { setUsuario(u); setTela('grupamentos'); mostrarToast('Perfil atualizado!', 'sucesso'); }}
           onVoltar={() => setTela('grupamentos')}
           mostrarToast={mostrarToast}
+          tema={tema}
+          onToggleTema={toggleTema}
         />
       )}
 
@@ -189,7 +210,11 @@ export default function App() {
       )}
 
       {tela === 'resumo' && resultado && (
-        <TelaResumo resultado={resultado} onVoltar={() => setTela('grupamentos')}/>
+        <TelaResumo
+          resultado={resultado}
+          onVoltar={() => setTela('grupamentos')}
+          mostrarToast={mostrarToast}
+        />
       )}
 
       {tela === 'rank' && usuario && (

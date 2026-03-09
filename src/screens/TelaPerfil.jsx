@@ -5,15 +5,35 @@ import { R } from '../config';
 const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
 const IconSave = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>;
 
-export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast }) {
-  const [nome, setNome]     = useState(usuario.nome || '');
-  const [email, setEmail]   = useState(usuario.email || '');
-  const [senha, setSenha]   = useState('');
-  const [peso, setPeso]     = useState(usuario.peso_atual || '');
-  const [altura, setAltura] = useState(usuario.altura || '');
-  const [idade, setIdade]   = useState(usuario.idade || '');
-  const [genero, setGenero] = useState(usuario.genero || '');
-  const [obj, setObj]       = useState(usuario.objetivo || '');
+const IconMoon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+  </svg>
+);
+
+const IconSun = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+    <circle cx="12" cy="12" r="5"/>
+    <line x1="12" y1="1"  x2="12" y2="3"/>
+    <line x1="12" y1="21" x2="12" y2="23"/>
+    <line x1="4.22" y1="4.22"   x2="5.64"  y2="5.64"/>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+    <line x1="1"  y1="12" x2="3"  y2="12"/>
+    <line x1="21" y1="12" x2="23" y2="12"/>
+    <line x1="4.22" y1="19.78"  x2="5.64"  y2="18.36"/>
+    <line x1="18.36" y1="5.64"  x2="19.78" y2="4.22"/>
+  </svg>
+);
+
+export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, tema, onToggleTema }) {
+  const [nome, setNome]         = useState(usuario.nome || '');
+  const [email, setEmail]       = useState(usuario.email || '');
+  const [senha, setSenha]       = useState('');
+  const [peso, setPeso]         = useState(usuario.peso_atual || '');
+  const [altura, setAltura]     = useState(usuario.altura || '');
+  const [idade, setIdade]       = useState(usuario.idade || '');
+  const [genero, setGenero]     = useState(usuario.genero || '');
+  const [obj, setObj]           = useState(usuario.objetivo || '');
   const [atividade, setAtividade] = useState(usuario.atividade || '');
   const [salvando, setSalvando] = useState(false);
 
@@ -26,7 +46,6 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast }
         id_usuario: usuario.id,
         nome, email, senha, peso_atual: peso, altura, idade, genero, objetivo: obj, atividade,
       };
-      // usa R.editarUsuario em vez de endpoint hard-coded
       await apiFetch(R.editarUsuario || '/api/usuario/editar', { method: 'POST', body: payload });
       const usrAtualizado = { ...usuario, nome, email, peso_atual: peso, altura, idade, genero, objetivo: obj, atividade };
       onSalvar(usrAtualizado);
@@ -41,7 +60,8 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast }
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col pb-10">
       <div className="px-5 pt-14 pb-4 flex items-center justify-between border-b border-zinc-900">
-        <button onClick={onVoltar} className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
+        <button onClick={onVoltar}
+          className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
           <IconBack/>
         </button>
         <h1 className="text-xl font-bold text-white">Editar Perfil</h1>
@@ -105,10 +125,31 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast }
           </select>
           {atividade && (
             <p className="text-zinc-600 text-xs mt-1.5 px-1">
-              {({sedentario:"Trabalho de escritório, sem atividade regular.", leve:"Caminhadas ou academia ocasional.", moderado:"Academia ou esporte 3-4x/semana — o mais comum.", ativo:"Treino intenso quase todo dia.", muito_ativo:"Atleta ou trabalho físico pesado."})[atividade]}
+              {({
+                sedentario:  'Trabalho de escritório, sem atividade regular.',
+                leve:        'Caminhadas ou academia ocasional.',
+                moderado:    'Academia ou esporte 3-4x/semana — o mais comum.',
+                ativo:       'Treino intenso quase todo dia.',
+                muito_ativo: 'Atleta ou trabalho físico pesado.',
+              })[atividade]}
             </p>
           )}
         </div>
+
+        {/* toggle tema */}
+        {onToggleTema && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-white font-semibold text-sm">Aparência</p>
+              <p className="text-zinc-500 text-xs mt-0.5">{tema === 'claro' ? 'Modo claro' : 'Modo escuro'}</p>
+            </div>
+            <button
+              onClick={onToggleTema}
+              className="btn w-12 h-12 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300 active:bg-zinc-700">
+              {tema === 'claro' ? <IconMoon/> : <IconSun/>}
+            </button>
+          </div>
+        )}
 
         <button onClick={salvar} disabled={salvando}
           className="btn w-full py-5 bg-[#c8f542] active:bg-[#b0d93b] text-black font-black text-base rounded-2xl flex items-center justify-center gap-2 mt-4 shadow-[0_0_20px_rgba(200,245,66,0.1)]">

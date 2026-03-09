@@ -9,9 +9,16 @@ const IconExport = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
   </svg>
 );
+
 const IconNote = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+  </svg>
+);
+
+const IconTrash = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"/>
   </svg>
 );
 
@@ -26,7 +33,6 @@ const fmtDataCurta = iso =>
     day: '2-digit', month: 'short',
   });
 
-// agrupa séries brutas em treinos [{data, split, exercicios}]
 function agruparTreinos(series) {
   const mapaData = new Map();
   series.forEach(s => {
@@ -45,13 +51,13 @@ function agruparTreinos(series) {
         mapaEx.get(nome).push(s);
       });
       const exercicios = Array.from(mapaEx.entries()).map(([nome, ss]) => ({
-        nome: nome.startsWith('[P]') ? nome.slice(3) : nome,
+        nome:      nome.startsWith('[P]') ? nome.slice(3) : nome,
         usaPlacas: nome.startsWith('[P]'),
-        series: ss.sort((a, b) => a.numero_serie - b.numero_serie),
-        volume: ss.reduce((acc, s) => acc + s.carga_kg * s.repeticoes, 0),
+        series:    ss.sort((a, b) => a.numero_serie - b.numero_serie),
+        volume:    ss.reduce((acc, s) => acc + s.carga_kg * s.repeticoes, 0),
       }));
-      const volumeTotal = exercicios.reduce((a, e) => a + e.volume, 0);
-      const totalSeries = t.series.length;
+      const volumeTotal  = exercicios.reduce((a, e) => a + e.volume, 0);
+      const totalSeries  = t.series.length;
       return { ...t, exercicios, volumeTotal, totalSeries };
     });
 }
@@ -63,8 +69,10 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
   const [treinoAberto, setAberto]   = useState(null);
   const [filtroSplit, setFiltro]    = useState('todos');
   const [comparando, setComparando] = useState(null);
-  const [notas, setNotas]           = useState({}); // id_treino → nota
+  const [notas, setNotas]           = useState({});
   const [exportando, setExportando] = useState(false);
+  const [serieParaDeletar, setSerieParaDeletar] = useState(null);
+  const [deletandoSerie, setDeletandoSerie]     = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -84,6 +92,19 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
     }
   }, [usuario.id, mostrarToast]);
 
+  const deletarSerie = async () => {
+    if (!serieParaDeletar) return;
+    setDeletandoSerie(true);
+    try {
+      await apiFetch(`${R.serie}?id=${serieParaDeletar.id_serie}`, { method: 'DELETE' });
+      mostrarToast('Série removida.', 'sucesso');
+      setSerieParaDeletar(null);
+      setAberto(null);
+      await carregar();
+    } catch { mostrarToast('Erro ao remover série.', 'erro'); }
+    finally { setDeletandoSerie(false); }
+  };
+
   const exportarCSV = useCallback(async () => {
     setExportando(true);
     try {
@@ -95,8 +116,8 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
         `${r.data},"${r.exercicio}",${r.serie},${r.carga_kg},${r.repeticoes},${r.volume}`
       )].join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
       a.href = url; a.download = `volt_historico_${usuario.id}.csv`; a.click();
       URL.revokeObjectURL(url);
       mostrarToast('Histórico exportado.', 'sucesso');
@@ -106,22 +127,21 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
 
   useEffect(() => { carregar(); }, [carregar]);
 
-  const splitNames = ['todos', ...Array.from(new Set(treinos.map(t => t.split)))];
-
+  const splitNames      = ['todos', ...Array.from(new Set(treinos.map(t => t.split)))];
   const treinosFiltrados = filtroSplit === 'todos'
     ? treinos
     : treinos.filter(t => t.split === filtroSplit);
 
-  // ── comparativo de treinos ──
+  // ── comparativo ──
   if (comparando && treinoAberto) {
-    const a = comparando;   // anterior
-    const b = treinoAberto; // atual
-    // todos os exercícios únicos entre os dois treinos
-    const todosEx = Array.from(new Set([...a.exercicios.map(e=>e.nome), ...b.exercicios.map(e=>e.nome)]));
-    const exA = Object.fromEntries(a.exercicios.map(e=>[e.nome,e]));
-    const exB = Object.fromEntries(b.exercicios.map(e=>[e.nome,e]));
-    const diffVol = Math.round(b.volumeTotal - a.volumeTotal);
-    const diffPct = a.volumeTotal > 0 ? ((b.volumeTotal - a.volumeTotal) / a.volumeTotal * 100).toFixed(1) : null;
+    const a = comparando;
+    const b = treinoAberto;
+    const todosEx  = Array.from(new Set([...a.exercicios.map(e => e.nome), ...b.exercicios.map(e => e.nome)]));
+    const exA      = Object.fromEntries(a.exercicios.map(e => [e.nome, e]));
+    const exB      = Object.fromEntries(b.exercicios.map(e => [e.nome, e]));
+    const diffVol  = Math.round(b.volumeTotal - a.volumeTotal);
+    const diffPct  = a.volumeTotal > 0 ? ((b.volumeTotal - a.volumeTotal) / a.volumeTotal * 100).toFixed(1) : null;
+
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
         <div className="sticky top-0 z-20 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-zinc-900 px-5 pt-12 pb-4 flex items-center gap-3">
@@ -135,7 +155,6 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
           </div>
         </div>
 
-        {/* cabeçalhos das datas */}
         <div className="px-5 pt-4 pb-3 grid grid-cols-2 gap-3">
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 text-center">
             <div className="text-zinc-500 text-xs font-semibold uppercase mb-0.5">Anterior</div>
@@ -149,47 +168,43 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
           </div>
         </div>
 
-        {/* delta de volume */}
         <div className={`mx-5 mb-4 rounded-2xl p-4 flex items-center gap-3 ${diffVol >= 0 ? 'bg-[#c8f542]/8 border border-[#c8f542]/20' : 'bg-red-500/8 border border-red-500/20'}`}>
-          <svg viewBox="0 0 24 24" fill="none" stroke={diffVol>=0?"#c8f542":"#ef4444"} strokeWidth={2.5} className="w-5 h-5 flex-shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke={diffVol >= 0 ? '#c8f542' : '#ef4444'} strokeWidth={2.5} className="w-5 h-5 flex-shrink-0">
             {diffVol >= 0
               ? <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
               : <path strokeLinecap="round" strokeLinejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"/>}
           </svg>
           <div>
-            <span className={`font-black text-lg ${diffVol>=0?'text-[#c8f542]':'text-red-400'}`}>
+            <span className={`font-black text-lg ${diffVol >= 0 ? 'text-[#c8f542]' : 'text-red-400'}`}>
               {diffVol >= 0 ? '+' : ''}{diffVol} kg
             </span>
-            {diffPct && <span className="text-zinc-500 text-sm ml-2">({diffVol>=0?'+':''}{diffPct}%)</span>}
+            {diffPct && <span className="text-zinc-500 text-sm ml-2">({diffVol >= 0 ? '+' : ''}{diffPct}%)</span>}
             <div className="text-zinc-500 text-xs mt-0.5">variação de volume total</div>
           </div>
         </div>
 
-        {/* exercícios lado a lado */}
         <div className="px-5 pb-10 flex flex-col gap-3">
           {todosEx.map(nome => {
             const ea = exA[nome]; const eb = exB[nome];
-            const cargaMaxA = ea ? Math.max(...ea.series.map(s=>s.carga_kg)) : null;
-            const cargaMaxB = eb ? Math.max(...eb.series.map(s=>s.carga_kg)) : null;
-            const melhorou = cargaMaxA !== null && cargaMaxB !== null && cargaMaxB > cargaMaxA;
-            const piorou   = cargaMaxA !== null && cargaMaxB !== null && cargaMaxB < cargaMaxA;
+            const cargaMaxA = ea ? Math.max(...ea.series.map(s => s.carga_kg)) : null;
+            const cargaMaxB = eb ? Math.max(...eb.series.map(s => s.carga_kg)) : null;
+            const melhorou  = cargaMaxA !== null && cargaMaxB !== null && cargaMaxB > cargaMaxA;
+            const piorou    = cargaMaxA !== null && cargaMaxB !== null && cargaMaxB < cargaMaxA;
             return (
               <div key={nome} className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
                 <div className="px-4 pt-3 pb-2 flex items-center justify-between">
                   <span className="text-white font-bold text-sm">{nome}</span>
-                  {melhorou && <span className="text-[#c8f542] text-xs font-bold bg-[#c8f542]/10 px-2 py-0.5 rounded-lg">↑ PR</span>}
-                  {piorou   && <span className="text-red-400 text-xs font-semibold bg-red-500/10 px-2 py-0.5 rounded-lg">↓</span>}
+                  {melhorou && <span className="text-[#c8f542] text-xs font-bold bg-[#c8f542]/10 px-2 py-0.5 rounded-lg">PR</span>}
+                  {piorou   && <span className="text-red-400 text-xs font-semibold bg-red-500/10 px-2 py-0.5 rounded-lg">queda</span>}
                 </div>
                 <div className="border-t border-zinc-800 grid grid-cols-2 divide-x divide-zinc-800">
-                  {/* coluna anterior */}
                   <div className="p-3">
-                    {ea ? ea.series.map((s,i) => (
+                    {ea ? ea.series.map((s, i) => (
                       <div key={i} className="text-zinc-500 text-xs py-0.5">{s.carga_kg}kg × {s.repeticoes}</div>
                     )) : <div className="text-zinc-700 text-xs italic">não realizado</div>}
                   </div>
-                  {/* coluna atual */}
                   <div className="p-3">
-                    {eb ? eb.series.map((s,i) => {
+                    {eb ? eb.series.map((s, i) => {
                       const sa = ea?.series[i];
                       const up = sa && (s.carga_kg > sa.carga_kg || (s.carga_kg >= sa.carga_kg && s.repeticoes > sa.repeticoes));
                       return (
@@ -208,12 +223,12 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
     );
   }
 
-
   // ── detalhe de treino ──
   if (treinoAberto) {
-    const t = treinoAberto;
+    const t           = treinoAberto;
     const treinosDoSplit = treinos.filter(tr => tr.split === t.split && tr.data < t.data);
-    const anterior = treinosDoSplit.length > 0 ? treinosDoSplit[0] : null;
+    const anterior    = treinosDoSplit.length > 0 ? treinosDoSplit[0] : null;
+
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
         <div className="sticky top-0 z-20 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-zinc-900 px-5 pt-12 pb-4 flex items-center gap-3">
@@ -247,23 +262,22 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
           </div>
         </div>
 
-        {/* métricas do treino */}
-        <div className="px-5 pt-5 pb-3 grid grid-cols-2 gap-3">
+        {/* resumo do treino */}
+        <div className="px-5 pt-4 pb-3 grid grid-cols-3 gap-3">
           {[
-            { l: 'Séries',        v: t.totalSeries },
-            { l: 'Volume total',  v: `${Math.round(t.volumeTotal)} kg` },
-            { l: 'Exercícios',    v: t.exercicios.length },
-            { l: 'Séries/exerc.', v: (t.totalSeries / t.exercicios.length).toFixed(1) },
+            { label: 'Volume',   value: `${Math.round(t.volumeTotal)} kg` },
+            { label: 'Séries',   value: t.totalSeries },
+            { label: 'Exercícios', value: t.exercicios.length },
           ].map(x => (
-            <div key={x.l} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center">
-              <div className="text-white font-black text-xl">{x.v}</div>
-              <div className="text-zinc-600 text-xs font-medium mt-0.5">{x.l}</div>
+            <div key={x.label} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 text-center">
+              <div className="text-white font-black text-lg">{x.value}</div>
+              <div className="text-zinc-600 text-xs mt-0.5">{x.label}</div>
             </div>
           ))}
         </div>
 
-        {/* nota do treino — se existir */}
-        {notas[t.data + '_' + (t.id_treino || '')] || Object.entries(notas).find(([k, v]) => k.includes(t.data.replace(/-/g, ''))) ? (() => {
+        {/* nota do treino */}
+        {(() => {
           const notaEntry = Object.entries(notas).find(([k]) => k.includes(t.data.replace(/-/g, '')));
           if (!notaEntry) return null;
           return (
@@ -274,7 +288,7 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
               </div>
             </div>
           );
-        })() : null}
+        })()}
 
         {/* exercícios */}
         <div className="px-5 pb-10 flex flex-col gap-3">
@@ -284,7 +298,9 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
                 <div className="flex items-center gap-2">
                   <span className="text-white font-bold text-sm">{ex.nome}</span>
                   {ex.usaPlacas && (
-                    <span className="text-blue-400 text-xs font-semibold bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg">Placas</span>
+                    <span className="text-blue-400 text-xs font-semibold bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg">
+                      Placas
+                    </span>
                   )}
                 </div>
                 <span className="text-zinc-500 text-xs font-semibold">{Math.round(ex.volume)} kg vol.</span>
@@ -293,12 +309,17 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
                 {ex.series.map((s, i) => {
                   const vol = s.carga_kg * s.repeticoes;
                   return (
-                    <div key={i} className="flex items-center justify-between">
-                      <span className="text-zinc-600 text-sm w-16">Série {s.numero_serie}</span>
-                      <span className="text-white font-bold text-sm">
+                    <div key={i} className="flex items-center justify-between gap-2">
+                      <span className="text-zinc-600 text-sm w-16 flex-shrink-0">Série {s.numero_serie}</span>
+                      <span className="text-white font-bold text-sm flex-1 text-center">
                         {s.carga_kg}{ex.usaPlacas ? ' pl' : ' kg'} × {s.repeticoes} reps
                       </span>
-                      <span className="text-zinc-600 text-xs w-16 text-right">{vol} kg</span>
+                      <span className="text-zinc-600 text-xs w-14 text-right">{vol} kg</span>
+                      <button
+                        onClick={() => setSerieParaDeletar(s)}
+                        className="btn w-8 h-8 rounded-lg flex items-center justify-center text-zinc-700 active:text-red-400 active:bg-zinc-800 flex-shrink-0">
+                        <IconTrash/>
+                      </button>
                     </div>
                   );
                 })}
@@ -306,6 +327,40 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
             </div>
           ))}
         </div>
+
+        {/* ── modal deletar série ── */}
+        {serieParaDeletar && (
+          <div
+            className="fixed inset-0 z-[70] bg-black/80 flex flex-col justify-end"
+            onClick={() => setSerieParaDeletar(null)}>
+            <div
+              className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl p-6 pb-10"
+              onClick={e => e.stopPropagation()}>
+              <div className="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto mb-6"/>
+              <h3 className="text-white font-black text-xl mb-2 text-center">Remover série?</h3>
+              <p className="text-zinc-400 text-sm mb-8 text-center">
+                Série {serieParaDeletar.numero_serie}
+                {' — '}
+                <strong className="text-white">
+                  {serieParaDeletar.carga_kg} kg × {serieParaDeletar.repeticoes} reps
+                </strong>
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setSerieParaDeletar(null)}
+                  className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-bold rounded-2xl">
+                  Cancelar
+                </button>
+                <button
+                  onClick={deletarSerie}
+                  disabled={deletandoSerie}
+                  className="btn flex-1 py-4 bg-red-500/10 text-red-400 active:bg-red-500/20 font-bold rounded-2xl disabled:opacity-50">
+                  {deletandoSerie ? 'Removendo...' : 'Sim, remover'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -320,7 +375,11 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
         </button>
         <div className="flex-1">
           <h1 className="text-xl font-bold text-white">Histórico</h1>
-          {!loading && <p className="text-zinc-500 text-xs mt-0.5">{treinos.length} treino{treinos.length !== 1 ? 's' : ''} registrado{treinos.length !== 1 ? 's' : ''}</p>}
+          {!loading && (
+            <p className="text-zinc-500 text-xs mt-0.5">
+              {treinos.length} treino{treinos.length !== 1 ? 's' : ''} registrado{treinos.length !== 1 ? 's' : ''}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button onClick={exportarCSV} disabled={exportando}
@@ -328,8 +387,7 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
             <IconExport/>
           </button>
           {onVerGraficos && (
-            <button
-              onClick={() => onVerGraficos(null)}
+            <button onClick={() => onVerGraficos(null)}
               className="btn flex items-center gap-2 px-3 py-2.5 bg-[#c8f542]/10 border border-[#c8f542]/25 rounded-xl text-[#c8f542] text-xs font-semibold active:bg-[#c8f542]/20">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -368,7 +426,6 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
         ) : treinosFiltrados.map((t, i) => (
           <button key={`${t.data}-${t.split}-${i}`} onClick={() => setAberto(t)}
             className="btn w-full bg-zinc-900 border border-zinc-800 active:bg-zinc-800 active:border-zinc-600 rounded-2xl p-4 text-left flex items-center gap-4 transition-all">
-            {/* data */}
             <div className="w-14 h-14 rounded-xl bg-zinc-800 flex flex-col items-center justify-center flex-shrink-0">
               <span className="text-white font-black text-lg leading-none">
                 {new Date(t.data + 'T00:00:00').getDate()}
@@ -384,7 +441,9 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
               </div>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 {t.exercicios.slice(0, 3).map(ex => (
-                  <span key={ex.nome} className="text-zinc-700 text-xs bg-zinc-800 px-2 py-0.5 rounded-lg truncate max-w-[90px]">{ex.nome}</span>
+                  <span key={ex.nome} className="text-zinc-700 text-xs bg-zinc-800 px-2 py-0.5 rounded-lg truncate max-w-[90px]">
+                    {ex.nome}
+                  </span>
                 ))}
                 {t.exercicios.length > 3 && (
                   <span className="text-zinc-700 text-xs">+{t.exercicios.length - 3}</span>

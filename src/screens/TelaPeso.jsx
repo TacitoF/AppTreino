@@ -4,12 +4,8 @@ import { R } from '../config';
 import { IconBack } from '../components/icons';
 import { Spinner } from '../components/ui';
 
-const IconScale = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l9-3 9 3v2a9 9 0 01-9 9 9 9 0 01-9-9V6z"/>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v14M9 10l3-3 3 3"/>
-  </svg>
-);
+const META_KEY = 'volt_meta_peso';
+
 const IconTrend = ({ up }) => up ? (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
     <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
@@ -17,6 +13,26 @@ const IconTrend = ({ up }) => up ? (
 ) : (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
     <path strokeLinecap="round" strokeLinejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"/>
+  </svg>
+);
+
+const IconTrash = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"/>
+  </svg>
+);
+
+const IconTarget = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+    <circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="12" r="6"/>
+    <circle cx="12" cy="12" r="2"/>
+  </svg>
+);
+
+const IconEdit = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
   </svg>
 );
 
@@ -38,12 +54,16 @@ function MiniChart({ dados, cor = '#c8f542' }) {
   const toX = i => PAD.left + (i / (dados.length - 1)) * iW;
   const toY = v => PAD.top + iH - ((v - min) / range) * iH;
   const pathD = dados.map((d, i) => `${i === 0 ? 'M' : 'L'} ${toX(i).toFixed(1)} ${toY(d.peso_kg).toFixed(1)}`).join(' ');
-  const areaD = [`M ${toX(0).toFixed(1)} ${toY(dados[0].peso_kg).toFixed(1)}`,
+  const areaD = [
+    `M ${toX(0).toFixed(1)} ${toY(dados[0].peso_kg).toFixed(1)}`,
     ...dados.map((d, i) => `L ${toX(i).toFixed(1)} ${toY(d.peso_kg).toFixed(1)}`),
-    `L ${toX(dados.length - 1).toFixed(1)} ${PAD.top + iH}`, `L ${toX(0).toFixed(1)} ${PAD.top + iH}`, 'Z'].join(' ');
+    `L ${toX(dados.length - 1).toFixed(1)} ${PAD.top + iH}`,
+    `L ${toX(0).toFixed(1)} ${PAD.top + iH}`,
+    'Z',
+  ].join(' ');
 
   const yTicks = [min + 0.5, (min + max) / 2, max - 0.5].map(v => ({ v: Math.round(v * 10) / 10, y: toY(v) }));
-  const step = Math.max(1, Math.floor(dados.length / 4));
+  const step   = Math.max(1, Math.floor(dados.length / 4));
   const xTicks = dados.filter((_, i) => i % step === 0 || i === dados.length - 1);
 
   return (
@@ -61,7 +81,7 @@ function MiniChart({ dados, cor = '#c8f542' }) {
         </g>
       ))}
       {xTicks.map((d, i) => {
-        const idx = dados.indexOf(d);
+        const idx   = dados.indexOf(d);
         const label = d.data ? d.data.slice(5).replace('-', '/') : '';
         return <text key={i} x={toX(idx)} y={H - 4} textAnchor="middle" fill="#52525b" fontSize="8">{label}</text>;
       })}
@@ -77,10 +97,17 @@ function MiniChart({ dados, cor = '#c8f542' }) {
 }
 
 export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
-  const [pesos, setPesos]       = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [valor, setValor]       = useState(String(usuario.peso_atual || ''));
-  const [salvando, setSalvando] = useState(false);
+  const [pesos, setPesos]                     = useState([]);
+  const [loading, setLoading]                 = useState(true);
+  const [valor, setValor]                     = useState(String(usuario.peso_atual || ''));
+  const [salvando, setSalvando]               = useState(false);
+  const [pesoParaDeletar, setPesoParaDeletar] = useState(null);
+  const [deletando, setDeletando]             = useState(false);
+  const [metaPeso, setMetaPeso]               = useState(() => {
+    try { return localStorage.getItem(META_KEY) || ''; } catch { return ''; }
+  });
+  const [editandoMeta, setEditandoMeta]       = useState(false);
+  const [metaInput, setMetaInput]             = useState('');
 
   const carregar = useCallback(async () => {
     try {
@@ -103,9 +130,9 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
         method: 'POST',
         body: {
           id_registro: `peso_${usuario.id}_${hoje}_${Date.now()}`,
-          id_usuario: usuario.id,
-          data: hoje,
-          peso_kg: kg,
+          id_usuario:  usuario.id,
+          data:        hoje,
+          peso_kg:     kg,
         },
       });
       mostrarToast('Peso registrado.', 'sucesso');
@@ -114,13 +141,34 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
     finally { setSalvando(false); }
   };
 
+  const deletarPeso = async () => {
+    if (!pesoParaDeletar) return;
+    setDeletando(true);
+    try {
+      await apiFetch(`${R.peso}?id_registro=${encodeURIComponent(pesoParaDeletar.id_registro)}`, { method: 'DELETE' });
+      mostrarToast('Pesagem removida.', 'sucesso');
+      setPesoParaDeletar(null);
+      await carregar();
+    } catch { mostrarToast('Erro ao remover pesagem.', 'erro'); }
+    finally { setDeletando(false); }
+  };
+
+  const salvarMeta = () => {
+    const v = parseFloat(metaInput.replace(',', '.'));
+    if (!v || v < 20 || v > 300) { mostrarToast('Meta inválida (20–300 kg).', 'erro'); return; }
+    try { localStorage.setItem(META_KEY, String(v)); } catch {}
+    setMetaPeso(String(v));
+    setEditandoMeta(false);
+    mostrarToast('Meta definida.', 'sucesso');
+  };
+
   const { variacao, variacaoTotal } = useMemo(() => {
     if (pesos.length < 2) return { variacao: null, variacaoTotal: null };
-    const ultimo = pesos[pesos.length - 1].peso_kg;
+    const ultimo    = pesos[pesos.length - 1].peso_kg;
     const penultimo = pesos[pesos.length - 2].peso_kg;
-    const primeiro = pesos[0].peso_kg;
+    const primeiro  = pesos[0].peso_kg;
     return {
-      variacao: +(ultimo - penultimo).toFixed(1),
+      variacao:      +(ultimo - penultimo).toFixed(1),
       variacaoTotal: +(ultimo - primeiro).toFixed(1),
     };
   }, [pesos]);
@@ -129,8 +177,11 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
+
+      {/* header */}
       <div className="sticky top-0 z-20 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-zinc-900 px-5 pt-12 pb-4 flex items-center gap-3">
-        <button onClick={onVoltar} className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
+        <button onClick={onVoltar}
+          className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
           <IconBack/>
         </button>
         <div>
@@ -141,7 +192,7 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
 
       <div className="px-5 pt-5 pb-24 flex flex-col gap-5">
 
-        {/* Registrar hoje */}
+        {/* registrar */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
           <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">Registrar hoje</p>
           <div className="flex gap-3 items-center">
@@ -165,7 +216,7 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
 
         {loading ? <Spinner/> : (
           <>
-            {/* Cards de resumo */}
+            {/* cards de resumo */}
             {pesoAtual && (
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center">
@@ -197,21 +248,77 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
               </div>
             )}
 
-            {/* Gráfico */}
+            {/* meta de peso */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 text-zinc-500">
+                  <IconTarget/>
+                  <p className="text-xs font-bold uppercase tracking-widest">Meta de peso</p>
+                </div>
+                <button
+                  onClick={() => { setMetaInput(metaPeso); setEditandoMeta(true); }}
+                  className="btn flex items-center gap-1.5 text-zinc-500 text-xs font-semibold bg-zinc-800 px-3 py-1.5 rounded-xl active:bg-zinc-700">
+                  <IconEdit/>
+                  {metaPeso ? 'Editar' : 'Definir'}
+                </button>
+              </div>
+              {metaPeso && pesoAtual ? (() => {
+                const meta         = parseFloat(metaPeso);
+                const pesoInicial  = pesos.length > 0 ? pesos[0].peso_kg : pesoAtual;
+                const diff         = +(pesoAtual - meta).toFixed(1);
+                const totalCaminho = Math.abs(pesoInicial - meta);
+                const percorrido   = Math.abs(pesoInicial - pesoAtual);
+                const progresso    = totalCaminho > 0
+                  ? Math.max(0, Math.min(100, Math.round((percorrido / totalCaminho) * 100)))
+                  : 100;
+                const atingiu = (pesoInicial >= meta && pesoAtual <= meta) || (pesoInicial <= meta && pesoAtual >= meta);
+                return (
+                  <div>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className="text-zinc-400 text-sm">{pesoAtual} kg</span>
+                      <span className={`font-bold text-sm ${atingiu ? 'text-[#c8f542]' : 'text-zinc-300'}`}>
+                        {atingiu ? 'Meta atingida' : `${diff > 0 ? '+' : ''}${diff} kg da meta`}
+                      </span>
+                      <span className="text-zinc-400 text-sm">{meta} kg</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#c8f542] rounded-full transition-all duration-700"
+                        style={{ width: `${progresso}%` }}
+                      />
+                    </div>
+                    <p className="text-zinc-600 text-xs mt-1.5 text-right">{progresso}% concluído</p>
+                  </div>
+                );
+              })() : (
+                <p className="text-zinc-600 text-sm">Defina uma meta para acompanhar seu progresso.</p>
+              )}
+            </div>
+
+            {/* gráfico */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
               <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">Evolução</p>
               <MiniChart dados={pesos}/>
             </div>
 
-            {/* Histórico de pesagens */}
+            {/* histórico */}
             {pesos.length > 0 && (
               <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
                 <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">Histórico</p>
                 <div className="flex flex-col">
                   {[...pesos].reverse().slice(0, 20).map((p, i) => (
                     <div key={i} className="flex items-center justify-between py-2.5 border-b border-zinc-800 last:border-0">
-                      <span className="text-zinc-400 text-sm">{new Date(p.data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}</span>
+                      <span className="text-zinc-400 text-sm">
+                        {new Date(p.data + 'T00:00:00').toLocaleDateString('pt-BR', {
+                          weekday: 'short', day: '2-digit', month: 'short',
+                        })}
+                      </span>
                       <span className="text-white font-bold text-base">{p.peso_kg} kg</span>
+                      <button
+                        onClick={() => setPesoParaDeletar(p)}
+                        className="btn w-9 h-9 rounded-xl flex items-center justify-center text-zinc-700 active:text-red-400 active:bg-zinc-800">
+                        <IconTrash/>
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -220,6 +327,79 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
           </>
         )}
       </div>
+
+      {/* ── modal deletar pesagem ── */}
+      {pesoParaDeletar && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/80 flex flex-col justify-end"
+          onClick={() => setPesoParaDeletar(null)}>
+          <div
+            className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl p-6 pb-10"
+            onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto mb-6"/>
+            <h3 className="text-white font-black text-xl mb-2 text-center">Remover pesagem?</h3>
+            <p className="text-zinc-400 text-sm mb-8 text-center">
+              {new Date(pesoParaDeletar.data + 'T00:00:00').toLocaleDateString('pt-BR', {
+                weekday: 'long', day: '2-digit', month: 'long',
+              })}
+              {' — '}
+              <strong className="text-white">{pesoParaDeletar.peso_kg} kg</strong>
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPesoParaDeletar(null)}
+                className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-bold rounded-2xl">
+                Cancelar
+              </button>
+              <button
+                onClick={deletarPeso}
+                disabled={deletando}
+                className="btn flex-1 py-4 bg-red-500/10 text-red-400 active:bg-red-500/20 font-bold rounded-2xl disabled:opacity-50">
+                {deletando ? 'Removendo...' : 'Sim, remover'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── modal meta de peso ── */}
+      {editandoMeta && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/80 flex flex-col justify-end"
+          onClick={() => setEditandoMeta(false)}>
+          <div
+            className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl p-6 pb-10"
+            onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto mb-5"/>
+            <h3 className="text-white font-black text-lg mb-1">Meta de peso</h3>
+            <p className="text-zinc-500 text-sm mb-4">Qual é o seu peso alvo?</p>
+            <div className="relative mb-5">
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="Ex: 75.0"
+                value={metaInput}
+                onChange={e => setMetaInput(e.target.value)}
+                autoFocus
+                className="w-full bg-zinc-800 text-white px-4 py-4 rounded-2xl border border-zinc-700 outline-none focus:border-[#c8f542] transition-colors text-base placeholder-zinc-600"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-sm font-semibold">kg</span>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditandoMeta(false)}
+                className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-semibold rounded-2xl">
+                Cancelar
+              </button>
+              <button
+                onClick={salvarMeta}
+                className="btn flex-1 py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold rounded-2xl">
+                Salvar meta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
