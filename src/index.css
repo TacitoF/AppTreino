@@ -79,121 +79,162 @@ input[type="number"] {
 /* ── Sheet overlay ───────────────────────────────────────────────────────── */
 .sheet-overlay { animation: fadeIn 0.2s ease both; }
 
-/* ── Modo Claro ───────────────────────────────────────────────────────────── */
-/*
-  Estratégia: a classe .tema-claro é aplicada no <html> pelo App.jsx.
-  Usamos variáveis CSS para reescrever as cores hardcoded do Tailwind.
-  As regras abaixo sobrescrevem bg, text e border nas telas principais.
-*/
+/* ══════════════════════════════════════════════════════════════════════════
+   MODO CLARO
+   Paleta:
+     Base      #EDEEF2  — fundo geral (cinza-azulado frio, não branco puro)
+     Card      #FFFFFF  — cards e painéis com sombra sutil
+     Input     #F2F3F7  — campos de formulário
+     Border    #D8DAE3  — bordas visíveis mas discretas
+     Primary   #111118  — texto principal (quase preto, mais suave que #000)
+     Secondary #3D3F4E  — texto secundário com bom contraste
+     Muted     #717285  — texto auxiliar / labels
+     Accent    #5A8A00  — verde escuro p/ texto sobre fundo claro (WCAG AA)
+     AccentBg  #6FA800  — verde p/ fundos de botão primário
+   ══════════════════════════════════════════════════════════════════════════ */
 
 html.tema-claro {
-  --bg-base:       #f4f4f5;
-  --bg-card:       #ffffff;
-  --bg-input:      #f0f0f2;
-  --border-color:  #e4e4e7;
-  --text-primary:  #09090b;
-  --text-secondary:#52525b;
-  --text-muted:    #a1a1aa;
-  --accent:        #84cc16;        /* verde um pouco mais escuro p/ contraste no claro */
-  --accent-text:   #3f6212;
+  --bg-base:        #EDEEF2;
+  --bg-card:        #FFFFFF;
+  --bg-input:       #F2F3F7;
+  --bg-elevated:    #F8F9FB;
+  --border-color:   #D8DAE3;
+  --border-subtle:  #E6E8EF;
+  --text-primary:   #111118;
+  --text-secondary: #3D3F4E;
+  --text-muted:     #717285;
+  --text-faint:     #9FA1B0;
+  --accent-text:    #5A8A00;
+  --accent-bg:      #6FA800;
+  --accent-hover:   #5E9100;
+  --accent-subtle:  rgba(95, 170, 0, 0.10);
+  --accent-border:  rgba(95, 170, 0, 0.30);
+  --shadow-card:    0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-input:   inset 0 1px 2px rgba(0,0,0,0.04);
 }
 
-/* ── body ─────── */
+/* ── Body & fundo geral ───────────────────────────────────────────────────── */
 html.tema-claro body {
   background: var(--bg-base);
 }
-
-/* ── Todas as telas — fundo principal ───── */
-html.tema-claro .min-h-screen,
-html.tema-claro .fixed.inset-0 {
+html.tema-claro .min-h-screen {
+  background: var(--bg-base) !important;
+}
+html.tema-claro .fixed.inset-0:not([style*="rgba"]) {
   background: var(--bg-base) !important;
 }
 
-/* ── Cards / painéis (bg-zinc-900) ──────── */
+/* ── Cards (bg-zinc-900) ─────────────────────────────────────────────────── */
 html.tema-claro .bg-zinc-900 {
   background: var(--bg-card) !important;
+  box-shadow: var(--shadow-card);
 }
+
+/* ── Painéis internos (bg-zinc-800) ─────────────────────────────────────── */
 html.tema-claro .bg-zinc-800 {
   background: var(--bg-input) !important;
+  box-shadow: none;
 }
+
+/* ── Fundo totalmente preto (NumInput, etc.) ─────────────────────────────── */
 html.tema-claro .bg-black {
-  background: var(--bg-input) !important;
+  background: var(--bg-elevated) !important;
 }
 
-/* ── Bordas ──────────────────────────────── */
-html.tema-claro .border-zinc-800,
-html.tema-claro .border-zinc-900,
-html.tema-claro .border-zinc-700 {
-  border-color: var(--border-color) !important;
-}
+/* ── Bordas ──────────────────────────────────────────────────────────────── */
+html.tema-claro .border-zinc-900 { border-color: var(--border-subtle) !important; }
+html.tema-claro .border-zinc-800 { border-color: var(--border-color)  !important; }
+html.tema-claro .border-zinc-700 { border-color: var(--border-color)  !important; }
 
-/* ── Textos ──────────────────────────────── */
-html.tema-claro .text-white {
-  color: var(--text-primary) !important;
-}
-html.tema-claro .text-zinc-300,
-html.tema-claro .text-zinc-400 {
-  color: var(--text-secondary) !important;
-}
-html.tema-claro .text-zinc-500,
-html.tema-claro .text-zinc-600 {
-  color: var(--text-muted) !important;
-}
-html.tema-claro .text-zinc-700 {
-  color: #d4d4d8 !important;
-}
+/* ── Textos — hierarquia clara e legível ─────────────────────────────────── */
+html.tema-claro .text-white        { color: var(--text-primary)   !important; }
+html.tema-claro .text-zinc-300     { color: var(--text-secondary) !important; }
+html.tema-claro .text-zinc-400     { color: var(--text-secondary) !important; }
+html.tema-claro .text-zinc-500     { color: var(--text-muted)     !important; }
+html.tema-claro .text-zinc-600     { color: var(--text-muted)     !important; }
+html.tema-claro .text-zinc-700     { color: var(--text-faint)     !important; }
+
 html.tema-claro .placeholder-zinc-600::placeholder,
 html.tema-claro .placeholder-zinc-700::placeholder {
-  color: #a1a1aa !important;
+  color: var(--text-faint) !important;
 }
 
-/* ── Inputs e selects ────────────────────── */
+/* ── Inputs, selects, textareas ──────────────────────────────────────────── */
 html.tema-claro input,
 html.tema-claro select,
 html.tema-claro textarea {
-  background: var(--bg-input) !important;
-  color: var(--text-primary) !important;
+  background:   var(--bg-input)    !important;
+  color:        var(--text-primary) !important;
   border-color: var(--border-color) !important;
+  box-shadow:   var(--shadow-input);
 }
 html.tema-claro input:focus,
-html.tema-claro select:focus {
-  border-color: var(--accent) !important;
+html.tema-claro select:focus,
+html.tema-claro textarea:focus {
+  border-color: var(--accent-bg) !important;
+  box-shadow: 0 0 0 3px rgba(95,170,0,0.12) !important;
 }
 
-/* ── Acento verde — mantém visibilidade no claro ── */
-html.tema-claro .text-\[#c8f542\] {
-  color: var(--accent-text) !important;
-}
-html.tema-claro .bg-\[#c8f542\] {
-  background: var(--accent) !important;
-}
-html.tema-claro .border-\[#c8f542\] {
-  border-color: var(--accent) !important;
-}
+/* ── Acento verde sobre fundo claro ─────────────────────────────────────── */
+/* texto verde → versão escura para WCAG AA */
+html.tema-claro .text-\[#c8f542\] { color: var(--accent-text) !important; }
 
-/* botões primários (fundo verde) — texto sempre preto */
-html.tema-claro .bg-\[#c8f542\] .text-black,
-html.tema-claro button.bg-\[#c8f542\] {
-  color: #000 !important;
-}
+/* fundo verde (botão primário) → verde sólido escuro */
+html.tema-claro .bg-\[#c8f542\]   { background: var(--accent-bg) !important; }
+html.tema-claro .active\:bg-\[#b0d93b\]:active { background: var(--accent-hover) !important; }
 
-/* ── Barra de status / header fixo ──────── */
-html.tema-claro .bg-\[#0a0a0a\]\/95 {
-  background: rgba(244,244,245,0.95) !important;
-}
+/* borda verde */
+html.tema-claro .border-\[#c8f542\] { border-color: var(--accent-bg) !important; }
 
-/* ── Streak / banner verde translúcido ───── */
+/* translúcidos verdes → tom ajustado */
 html.tema-claro .bg-\[#c8f542\]\/5,
 html.tema-claro .bg-\[#c8f542\]\/8,
 html.tema-claro .bg-\[#c8f542\]\/10,
 html.tema-claro .bg-\[#c8f542\]\/15 {
-  background: rgba(132,204,22,0.12) !important;
+  background: var(--accent-subtle) !important;
+}
+html.tema-claro .border-\[#c8f542\]\/20,
+html.tema-claro .border-\[#c8f542\]\/25 {
+  border-color: var(--accent-border) !important;
 }
 
-/* ── Scrollbar (modo claro) ──────────────── */
-html.tema-claro ::-webkit-scrollbar-track {
-  background: var(--bg-base);
+/* texto dentro de botão verde primário — sempre preto */
+html.tema-claro .bg-\[#c8f542\],
+html.tema-claro .bg-\[#c8f542\] * {
+  color: #000000 !important;
 }
-html.tema-claro ::-webkit-scrollbar-thumb {
-  background: #d4d4d8;
+
+/* ── Header fixo com blur ────────────────────────────────────────────────── */
+html.tema-claro .bg-\[#0a0a0a\]\/95 {
+  background: rgba(237, 238, 242, 0.95) !important;
 }
+
+/* ── Divisores / borders de seção ───────────────────────────────────────── */
+html.tema-claro .border-b,
+html.tema-claro .border-t {
+  border-color: var(--border-color) !important;
+}
+
+/* ── Cores de destaque das outras seções (cardio, dieta, rank…) ──────────── */
+/* mantemos as cores de acento coloridas mas reduzimos opacidade dos fundos */
+html.tema-claro [class*="bg-blue-500\/"],
+html.tema-claro [class*="bg-violet-500\/"],
+html.tema-claro [class*="bg-amber-500\/"],
+html.tema-claro [class*="bg-sky-500\/"],
+html.tema-claro [class*="bg-emerald-500\/"],
+html.tema-claro [class*="bg-\[#f97316\]\/"] {
+  opacity: 0.85;
+}
+
+/* ── Toast — mantém legibilidade ────────────────────────────────────────── */
+html.tema-claro .bg-zinc-800.border-zinc-700 {
+  background: var(--bg-card)    !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary)    !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────── */
+html.tema-claro ::-webkit-scrollbar       { width: 4px; }
+html.tema-claro ::-webkit-scrollbar-track { background: var(--bg-base); }
+html.tema-claro ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
