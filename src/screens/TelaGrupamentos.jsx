@@ -4,7 +4,7 @@ import { apiFetch } from '../auth';
 import { R } from '../config';
 import { Spinner } from '../components/ui';
 
-function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onRank, onCardio, onDieta, onHistorico, onRelatorio, onLogout, onPerfil, onPeso, onProgressao }) {
+function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onRank, onCardio, onDieta, onHistorico, onRelatorio, onLogout, onPerfil, onPeso, onProgressao, tema, onToggleTema }) {
   const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const [streak, setStreak] = useState(null);
   const [relLoading, setRelLoading] = useState(false);
@@ -23,6 +23,12 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
             {dias[new Date().getDay()]} · {new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}
           </span>
           <div className="flex items-center gap-2">
+            <button onClick={onToggleTema} className="btn w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 active:bg-zinc-800" title={tema === 'claro' ? 'Modo escuro' : 'Modo claro'}>
+              {tema === 'claro'
+                ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              }
+            </button>
             <button onClick={onPerfil} className="btn w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 active:bg-zinc-800">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
             </button>
@@ -49,7 +55,7 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
             </div>
             <div className="flex-1 text-left">
               <div className="text-[#c8f542] font-bold text-sm">
-                🔥 {streak.semanas > 1 ? `${streak.semanas} semanas seguidas` : streak.dias > 0 ? `${streak.dias} dia${streak.dias>1?'s':''} de streak` : 'Treino registrado'}
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 inline-block mr-1 align-text-bottom"><path d="M12 23a7.5 7.5 0 01-5.138-12.963C8.204 8.774 11.5 6.5 11 1.5c6 4 9 8 3 14 1 0 2.5 0 3-1.5.5 1.5.5 3-.5 4.5A7.5 7.5 0 0112 23z"/></svg>{streak.semanas > 1 ? `${streak.semanas} semanas seguidas` : streak.dias > 0 ? `${streak.dias} dia${streak.dias>1?'s':''} de streak` : 'Treino registrado'}
               </div>
               <div className="text-zinc-600 text-xs mt-0.5">{streak.totalTreinos} treino{streak.totalTreinos!==1?'s':''} no histórico · toque para relatório</div>
             </div>

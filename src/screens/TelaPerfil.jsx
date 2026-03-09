@@ -136,21 +136,6 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, 
           )}
         </div>
 
-        {/* toggle tema */}
-        {onToggleTema && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between">
-            <div>
-              <p className="text-white font-semibold text-sm">Aparência</p>
-              <p className="text-zinc-500 text-xs mt-0.5">{tema === 'claro' ? 'Modo claro' : 'Modo escuro'}</p>
-            </div>
-            <button
-              onClick={onToggleTema}
-              className="btn w-12 h-12 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300 active:bg-zinc-700">
-              {tema === 'claro' ? <IconMoon/> : <IconSun/>}
-            </button>
-          </div>
-        )}
-
         <button onClick={salvar} disabled={salvando}
           className="btn w-full py-5 bg-[#c8f542] active:bg-[#b0d93b] text-black font-black text-base rounded-2xl flex items-center justify-center gap-2 mt-4 shadow-[0_0_20px_rgba(200,245,66,0.1)]">
           {salvando

@@ -174,6 +174,8 @@ export default function App() {
           onPeso={() => setTela('peso')}
           onProgressao={() => setTela('progressao')}
           onLogout={onLogout}
+          tema={tema}
+          onToggleTema={toggleTema}
         />
       )}
 

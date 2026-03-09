@@ -78,3 +78,122 @@ input[type="number"] {
 
 /* ── Sheet overlay ───────────────────────────────────────────────────────── */
 .sheet-overlay { animation: fadeIn 0.2s ease both; }
+
+/* ── Modo Claro ───────────────────────────────────────────────────────────── */
+/*
+  Estratégia: a classe .tema-claro é aplicada no <html> pelo App.jsx.
+  Usamos variáveis CSS para reescrever as cores hardcoded do Tailwind.
+  As regras abaixo sobrescrevem bg, text e border nas telas principais.
+*/
+
+html.tema-claro {
+  --bg-base:       #f4f4f5;
+  --bg-card:       #ffffff;
+  --bg-input:      #f0f0f2;
+  --border-color:  #e4e4e7;
+  --text-primary:  #09090b;
+  --text-secondary:#52525b;
+  --text-muted:    #a1a1aa;
+  --accent:        #84cc16;        /* verde um pouco mais escuro p/ contraste no claro */
+  --accent-text:   #3f6212;
+}
+
+/* ── body ─────── */
+html.tema-claro body {
+  background: var(--bg-base);
+}
+
+/* ── Todas as telas — fundo principal ───── */
+html.tema-claro .min-h-screen,
+html.tema-claro .fixed.inset-0 {
+  background: var(--bg-base) !important;
+}
+
+/* ── Cards / painéis (bg-zinc-900) ──────── */
+html.tema-claro .bg-zinc-900 {
+  background: var(--bg-card) !important;
+}
+html.tema-claro .bg-zinc-800 {
+  background: var(--bg-input) !important;
+}
+html.tema-claro .bg-black {
+  background: var(--bg-input) !important;
+}
+
+/* ── Bordas ──────────────────────────────── */
+html.tema-claro .border-zinc-800,
+html.tema-claro .border-zinc-900,
+html.tema-claro .border-zinc-700 {
+  border-color: var(--border-color) !important;
+}
+
+/* ── Textos ──────────────────────────────── */
+html.tema-claro .text-white {
+  color: var(--text-primary) !important;
+}
+html.tema-claro .text-zinc-300,
+html.tema-claro .text-zinc-400 {
+  color: var(--text-secondary) !important;
+}
+html.tema-claro .text-zinc-500,
+html.tema-claro .text-zinc-600 {
+  color: var(--text-muted) !important;
+}
+html.tema-claro .text-zinc-700 {
+  color: #d4d4d8 !important;
+}
+html.tema-claro .placeholder-zinc-600::placeholder,
+html.tema-claro .placeholder-zinc-700::placeholder {
+  color: #a1a1aa !important;
+}
+
+/* ── Inputs e selects ────────────────────── */
+html.tema-claro input,
+html.tema-claro select,
+html.tema-claro textarea {
+  background: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+html.tema-claro input:focus,
+html.tema-claro select:focus {
+  border-color: var(--accent) !important;
+}
+
+/* ── Acento verde — mantém visibilidade no claro ── */
+html.tema-claro .text-\[#c8f542\] {
+  color: var(--accent-text) !important;
+}
+html.tema-claro .bg-\[#c8f542\] {
+  background: var(--accent) !important;
+}
+html.tema-claro .border-\[#c8f542\] {
+  border-color: var(--accent) !important;
+}
+
+/* botões primários (fundo verde) — texto sempre preto */
+html.tema-claro .bg-\[#c8f542\] .text-black,
+html.tema-claro button.bg-\[#c8f542\] {
+  color: #000 !important;
+}
+
+/* ── Barra de status / header fixo ──────── */
+html.tema-claro .bg-\[#0a0a0a\]\/95 {
+  background: rgba(244,244,245,0.95) !important;
+}
+
+/* ── Streak / banner verde translúcido ───── */
+html.tema-claro .bg-\[#c8f542\]\/5,
+html.tema-claro .bg-\[#c8f542\]\/8,
+html.tema-claro .bg-\[#c8f542\]\/10,
+html.tema-claro .bg-\[#c8f542\]\/15 {
+  background: rgba(132,204,22,0.12) !important;
+}
+
+/* ── Scrollbar (modo claro) ──────────────── */
+html.tema-claro ::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+html.tema-claro ::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+}
