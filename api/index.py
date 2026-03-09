@@ -350,6 +350,124 @@ def buscar_cardio(id_usuario: str = Query(...), limite: int = Query(5)):
     except Exception as e: raise HTTPException(500, str(e))
 
 # ── RANKING ───────────────────────────────────────────────────────────────────
+@app.get("/api/treino/relatorio")
+def relatorio_semanal(id_usuario: str = Query(...)):
+    """Relatório das últimas 4 semanas + streak atual de treinos."""
+    from datetime import timedelta
+    series   = get_records("Series_Exercicios")
+    treinos_ws = get_records("Treinos")
+
+    # mapa split_id → nome
+    splits_data = {}
+    for row in treinos_ws:
+        sid = str(row.get("ID_Split", "")).strip()
+        uid = str(row.get("ID_Usuario", "")).strip()
+        if uid == id_usuario and sid:
+            splits_data[sid] = str(row.get("Nome_Split", sid))
+
+    hoje = date.today()
+    # pega séries do usuário
+    minhas = [s for s in series if f"_{id_usuario}_" in str(s.get("ID_Treino",""))]
+
+    # agrupa por data_treino único
+    dias_treino = set()
+    treinos_por_semana = {}  # "YYYY-Www" → {splits, volume, series, prs}
+    exerc_cargas = {}  # nome_ex → [(data, carga_max)]
+
+    for s in minhas:
+        id_treino = str(s.get("ID_Treino",""))
+        data_str  = extrair_data_de_id_treino(id_treino)
+        if not data_str: continue
+        try: dt = date.fromisoformat(data_str)
+        except: continue
+
+        dias_treino.add(data_str)
+        semana = dt.strftime("%Y-W%W")
+        if semana not in treinos_por_semana:
+            treinos_por_semana[semana] = {"semana": semana, "inicio": dt - timedelta(days=dt.weekday()), "dias": set(), "volume": 0.0, "series": 0, "splits": set()}
+
+        tw = treinos_por_semana[semana]
+        tw["dias"].add(data_str)
+        try:
+            carga  = float(s.get("Carga_kg", 0) or 0)
+            reps   = int(s.get("Repeticoes", 0) or 0)
+            tw["volume"] += carga * reps
+            tw["series"] += 1
+        except: pass
+
+        split_id_raw = id_treino.split("_")[0] if "_" in id_treino else ""
+        nome_split = splits_data.get(split_id_raw, split_id_raw)
+        tw["splits"].add(nome_split)
+
+        # rastreia cargas para PRs
+        nome_ex = str(s.get("Nome_Exercicio","")).lstrip("[P]").strip()
+        try: carga_f = float(s.get("Carga_kg", 0) or 0)
+        except: carga_f = 0
+        if nome_ex:
+            if nome_ex not in exerc_cargas: exerc_cargas[nome_ex] = []
+            exerc_cargas[nome_ex].append((data_str, carga_f))
+
+    # PRs desta semana
+    inicio_semana = (hoje - timedelta(days=hoje.weekday())).isoformat()
+    prs_semana = []
+    for nome, registros in exerc_cargas.items():
+        registros.sort()
+        carga_max_geral = max(c for _, c in registros) if registros else 0
+        carga_esta_semana = max((c for d, c in registros if d >= inicio_semana), default=0)
+        if carga_esta_semana > 0 and carga_esta_semana >= carga_max_geral:
+            prs_semana.append({"exercicio": nome, "carga": carga_esta_semana})
+
+    # streak: quantos dias consecutivos (contando semanas com pelo menos 1 treino)
+    streak_dias = 0
+    d = hoje
+    while True:
+        if d.isoformat() in dias_treino:
+            streak_dias += 1
+        elif d < hoje:  # hoje pode não ter treinado ainda
+            break
+        d -= timedelta(days=1)
+        if streak_dias > 365: break
+
+    # semanas streak (semanas consecutivas com >=1 treino)
+    streak_semanas = 0
+    semana_check = hoje - timedelta(days=hoje.weekday())
+    while True:
+        sw = semana_check.strftime("%Y-W%W")
+        if sw in treinos_por_semana and len(treinos_por_semana[sw]["dias"]) > 0:
+            streak_semanas += 1
+        else:
+            break
+        semana_check -= timedelta(weeks=1)
+        if streak_semanas > 52: break
+
+    # últimas 4 semanas
+    ultimas4 = []
+    for i in range(4):
+        seg = hoje - timedelta(days=hoje.weekday()) - timedelta(weeks=i)
+        sw = seg.strftime("%Y-W%W")
+        tw = treinos_por_semana.get(sw, {})
+        ultimas4.append({
+            "semana_label": f"{seg.strftime('%d/%m')} – {(seg+timedelta(days=6)).strftime('%d/%m')}",
+            "dias_treino": len(tw.get("dias", set())),
+            "volume": round(tw.get("volume", 0)),
+            "series": tw.get("series", 0),
+            "splits": list(tw.get("splits", set())),
+        })
+
+    total_treinos = len(set(
+        f"{extrair_data_de_id_treino(str(s.get('ID_Treino','')))}__{str(s.get('ID_Treino','')).split('_')[0]}"
+        for s in minhas
+    ))
+
+    return {
+        "streak_dias": streak_dias,
+        "streak_semanas": streak_semanas,
+        "prs_semana": prs_semana[:10],
+        "ultimas_4_semanas": ultimas4,
+        "total_treinos_historico": total_treinos,
+    }
+
+
 @app.post("/api/rank/criar")
 def rank_criar(req: RankCriar):
     try:

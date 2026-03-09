@@ -13,6 +13,7 @@ import TelaDieta            from './screens/TelaDieta';
 import TelaPerfil           from './screens/TelaPerfil';
 import TelaHistorico        from './screens/TelaHistorico';
 import TelaGraficos         from './screens/TelaGraficos';
+import TelaRelatorio        from './screens/TelaRelatorio';
 
 export default function App() {
   const sessaoSalva = carregarSessao();
@@ -32,6 +33,17 @@ export default function App() {
   const toastTimerRef                = useRef(null);
 
   const usuarioRef = useRef(usuario);
+
+  // ─── auto-sync fila offline ao abrir o app ────────────────────────────────
+  useEffect(() => {
+    import('./auth').then(({ syncOfflineQueue, getOfflineQueue }) => {
+      if (getOfflineQueue().length > 0 && navigator.onLine) {
+        syncOfflineQueue().then(({ synced }) => {
+          if (synced > 0) mostrarToast(`${synced} série${synced>1?'s':''} sincronizada${synced>1?'s':''} (offline).`, 'sucesso');
+        });
+      }
+    });
+  }, []);
   useEffect(() => { usuarioRef.current = usuario; }, [usuario]);
 
   useEffect(() => {
@@ -124,6 +136,7 @@ export default function App() {
           onDieta={() => setTela('dieta')}
           onPerfil={() => setTela('perfil')}
           onHistorico={() => setTela('historico')}
+          onRelatorio={() => setTela('relatorio')}
           onLogout={onLogout}
         />
       )}
@@ -180,6 +193,14 @@ export default function App() {
           splits={splits}
           onVoltar={() => setTela('grupamentos')}
           onVerGraficos={irParaGraficos}
+          mostrarToast={mostrarToast}
+        />
+      )}
+
+      {tela === 'relatorio' && usuario && (
+        <TelaRelatorio
+          usuario={usuario}
+          onVoltar={() => setTela('grupamentos')}
           mostrarToast={mostrarToast}
         />
       )}

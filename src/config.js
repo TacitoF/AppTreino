@@ -14,4 +14,5 @@ export const R = {
   historicoTodos: '/api/treino/historico/todos',
   editarUsuario:  '/api/usuario/editar',
   cardio:         '/api/cardio',
+  relatorio:      '/api/treino/relatorio',
 };

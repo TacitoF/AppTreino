@@ -1,9 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { IconDumbbell, IconSettings, IconCardio, IconTrophy, IconChevronRight } from '../components/icons';
+import { apiFetch } from '../auth';
+import { R } from '../config';
 import { Spinner } from '../components/ui';
 
-function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onRank, onCardio, onDieta, onHistorico, onLogout, onPerfil }) {
+function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onRank, onCardio, onDieta, onHistorico, onRelatorio, onLogout, onPerfil }) {
   const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const [streak, setStreak] = useState(null);
+  const [relLoading, setRelLoading] = useState(false);
+
+  useEffect(() => {
+    if (!usuario?.id) return;
+    apiFetch(`${R.relatorio}?id_usuario=${usuario.id}`)
+      .then(r => setStreak({ dias: r.streak_dias, semanas: r.streak_semanas, totalTreinos: r.total_treinos_historico }))
+      .catch(() => {});
+  }, [usuario?.id]);
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
       <div className="px-5 pt-14 pb-5">
@@ -25,6 +36,29 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
           <span className="text-[#c8f542]">{usuario.nome.split(' ')[0]}</span>?
         </h1>
       </div>
+
+      {/* streak banner */}
+      {streak && (streak.dias > 0 || streak.semanas > 0) && (
+        <div className="mx-5 mb-2">
+          <button onClick={onRelatorio}
+            className="btn w-full bg-[#c8f542]/5 border border-[#c8f542]/20 active:bg-[#c8f542]/10 rounded-2xl px-4 py-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#c8f542]/15 flex items-center justify-center flex-shrink-0">
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#c8f542]">
+                <path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 3c.6 0 1 .4 1 1v5.6l3.2 1.9c.5.3.7 1 .4 1.5-.3.5-1 .7-1.5.4l-3.7-2.2A1 1 0 0111 12V6c0-.6.4-1 1-1z"/>
+              </svg>
+            </div>
+            <div className="flex-1 text-left">
+              <div className="text-[#c8f542] font-bold text-sm">
+                🔥 {streak.semanas > 1 ? `${streak.semanas} semanas seguidas` : streak.dias > 0 ? `${streak.dias} dia${streak.dias>1?'s':''} de streak` : 'Treino registrado'}
+              </div>
+              <div className="text-zinc-600 text-xs mt-0.5">{streak.totalTreinos} treino{streak.totalTreinos!==1?'s':''} no histórico · toque para relatório</div>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#52525b" strokeWidth={2} className="w-4 h-4 flex-shrink-0">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+      )}
 
       <div className="px-5 flex flex-col gap-3 pb-10 flex-1">
         {loadingSplits ? <Spinner/> : (
@@ -87,12 +121,22 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                 <span className="text-[#c8f542] text-xs font-semibold text-center leading-tight">Ranking<br/>com amigos</span>
               </button>
 
+              <button onClick={onRelatorio}
+                className="btn bg-amber-500/8 border border-amber-500/25 active:bg-amber-500/15 rounded-2xl p-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-400">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                </div>
+                <span className="text-amber-400 text-xs font-semibold text-center leading-tight">Relatório<br/>Semanal</span>
+              </button>
+
               <button onClick={onGerenciar}
-                className="btn col-span-2 bg-zinc-900 border border-zinc-800 active:bg-zinc-800 rounded-2xl p-4 flex items-center justify-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400">
+                className="btn bg-zinc-900 border border-zinc-800 active:bg-zinc-800 rounded-2xl p-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400">
                   <IconSettings/>
                 </div>
-                <span className="text-zinc-400 text-sm font-semibold">Gerenciar grupos musculares</span>
+                <span className="text-zinc-400 text-xs font-semibold text-center leading-tight">Gerenciar<br/>grupos</span>
               </button>
             </div>
           </>

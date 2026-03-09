@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { apiFetch } from '../auth';
+import { apiFetch, apiFetchOffline, syncOfflineQueue, getOfflineQueue } from '../auth';
 import { R, REST_TIME_KEY } from '../config';
 import { IconBack, IconPlus, IconTrash, IconCheck, IconUndo, IconHistory } from '../components/icons';
 import { BarraDescanso, ModalConfigDescanso, RestEndBanner, NumInput } from '../components/ui';
@@ -7,6 +7,8 @@ import { ModalExercicio } from '../components/ModalExercicio';
 
 function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, mostrarToast }) {
   const [exerciciosInicializados, setExerciciosInicializados] = useState(false);
+  const [isOnline, setIsOnline]     = useState(navigator.onLine);
+  const [pendentes, setPendentes]   = useState(() => getOfflineQueue().length);
 
   const idTreinoSessao = useRef((() => {
     const hoje  = new Date().toISOString().slice(0, 10);
@@ -19,6 +21,20 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   })());
 
   const [exercicios, setExercicios] = useState([]);
+
+  // ─── online/offline listener + auto-sync ──────────────────────────────────
+  useEffect(() => {
+    const onOnline = async () => {
+      setIsOnline(true);
+      const { synced } = await syncOfflineQueue();
+      setPendentes(getOfflineQueue().length);
+      if (synced > 0) mostrarToast(`${synced} série${synced>1?'s':''} sincronizada${synced>1?'s':''}.`, 'sucesso');
+    };
+    const onOffline = () => { setIsOnline(false); };
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); };
+  }, [mostrarToast]);
 
   useEffect(() => {
     if (exerciciosInicializados) return;
@@ -245,10 +261,11 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       const nomeParaSalvar = ex.usaPlacas ? `[P]${ex.nome}` : ex.nome;
 
       try {
-        await apiFetch(R.serie, {
+        await apiFetchOffline(R.serie, {
           method: 'POST',
           body: { id_serie:nid, id_treino:idTreino, nome_exercicio:nomeParaSalvar, numero_serie:serie.id, repeticoes:serie.reps, carga_kg:serie.carga },
-        });
+        }, nid);
+        setPendentes(getOfflineQueue().length);
         setExercicios(cur => cur.map(x => x.id!==ex.id ? x : {
           ...x, series: x.series.map(s => s.id===serie.id ? {...s,salvandoNow:false} : s),
         }));
@@ -293,6 +310,16 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
             <div className="text-[#c8f542] text-xs font-semibold uppercase tracking-wider">Treino ativo</div>
             <div className="text-white font-bold text-lg truncate">{split.nome}</div>
           </div>
+          {!isOnline && (
+            <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/30 rounded-xl px-3 py-2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth={2.5} className="w-3.5 h-3.5 flex-shrink-0">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636a9 9 0 010 12.728M15.536 8.464a5 5 0 010 7.072M3 3l18 18M10.584 10.587a2 2 0 002.828 2.83"/>
+              </svg>
+              <span className="text-orange-400 font-bold text-xs">
+                offline{pendentes > 0 ? ` · ${pendentes}` : ''}
+              </span>
+            </div>
+          )}
           {timerAtivo && (
             <div className="flex items-center gap-1.5 bg-zinc-900 border border-[#c8f542]/30 rounded-xl px-3 py-2 fade-in">
               <div className="w-1.5 h-1.5 rounded-full bg-[#c8f542] pulse-green"/>

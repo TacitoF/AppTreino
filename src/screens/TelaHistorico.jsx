@@ -51,6 +51,7 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
   const [loading, setLoading]       = useState(true);
   const [treinoAberto, setAberto]   = useState(null);
   const [filtroSplit, setFiltro]    = useState('todos');
+  const [comparando, setComparando] = useState(null); // treino selecionado para comparar
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -72,9 +73,108 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
     ? treinos
     : treinos.filter(t => t.split === filtroSplit);
 
+  // ── comparativo de treinos ──
+  if (comparando && treinoAberto) {
+    const a = comparando;   // anterior
+    const b = treinoAberto; // atual
+    // todos os exercícios únicos entre os dois treinos
+    const todosEx = Array.from(new Set([...a.exercicios.map(e=>e.nome), ...b.exercicios.map(e=>e.nome)]));
+    const exA = Object.fromEntries(a.exercicios.map(e=>[e.nome,e]));
+    const exB = Object.fromEntries(b.exercicios.map(e=>[e.nome,e]));
+    const diffVol = Math.round(b.volumeTotal - a.volumeTotal);
+    const diffPct = a.volumeTotal > 0 ? ((b.volumeTotal - a.volumeTotal) / a.volumeTotal * 100).toFixed(1) : null;
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
+        <div className="sticky top-0 z-20 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-zinc-900 px-5 pt-12 pb-4 flex items-center gap-3">
+          <button onClick={() => setComparando(null)}
+            className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
+            <IconBack/>
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className="text-zinc-500 text-xs font-semibold uppercase tracking-widest">Comparativo</div>
+            <div className="text-white font-bold text-base truncate">{b.split}</div>
+          </div>
+        </div>
+
+        {/* cabeçalhos das datas */}
+        <div className="px-5 pt-4 pb-3 grid grid-cols-2 gap-3">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 text-center">
+            <div className="text-zinc-500 text-xs font-semibold uppercase mb-0.5">Anterior</div>
+            <div className="text-white font-bold text-sm">{fmtDataCurta(a.data)}</div>
+            <div className="text-zinc-600 text-xs mt-0.5">{Math.round(a.volumeTotal)} kg vol.</div>
+          </div>
+          <div className="bg-zinc-900 border border-[#c8f542]/30 rounded-2xl p-3 text-center">
+            <div className="text-[#c8f542] text-xs font-semibold uppercase mb-0.5">Atual</div>
+            <div className="text-white font-bold text-sm">{fmtDataCurta(b.data)}</div>
+            <div className="text-zinc-600 text-xs mt-0.5">{Math.round(b.volumeTotal)} kg vol.</div>
+          </div>
+        </div>
+
+        {/* delta de volume */}
+        <div className={`mx-5 mb-4 rounded-2xl p-4 flex items-center gap-3 ${diffVol >= 0 ? 'bg-[#c8f542]/8 border border-[#c8f542]/20' : 'bg-red-500/8 border border-red-500/20'}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke={diffVol>=0?"#c8f542":"#ef4444"} strokeWidth={2.5} className="w-5 h-5 flex-shrink-0">
+            {diffVol >= 0
+              ? <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+              : <path strokeLinecap="round" strokeLinejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"/>}
+          </svg>
+          <div>
+            <span className={`font-black text-lg ${diffVol>=0?'text-[#c8f542]':'text-red-400'}`}>
+              {diffVol >= 0 ? '+' : ''}{diffVol} kg
+            </span>
+            {diffPct && <span className="text-zinc-500 text-sm ml-2">({diffVol>=0?'+':''}{diffPct}%)</span>}
+            <div className="text-zinc-500 text-xs mt-0.5">variação de volume total</div>
+          </div>
+        </div>
+
+        {/* exercícios lado a lado */}
+        <div className="px-5 pb-10 flex flex-col gap-3">
+          {todosEx.map(nome => {
+            const ea = exA[nome]; const eb = exB[nome];
+            const cargaMaxA = ea ? Math.max(...ea.series.map(s=>s.carga_kg)) : null;
+            const cargaMaxB = eb ? Math.max(...eb.series.map(s=>s.carga_kg)) : null;
+            const melhorou = cargaMaxA !== null && cargaMaxB !== null && cargaMaxB > cargaMaxA;
+            const piorou   = cargaMaxA !== null && cargaMaxB !== null && cargaMaxB < cargaMaxA;
+            return (
+              <div key={nome} className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+                <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+                  <span className="text-white font-bold text-sm">{nome}</span>
+                  {melhorou && <span className="text-[#c8f542] text-xs font-bold bg-[#c8f542]/10 px-2 py-0.5 rounded-lg">↑ PR</span>}
+                  {piorou   && <span className="text-red-400 text-xs font-semibold bg-red-500/10 px-2 py-0.5 rounded-lg">↓</span>}
+                </div>
+                <div className="border-t border-zinc-800 grid grid-cols-2 divide-x divide-zinc-800">
+                  {/* coluna anterior */}
+                  <div className="p-3">
+                    {ea ? ea.series.map((s,i) => (
+                      <div key={i} className="text-zinc-500 text-xs py-0.5">{s.carga_kg}kg × {s.repeticoes}</div>
+                    )) : <div className="text-zinc-700 text-xs italic">não realizado</div>}
+                  </div>
+                  {/* coluna atual */}
+                  <div className="p-3">
+                    {eb ? eb.series.map((s,i) => {
+                      const sa = ea?.series[i];
+                      const up = sa && (s.carga_kg > sa.carga_kg || (s.carga_kg >= sa.carga_kg && s.repeticoes > sa.repeticoes));
+                      return (
+                        <div key={i} className={`text-xs py-0.5 font-semibold ${up ? 'text-[#c8f542]' : 'text-zinc-300'}`}>
+                          {s.carga_kg}kg × {s.repeticoes}
+                        </div>
+                      );
+                    }) : <div className="text-zinc-700 text-xs italic">não realizado</div>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+
   // ── detalhe de treino ──
   if (treinoAberto) {
     const t = treinoAberto;
+    const treinosDoSplit = treinos.filter(tr => tr.split === t.split && tr.data < t.data);
+    const anterior = treinosDoSplit.length > 0 ? treinosDoSplit[0] : null;
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
         <div className="sticky top-0 z-20 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-zinc-900 px-5 pt-12 pb-4 flex items-center gap-3">
@@ -86,17 +186,26 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
             <div className="text-[#c8f542] text-xs font-semibold uppercase tracking-widest">{fmtData(t.data)}</div>
             <div className="text-white font-bold text-lg truncate">{t.split}</div>
           </div>
-          {/* botão de gráficos para este split */}
-          {onVerGraficos && (
-            <button
-              onClick={() => onVerGraficos(t.split)}
-              className="btn flex items-center gap-2 px-3 py-2.5 bg-[#c8f542]/10 border border-[#c8f542]/25 rounded-xl text-[#c8f542] text-xs font-semibold active:bg-[#c8f542]/20">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-              </svg>
-              Gráfico
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {anterior && (
+              <button onClick={() => setComparando(anterior)}
+                className="btn flex items-center gap-1.5 px-3 py-2.5 bg-violet-500/10 border border-violet-500/25 rounded-xl text-violet-400 text-xs font-semibold active:bg-violet-500/20">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                Comparar
+              </button>
+            )}
+            {onVerGraficos && (
+              <button onClick={() => onVerGraficos(t.split)}
+                className="btn flex items-center gap-2 px-3 py-2.5 bg-[#c8f542]/10 border border-[#c8f542]/25 rounded-xl text-[#c8f542] text-xs font-semibold active:bg-[#c8f542]/20">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                Gráfico
+              </button>
+            )}
+          </div>
         </div>
 
         {/* métricas do treino */}
