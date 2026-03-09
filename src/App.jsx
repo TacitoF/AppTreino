@@ -11,6 +11,8 @@ import TelaRank             from './screens/TelaRank';
 import TelaCardio           from './screens/TelaCardio';
 import TelaDieta            from './screens/TelaDieta';
 import TelaPerfil           from './screens/TelaPerfil';
+import TelaHistorico        from './screens/TelaHistorico';
+import TelaGraficos         from './screens/TelaGraficos';
 
 export default function App() {
   const sessaoSalva = carregarSessao();
@@ -25,6 +27,8 @@ export default function App() {
   const [historico, setHistorico]    = useState([]);
   const [resultado, setResultado]    = useState(null);
   const [toast, setToast]            = useState(null);
+  // para navegar direto de histórico → gráficos filtrando por split
+  const [splitGraficoPre, setSplitGraficoPre] = useState(null);
   const toastTimerRef                = useRef(null);
 
   const usuarioRef = useRef(usuario);
@@ -47,7 +51,7 @@ export default function App() {
     }
   }, []);
 
-  const mostrarToast = useCallback((mensagem, tipo='sucesso') => {
+  const mostrarToast = useCallback((mensagem, tipo = 'sucesso') => {
     clearTimeout(toastTimerRef.current);
     setToast({ mensagem, tipo });
     toastTimerRef.current = setTimeout(() => setToast(null), 2800);
@@ -58,7 +62,7 @@ export default function App() {
     try {
       const r = await apiFetch(`${R.splits}?id_usuario=${uid}`);
       setSplits(r.splits || []);
-    } catch (err) {
+    } catch {
       setSplits([]);
     } finally { setLoadingS(false); }
   }, []);
@@ -93,22 +97,101 @@ export default function App() {
     mostrarToast('Treino finalizado.', 'sucesso');
   }, [mostrarToast]);
 
+  // navega para gráficos com split pré-filtrado (vindo do histórico)
+  const irParaGraficos = useCallback((splitNome) => {
+    setSplitGraficoPre(splitNome);
+    setTela('graficos');
+  }, []);
+
   return (
     <>
       <Toast data={toast}/>
       <IOSInstallBanner/>
-      {tela==='auth'             && <TelaAuth onLogin={onLogin} mostrarToast={mostrarToast}/>}
-      
-      {/* CORREÇÃO: O onPerfil={()=>setTela('perfil')} agora está aqui em baixo! */}
-      {tela==='grupamentos'      && usuario && <TelaGrupamentos usuario={usuario} splits={splits} loadingSplits={loadingSplits} onSelecionarSplit={onSelecionarSplit} onGerenciar={()=>setTela('gerenciar-splits')} onRank={()=>setTela('rank')} onCardio={()=>setTela('cardio')} onDieta={()=>setTela('dieta')} onPerfil={()=>setTela('perfil')} onLogout={onLogout}/>}
-      
-      {tela==='perfil'           && usuario && <TelaPerfil usuario={usuario} onSalvar={u => { setUsuario(u); setTela('grupamentos'); mostrarToast('Perfil atualizado!', 'sucesso'); }} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
-      {tela==='gerenciar-splits' && usuario && <TelaGerenciarSplits usuario={usuario} splits={splits} onSalvar={l=>{setSplits(l);setTela('grupamentos');}} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
-      {tela==='treino'           && splitAtivo && <TelaTreino usuario={usuario} split={splitAtivo} historicoAnterior={historico} onFinalizar={onFinalizar} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
-      {tela==='resumo'           && resultado && <TelaResumo resultado={resultado} onVoltar={()=>setTela('grupamentos')}/>}
-      {tela==='rank'             && usuario && <TelaRank usuario={usuario} mostrarToast={mostrarToast} onVoltar={()=>setTela('grupamentos')}/>}
-      {tela==='cardio'           && usuario && <TelaCardio usuario={usuario} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
-      {tela==='dieta'            && usuario && <TelaDieta usuario={usuario} onVoltar={()=>setTela('grupamentos')} mostrarToast={mostrarToast}/>}
+
+      {tela === 'auth' && (
+        <TelaAuth onLogin={onLogin} mostrarToast={mostrarToast}/>
+      )}
+
+      {tela === 'grupamentos' && usuario && (
+        <TelaGrupamentos
+          usuario={usuario}
+          splits={splits}
+          loadingSplits={loadingSplits}
+          onSelecionarSplit={onSelecionarSplit}
+          onGerenciar={() => setTela('gerenciar-splits')}
+          onRank={() => setTela('rank')}
+          onCardio={() => setTela('cardio')}
+          onDieta={() => setTela('dieta')}
+          onPerfil={() => setTela('perfil')}
+          onHistorico={() => setTela('historico')}
+          onLogout={onLogout}
+        />
+      )}
+
+      {tela === 'perfil' && usuario && (
+        <TelaPerfil
+          usuario={usuario}
+          onSalvar={u => { setUsuario(u); setTela('grupamentos'); mostrarToast('Perfil atualizado!', 'sucesso'); }}
+          onVoltar={() => setTela('grupamentos')}
+          mostrarToast={mostrarToast}
+        />
+      )}
+
+      {tela === 'gerenciar-splits' && usuario && (
+        <TelaGerenciarSplits
+          usuario={usuario}
+          splits={splits}
+          onSalvar={l => { setSplits(l); setTela('grupamentos'); }}
+          onVoltar={() => setTela('grupamentos')}
+          mostrarToast={mostrarToast}
+        />
+      )}
+
+      {tela === 'treino' && splitAtivo && (
+        <TelaTreino
+          usuario={usuario}
+          split={splitAtivo}
+          historicoAnterior={historico}
+          onFinalizar={onFinalizar}
+          onVoltar={() => setTela('grupamentos')}
+          mostrarToast={mostrarToast}
+        />
+      )}
+
+      {tela === 'resumo' && resultado && (
+        <TelaResumo resultado={resultado} onVoltar={() => setTela('grupamentos')}/>
+      )}
+
+      {tela === 'rank' && usuario && (
+        <TelaRank usuario={usuario} mostrarToast={mostrarToast} onVoltar={() => setTela('grupamentos')}/>
+      )}
+
+      {tela === 'cardio' && usuario && (
+        <TelaCardio usuario={usuario} onVoltar={() => setTela('grupamentos')} mostrarToast={mostrarToast}/>
+      )}
+
+      {tela === 'dieta' && usuario && (
+        <TelaDieta usuario={usuario} onVoltar={() => setTela('grupamentos')} mostrarToast={mostrarToast}/>
+      )}
+
+      {tela === 'historico' && usuario && (
+        <TelaHistorico
+          usuario={usuario}
+          splits={splits}
+          onVoltar={() => setTela('grupamentos')}
+          onVerGraficos={irParaGraficos}
+          mostrarToast={mostrarToast}
+        />
+      )}
+
+      {tela === 'graficos' && usuario && (
+        <TelaGraficos
+          usuario={usuario}
+          splitInicial={splitGraficoPre}
+          onVoltar={() => setTela('historico')}
+          mostrarToast={mostrarToast}
+        />
+      )}
     </>
   );
 }

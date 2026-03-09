@@ -2,7 +2,7 @@ import React from 'react';
 import { IconDumbbell, IconSettings, IconCardio, IconTrophy, IconChevronRight } from '../components/icons';
 import { Spinner } from '../components/ui';
 
-function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onRank, onCardio, onDieta, onLogout, onPerfil }) {
+function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onRank, onCardio, onDieta, onHistorico, onLogout, onPerfil }) {
   const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
@@ -12,7 +12,6 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
             {dias[new Date().getDay()]} · {new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}
           </span>
           <div className="flex items-center gap-2">
-            {/* NOVO: BOTÃO DE PERFIL */}
             <button onClick={onPerfil} className="btn w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 active:bg-zinc-800">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
             </button>
@@ -26,6 +25,7 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
           <span className="text-[#c8f542]">{usuario.nome.split(' ')[0]}</span>?
         </h1>
       </div>
+
       <div className="px-5 flex flex-col gap-3 pb-10 flex-1">
         {loadingSplits ? <Spinner/> : (
           <>
@@ -35,7 +35,7 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                 <button onClick={onGerenciar} className="btn px-6 py-4 bg-[#c8f542] text-black font-bold rounded-2xl">Configurar grupos</button>
               </div>
             )}
-            
+
             {splits.map(split => (
               <button key={split.id} onClick={() => onSelecionarSplit(split)}
                 className="btn w-full bg-zinc-900 border border-zinc-800 active:border-zinc-600 active:bg-zinc-800 rounded-2xl p-5 text-left flex items-center gap-4">
@@ -50,6 +50,7 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
               </button>
             ))}
 
+            {/* grid de atalhos — agora com 6 botões em 2 colunas */}
             <div className="grid grid-cols-2 gap-3 mt-1">
               <button onClick={onDieta}
                 className="btn bg-blue-500/10 border border-blue-500/25 active:bg-blue-500/20 rounded-2xl p-4 flex flex-col items-center gap-2">
@@ -67,20 +68,31 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                 <span className="text-[#f97316] text-xs font-semibold text-center leading-tight">Cardio<br/>& Calorias</span>
               </button>
 
-              <button onClick={onGerenciar}
-                className="btn bg-zinc-900 border border-zinc-800 active:bg-zinc-800 rounded-2xl p-4 flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400">
-                  <IconSettings/>
+              {/* NOVO: Histórico */}
+              <button onClick={onHistorico}
+                className="btn bg-violet-500/8 border border-violet-500/25 active:bg-violet-500/15 rounded-2xl p-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center text-violet-400">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                  </svg>
                 </div>
-                <span className="text-zinc-400 text-xs font-semibold text-center leading-tight">Gerenciar<br/>grupos</span>
+                <span className="text-violet-400 text-xs font-semibold text-center leading-tight">Histórico<br/>& Gráficos</span>
               </button>
-              
+
               <button onClick={onRank}
                 className="btn bg-[#c8f542]/8 border border-[#c8f542]/25 active:bg-[#c8f542]/15 rounded-2xl p-4 flex flex-col items-center gap-2">
                 <div className="w-10 h-10 rounded-xl bg-[#c8f542]/15 flex items-center justify-center text-[#c8f542]">
                   <IconTrophy/>
                 </div>
                 <span className="text-[#c8f542] text-xs font-semibold text-center leading-tight">Ranking<br/>com amigos</span>
+              </button>
+
+              <button onClick={onGerenciar}
+                className="btn col-span-2 bg-zinc-900 border border-zinc-800 active:bg-zinc-800 rounded-2xl p-4 flex items-center justify-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400">
+                  <IconSettings/>
+                </div>
+                <span className="text-zinc-400 text-sm font-semibold">Gerenciar grupos musculares</span>
               </button>
             </div>
           </>
