@@ -14,6 +14,8 @@ import TelaPerfil           from './screens/TelaPerfil';
 import TelaHistorico        from './screens/TelaHistorico';
 import TelaGraficos         from './screens/TelaGraficos';
 import TelaRelatorio        from './screens/TelaRelatorio';
+import TelaPeso             from './screens/TelaPeso';
+import TelaProgressao       from './screens/TelaProgressao';
 
 export default function App() {
   const sessaoSalva = carregarSessao();
@@ -115,6 +117,19 @@ export default function App() {
     setTela('graficos');
   }, []);
 
+  // Templates → preenche splits automaticamente e vai para gerenciar-splits
+  const usarTemplate = useCallback((template) => {
+    const novosSplits = template.splits.map((nome, i) => ({
+      id: `split_${Date.now()}_${i}`,
+      id_usuario: usuario?.id || '',
+      nome: nome.split(' —')[0].split(' (')[0],
+      nomeHistorico: nome.split(' —')[0].split(' (')[0],
+      ultimo_treino: null,
+    }));
+    setSplits(novosSplits);
+    setTela('gerenciar-splits');
+  }, [usuario]);
+
   return (
     <>
       <Toast data={toast}/>
@@ -137,6 +152,8 @@ export default function App() {
           onPerfil={() => setTela('perfil')}
           onHistorico={() => setTela('historico')}
           onRelatorio={() => setTela('relatorio')}
+          onPeso={() => setTela('peso')}
+          onProgressao={() => setTela('progressao')}
           onLogout={onLogout}
         />
       )}
@@ -209,7 +226,25 @@ export default function App() {
         <TelaGraficos
           usuario={usuario}
           splitInicial={splitGraficoPre}
-          onVoltar={() => setTela('historico')}
+          onVoltar={() => { setSplitGraficoPre(null); setTela('historico'); }}
+          mostrarToast={mostrarToast}
+        />
+      )}
+
+      {tela === 'peso' && usuario && (
+        <TelaPeso
+          usuario={usuario}
+          onVoltar={() => setTela('grupamentos')}
+          mostrarToast={mostrarToast}
+        />
+      )}
+
+      {tela === 'progressao' && usuario && (
+        <TelaProgressao
+          usuario={usuario}
+          splits={splits}
+          onUsarTemplate={usarTemplate}
+          onVoltar={() => setTela('grupamentos')}
           mostrarToast={mostrarToast}
         />
       )}

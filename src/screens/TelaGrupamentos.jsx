@@ -4,7 +4,7 @@ import { apiFetch } from '../auth';
 import { R } from '../config';
 import { Spinner } from '../components/ui';
 
-function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onRank, onCardio, onDieta, onHistorico, onRelatorio, onLogout, onPerfil }) {
+function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, onGerenciar, onRank, onCardio, onDieta, onHistorico, onRelatorio, onLogout, onPerfil, onPeso, onProgressao }) {
   const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const [streak, setStreak] = useState(null);
   const [relLoading, setRelLoading] = useState(false);
@@ -129,6 +129,27 @@ function TelaGrupamentos({ usuario, splits, loadingSplits, onSelecionarSplit, on
                   </svg>
                 </div>
                 <span className="text-amber-400 text-xs font-semibold text-center leading-tight">Relatório<br/>Semanal</span>
+              </button>
+
+              <button onClick={onPeso}
+                className="btn bg-sky-500/8 border border-sky-500/25 active:bg-sky-500/15 rounded-2xl p-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-sky-500/15 flex items-center justify-center text-sky-400">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l9-3 9 3v2a9 9 0 01-18 0V6zM12 3v6"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 13v4M9 17h6"/>
+                  </svg>
+                </div>
+                <span className="text-sky-400 text-xs font-semibold text-center leading-tight">Peso<br/>Corporal</span>
+              </button>
+
+              <button onClick={onProgressao}
+                className="btn bg-emerald-500/8 border border-emerald-500/25 active:bg-emerald-500/15 rounded-2xl p-4 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                  </svg>
+                </div>
+                <span className="text-emerald-400 text-xs font-semibold text-center leading-tight">Progressão<br/>& Templates</span>
               </button>
 
               <button onClick={onGerenciar}

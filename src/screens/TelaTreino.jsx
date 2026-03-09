@@ -5,6 +5,18 @@ import { IconBack, IconPlus, IconTrash, IconCheck, IconUndo, IconHistory } from 
 import { BarraDescanso, ModalConfigDescanso, RestEndBanner, NumInput } from '../components/ui';
 import { ModalExercicio } from '../components/ModalExercicio';
 
+// ─── Ícones locais ────────────────────────────────────────────────────────────
+const IconNote = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+  </svg>
+);
+const IconStopwatch = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
+    <circle cx="12" cy="13" r="8"/><path strokeLinecap="round" d="M12 9v4l2 2M9.5 2.5h5M12 2.5V5"/>
+  </svg>
+);
+
 function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, mostrarToast }) {
   const [exerciciosInicializados, setExerciciosInicializados] = useState(false);
   const [isOnline, setIsOnline]     = useState(navigator.onLine);
@@ -80,6 +92,16 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   const [timerRestante, setTimerRestante] = useState(0);
   const [showConfig, setShowConfig]       = useState(false);
   const [showRestEnd, setShowRestEnd]     = useState(false);
+
+  // ─── Nota de treino ────────────────────────────────────────────────────────
+  const [showNota, setShowNota]     = useState(false);
+  const [notaTexto, setNotaTexto]   = useState('');
+  const [notaSalva, setNotaSalva]   = useState(false);
+
+  // ─── Cronômetro de série ativa ─────────────────────────────────────────────
+  // serieTimers: { "exId_serieId": { inicio, duracao } }
+  const [serieTimers, setSerieTimers] = useState({});
+  const serieTimerRef = useRef({});
 
   const intervalRef    = useRef(null);
   const timerFimRef    = useRef(null);
@@ -239,8 +261,11 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
   const alternarSerie = useCallback(async (ex, serie) => {
     const snapshot = exercicios.map(x => ({...x, series:x.series.map(s=>({...s}))}));
+    const timerKey = `${ex.id}_${serie.id}`;
 
     if (serie.enviada) {
+      // ao desmarcar: limpa timer
+      setSerieTimers(t => { const n = {...t}; delete n[timerKey]; return n; });
       setExercicios(cur => cur.map(x => x.id!==ex.id ? x : {
         ...x, series: x.series.map(s => s.id===serie.id ? {...s,enviada:false,id_banco:null} : s),
       }));
@@ -248,6 +273,14 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       catch { setExercicios(snapshot); mostrarToast('Sem conexão. Não removido.', 'erro'); }
     } else {
       if (!ex.nome.trim()) { mostrarToast('Digite o nome do exercício.', 'erro'); return; }
+      // ao marcar: registra tempo de início para calcular duração ao salvar
+      const inicioSerie = serieTimerRef.current[timerKey] || Date.now();
+      const duracaoSeg  = Math.round((Date.now() - inicioSerie) / 1000);
+      setSerieTimers(t => ({ ...t, [timerKey]: { duracao: duracaoSeg } }));
+      // registra início da próxima série
+      const proximaKey = `${ex.id}_${serie.id + 1}`;
+      serieTimerRef.current[proximaKey] = Date.now();
+
       const nid      = 'S' + Date.now();
       const idTreino = idTreinoSessao.current;
 
@@ -461,6 +494,8 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                 {ex.series.map(serie => {
                   const hS = hist.find(h => h.numero_serie===serie.id);
                   const PR = serie.enviada && hS && (serie.carga>hS.carga_kg || (serie.carga>=hS.carga_kg && serie.reps>hS.repeticoes));
+                  const timerKey = `${ex.id}_${serie.id}`;
+                  const timerInfo = serieTimers[timerKey];
                   return (
                     <div key={serie.id}
                       className={`rounded-2xl border transition-all duration-300 ${
@@ -470,6 +505,11 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-zinc-500 text-sm font-semibold">Série {serie.id}</span>
                           {PR && <span className="text-[#c8f542] text-xs font-bold bg-[#c8f542]/10 px-2 py-0.5 rounded-lg">RECORDE</span>}
+                          {timerInfo && (
+                            <span className="text-zinc-600 text-xs flex items-center gap-1">
+                              <IconStopwatch/>{timerInfo.duracao}s
+                            </span>
+                          )}
                           {hS && !show && (
                             <span className="text-zinc-700 text-xs">
                               ref: {hS.carga_kg}{ex.usaPlacas ? ' pl' : 'kg'} × {hS.repeticoes}
@@ -546,16 +586,70 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
             onPararTimer={pararDescanso}
           />
         </div>
-        <button
-          onClick={() => { if (!salvando) onFinalizar({ exercicios, split }); }}
-          disabled={salvando}
-          className="btn w-full py-5 bg-zinc-900 border border-zinc-700 active:bg-zinc-800 text-white font-bold text-base rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
-          {salvando
-            ? <><div className="w-4 h-4 border-2 border-zinc-600 border-t-white rounded-full animate-spin"/><span>Salvando...</span></>
-            : 'Finalizar treino'
-          }
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowNota(true)}
+            className={`btn w-14 h-14 rounded-2xl border flex items-center justify-center flex-shrink-0 ${notaSalva ? 'bg-[#c8f542]/10 border-[#c8f542]/30 text-[#c8f542]' : 'bg-zinc-900 border-zinc-700 text-zinc-400 active:bg-zinc-800'}`}>
+            <IconNote/>
+          </button>
+          <button
+            onClick={() => {
+              if (salvando) return;
+              if (totalEnv === 0) { mostrarToast('Registre ao menos uma série antes de finalizar.', 'erro'); return; }
+              onFinalizar({ exercicios, split });
+            }}
+            disabled={salvando}
+            className="btn flex-1 py-5 bg-zinc-900 border border-zinc-700 active:bg-zinc-800 text-white font-bold text-base rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
+            {salvando
+              ? <><div className="w-4 h-4 border-2 border-zinc-600 border-t-white rounded-full animate-spin"/><span>Salvando...</span></>
+              : 'Finalizar treino'
+            }
+          </button>
+        </div>
       </div>
+
+      {/* Modal de nota de treino */}
+      {showNota && (
+        <div className="fixed inset-0 z-[100] flex items-end" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => setShowNota(false)}>
+          <div className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl px-5 pt-5 pb-10" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-5"/>
+            <h3 className="text-white font-black text-lg mb-1">Nota do treino</h3>
+            <p className="text-zinc-500 text-sm mb-4">Como foi? Anote observações, dores, PRs quase batidos...</p>
+            <textarea
+              value={notaTexto}
+              onChange={e => setNotaTexto(e.target.value)}
+              placeholder="Ex: joelho doeu no agachamento, quase bati PR no supino..."
+              rows={4}
+              className="w-full bg-zinc-800 text-white px-4 py-3 rounded-2xl border border-zinc-700 outline-none focus:border-[#c8f542] transition-colors text-sm placeholder-zinc-600 resize-none mb-4"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setShowNota(false)} className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-semibold rounded-2xl">Fechar</button>
+              <button onClick={async () => {
+                if (!notaTexto.trim()) { setShowNota(false); return; }
+                try {
+                  await apiFetch(R.notaTreino, {
+                    method: 'POST',
+                    body: {
+                      id_nota: `nota_${usuario.id}_${Date.now()}`,
+                      id_usuario: usuario.id,
+                      id_treino: idTreinoSessao.current,
+                      data: new Date().toISOString().slice(0, 10),
+                      split: split.nome,
+                      nota: notaTexto.trim(),
+                    }
+                  });
+                  setNotaSalva(true);
+                  mostrarToast('Nota salva.', 'sucesso');
+                } catch { mostrarToast('Erro ao salvar nota.', 'erro'); }
+                setShowNota(false);
+              }} className="btn flex-1 py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold rounded-2xl">
+                Salvar nota
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

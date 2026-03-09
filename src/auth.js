@@ -10,7 +10,7 @@ export function getAuthToken()    { try { return localStorage.getItem(TOKEN_KEY)
 
 export function salvarSessao(u, tela, split) {
   try {
-    const t = ['grupamentos','treino','rank','gerenciar-splits','cardio','historico','graficos','dieta','perfil'].includes(tela) ? tela : 'grupamentos';
+    const t = ['grupamentos','treino','rank','gerenciar-splits','cardio','historico','graficos','dieta','perfil','relatorio','peso','progressao'].includes(tela) ? tela : 'grupamentos';
     localStorage.setItem(SESSAO_KEY, JSON.stringify({ usuario: u, tela: t, splitAtivo: split || null }));
   } catch {}
 }

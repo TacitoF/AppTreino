@@ -516,3 +516,182 @@ def rank_ranking(codigo: str = Query(...)):
         ranking.sort(key=lambda x: x["pontos"], reverse=True)
         return {"ranking": ranking}
     except Exception as e: raise HTTPException(500, str(e))
+
+# ══════════════════════════════════════════════════════════════════════════════
+# NOVAS FEATURES — Peso Corporal, Notas de Treino, Progressão
+# ══════════════════════════════════════════════════════════════════════════════
+
+class RegistroPeso(BaseModel):
+    id_registro: str
+    id_usuario: str
+    data: str
+    peso_kg: float
+
+class NotaTreino(BaseModel):
+    id_nota: str
+    id_usuario: str
+    id_treino: str   # mesmo ID de sessão usado nas séries
+    data: str
+    split: str
+    nota: str
+
+class ExportarReq(BaseModel):
+    id_usuario: str
+
+# ── PESO CORPORAL ─────────────────────────────────────────────────────────────
+@app.post("/api/peso")
+def registrar_peso(r: RegistroPeso):
+    try:
+        ws = get_ws("Peso_Corporal")
+        com_retry(lambda: ws.append_row([
+            r.id_registro, r.id_usuario, r.data, r.peso_kg
+        ], value_input_option="RAW"))
+        cache_del("Peso_Corporal")
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/peso")
+def buscar_pesos(id_usuario: str = Query(...)):
+    try:
+        registros = get_records("Peso_Corporal")
+        meus = [r for r in registros if str(r.get("id_usuario","")) == id_usuario]
+        meus.sort(key=lambda x: str(x.get("data","")))
+        return {"pesos": [{"data": r["data"], "peso_kg": float(r["peso_kg"])} for r in meus]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ── NOTAS DE TREINO ───────────────────────────────────────────────────────────
+@app.post("/api/nota-treino")
+def salvar_nota(n: NotaTreino):
+    try:
+        ws = get_ws("Notas_Treino")
+        registros = com_retry(lambda: ws.get_all_records())
+        # upsert: atualiza se já existe nota para esse id_treino
+        for i, row in enumerate(registros):
+            if str(row.get("id_treino","")) == n.id_treino and str(row.get("id_usuario","")) == n.id_usuario:
+                com_retry(lambda: ws.update(f"F{i+2}", [[n.nota]]))
+                cache_del("Notas_Treino")
+                return {"ok": True, "updated": True}
+        com_retry(lambda: ws.append_row([
+            n.id_nota, n.id_usuario, n.id_treino, n.data, n.split, n.nota
+        ], value_input_option="RAW"))
+        cache_del("Notas_Treino")
+        return {"ok": True, "updated": False}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/nota-treino")
+def buscar_notas(id_usuario: str = Query(...), id_treino: str = Query(None)):
+    try:
+        registros = get_records("Notas_Treino")
+        meus = [r for r in registros if str(r.get("id_usuario","")) == id_usuario]
+        if id_treino:
+            meus = [r for r in meus if str(r.get("id_treino","")) == id_treino]
+        return {"notas": [{"id_treino": r["id_treino"], "data": r["data"], "split": r["split"], "nota": r["nota"]} for r in meus]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ── PROGRESSÃO AUTOMÁTICA ─────────────────────────────────────────────────────
+@app.get("/api/progressao")
+def sugestoes_progressao(id_usuario: str = Query(...)):
+    """
+    Para cada exercício, verifica as últimas 3 sessões.
+    Se nas 3 sessões todas as séries foram completadas com a mesma carga,
+    sugere aumentar 2,5kg (ou +1 rep se a carga não mudou mas reps aumentaram).
+    """
+    try:
+        series = get_records("Series_Exercicios")
+        minhas = [s for s in series if f"_{id_usuario}_" in str(s.get("ID_Treino",""))]
+
+        # agrupa por exercício → data → séries
+        por_exercicio: dict = {}
+        for s in minhas:
+            nome = str(s.get("Nome_Exercicio","")).strip()
+            if nome.startswith("[P]"): nome = nome[3:]
+            if not nome: continue
+            id_treino = str(s.get("ID_Treino",""))
+            data = extrair_data_de_id_treino(id_treino)
+            if not data: continue
+            try:
+                carga = float(s.get("Carga_kg", 0) or 0)
+                reps  = int(s.get("Repeticoes", 0) or 0)
+            except: continue
+
+            if nome not in por_exercicio: por_exercicio[nome] = {}
+            if data not in por_exercicio[nome]: por_exercicio[nome][data] = []
+            por_exercicio[nome][data].append({"carga": carga, "reps": reps})
+
+        sugestoes = []
+        for nome, sessoes_por_data in por_exercicio.items():
+            datas = sorted(sessoes_por_data.keys(), reverse=True)
+            if len(datas) < 3: continue
+            ultimas3 = datas[:3]
+
+            # extrai carga máxima e reps médias de cada sessão
+            resumo = []
+            for d in ultimas3:
+                series_d = sessoes_por_data[d]
+                carga_max = max(s["carga"] for s in series_d)
+                reps_med  = round(sum(s["reps"] for s in series_d) / len(series_d))
+                resumo.append({"data": d, "carga": carga_max, "reps": reps_med})
+
+            # verifica estagnação: mesma carga nas 3 sessões
+            cargas = [r["carga"] for r in resumo]
+            reps   = [r["reps"]  for r in resumo]
+            if len(set(cargas)) == 1 and cargas[0] > 0:
+                sugestoes.append({
+                    "exercicio": nome,
+                    "carga_atual": cargas[0],
+                    "reps_atuais": reps[0],
+                    "sugestao": "carga",
+                    "nova_carga": cargas[0] + 2.5,
+                    "sessoes_analisadas": 3,
+                })
+            elif len(set(cargas)) == 1 and len(set(reps)) > 1 and min(reps) > 0:
+                # mesma carga mas reps crescendo → sugere aumentar rep alvo
+                sugestoes.append({
+                    "exercicio": nome,
+                    "carga_atual": cargas[0],
+                    "reps_atuais": max(reps),
+                    "sugestao": "reps",
+                    "nova_carga": cargas[0],
+                    "sessoes_analisadas": 3,
+                })
+
+        sugestoes.sort(key=lambda x: x["exercicio"])
+        return {"sugestoes": sugestoes}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ── EXPORTAR HISTÓRICO CSV ────────────────────────────────────────────────────
+@app.get("/api/exportar-historico")
+def exportar_historico(id_usuario: str = Query(...)):
+    """Retorna o histórico completo do usuário como JSON para exportação CSV no frontend."""
+    try:
+        series = get_records("Series_Exercicios")
+        minhas = [s for s in series if f"_{id_usuario}_" in str(s.get("ID_Treino",""))]
+        registros = []
+        for s in minhas:
+            id_treino = str(s.get("ID_Treino",""))
+            data = extrair_data_de_id_treino(id_treino)
+            nome_ex = str(s.get("Nome_Exercicio","")).strip()
+            if nome_ex.startswith("[P]"): nome_ex = nome_ex[3:]
+            try:
+                carga = float(s.get("Carga_kg", 0) or 0)
+                reps  = int(s.get("Repeticoes", 0) or 0)
+                num   = int(s.get("Numero_Serie", 0) or 0)
+            except:
+                carga, reps, num = 0, 0, 0
+            registros.append({
+                "data": data,
+                "exercicio": nome_ex,
+                "serie": num,
+                "carga_kg": carga,
+                "repeticoes": reps,
+                "volume": round(carga * reps, 1),
+            })
+        registros.sort(key=lambda x: (x["data"], x["exercicio"], x["serie"]))
+        return {"registros": registros}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

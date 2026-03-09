@@ -39,7 +39,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   });
 
   const [abaAtiva, setAbaAtiva] = useState('recentes');
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const categoriasPopulares = useMemo(() => {
     const buscar = (termos) => {

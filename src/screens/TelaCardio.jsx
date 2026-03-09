@@ -69,7 +69,7 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
           met:         parseFloat(met) || 0,
         },
       });
-      mostrarToast(`${kcal} kcal registradas! 🔥`, 'sucesso');
+      mostrarToast(`${kcal} kcal registradas.`, 'sucesso');
       onVoltar();
     } catch (e) {
       mostrarToast(`[${e.status || '?'}] ${e.message}`, 'erro');

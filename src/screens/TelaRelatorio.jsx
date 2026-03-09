@@ -31,11 +31,11 @@ const IconPR = () => (
 );
 
 function msgStreak(semanas, totalTreinos) {
-  if (semanas >= 8) return 'Maquina. 8+ semanas sem parar.';
-  if (semanas >= 4) return 'Incrivel consistencia. 4+ semanas.';
-  if (semanas >= 2) return 'Duas semanas seguidas. Mantem!';
-  if (semanas === 1) return 'Semana ativa. Bora pela proxima!';
-  if (totalTreinos > 0) return 'Retome sua sequencia essa semana.';
+  if (semanas >= 8) return 'Máquina. 8+ semanas sem parar.';
+  if (semanas >= 4) return 'Incrível consistência. 4+ semanas.';
+  if (semanas >= 2) return 'Duas semanas seguidas. Mantém!';
+  if (semanas === 1) return 'Semana ativa. Bora pela próxima!';
+  if (totalTreinos > 0) return 'Retome sua sequência essa semana.';
   return 'Registre seu primeiro treino!';
 }
 

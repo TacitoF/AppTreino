@@ -4,6 +4,17 @@ import { R } from '../config';
 import { IconBack } from '../components/icons';
 import { Spinner } from '../components/ui';
 
+const IconExport = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+  </svg>
+);
+const IconNote = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+  </svg>
+);
+
 // ─── helpers ────────────────────────────────────────────────────────────────
 const fmtData = iso =>
   new Date(iso + (iso.includes('T') ? '' : 'T00:00:00')).toLocaleDateString('pt-BR', {
@@ -51,18 +62,46 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
   const [loading, setLoading]       = useState(true);
   const [treinoAberto, setAberto]   = useState(null);
   const [filtroSplit, setFiltro]    = useState('todos');
-  const [comparando, setComparando] = useState(null); // treino selecionado para comparar
+  const [comparando, setComparando] = useState(null);
+  const [notas, setNotas]           = useState({}); // id_treino → nota
+  const [exportando, setExportando] = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await apiFetch(`${R.historicoTodos}?id_usuario=${usuario.id}`);
+      const [r, n] = await Promise.all([
+        apiFetch(`${R.historicoTodos}?id_usuario=${usuario.id}`),
+        apiFetch(`${R.notaTreino}?id_usuario=${usuario.id}`).catch(() => ({ notas: [] })),
+      ]);
       setTreinos(agruparTreinos(r.series || []));
+      const mapaNotas = {};
+      (n.notas || []).forEach(nota => { mapaNotas[nota.id_treino] = nota.nota; });
+      setNotas(mapaNotas);
     } catch {
       mostrarToast('Erro ao carregar histórico.', 'erro');
     } finally {
       setLoading(false);
     }
+  }, [usuario.id, mostrarToast]);
+
+  const exportarCSV = useCallback(async () => {
+    setExportando(true);
+    try {
+      const r = await apiFetch(`${R.exportarHistorico}?id_usuario=${usuario.id}`);
+      const rows = r.registros || [];
+      if (rows.length === 0) { mostrarToast('Nenhum dado para exportar.', 'info'); return; }
+      const header = 'Data,Exercicio,Serie,Carga (kg),Repeticoes,Volume (kg)';
+      const csv = [header, ...rows.map(r =>
+        `${r.data},"${r.exercicio}",${r.serie},${r.carga_kg},${r.repeticoes},${r.volume}`
+      )].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `volt_historico_${usuario.id}.csv`; a.click();
+      URL.revokeObjectURL(url);
+      mostrarToast('Histórico exportado.', 'sucesso');
+    } catch { mostrarToast('Erro ao exportar.', 'erro'); }
+    finally { setExportando(false); }
   }, [usuario.id, mostrarToast]);
 
   useEffect(() => { carregar(); }, [carregar]);
@@ -223,6 +262,20 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
           ))}
         </div>
 
+        {/* nota do treino — se existir */}
+        {notas[t.data + '_' + (t.id_treino || '')] || Object.entries(notas).find(([k, v]) => k.includes(t.data.replace(/-/g, ''))) ? (() => {
+          const notaEntry = Object.entries(notas).find(([k]) => k.includes(t.data.replace(/-/g, '')));
+          if (!notaEntry) return null;
+          return (
+            <div className="px-5 pb-3">
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex items-start gap-3">
+                <div className="text-zinc-500 flex-shrink-0 mt-0.5"><IconNote/></div>
+                <p className="text-zinc-400 text-sm leading-relaxed">{notaEntry[1]}</p>
+              </div>
+            </div>
+          );
+        })() : null}
+
         {/* exercícios */}
         <div className="px-5 pb-10 flex flex-col gap-3">
           {t.exercicios.map(ex => (
@@ -269,16 +322,22 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
           <h1 className="text-xl font-bold text-white">Histórico</h1>
           {!loading && <p className="text-zinc-500 text-xs mt-0.5">{treinos.length} treino{treinos.length !== 1 ? 's' : ''} registrado{treinos.length !== 1 ? 's' : ''}</p>}
         </div>
-        {onVerGraficos && (
-          <button
-            onClick={() => onVerGraficos(null)}
-            className="btn flex items-center gap-2 px-3 py-2.5 bg-[#c8f542]/10 border border-[#c8f542]/25 rounded-xl text-[#c8f542] text-xs font-semibold active:bg-[#c8f542]/20">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-            </svg>
-            Gráficos
+        <div className="flex items-center gap-2">
+          <button onClick={exportarCSV} disabled={exportando}
+            className="btn w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 active:bg-zinc-800 disabled:opacity-50">
+            <IconExport/>
           </button>
-        )}
+          {onVerGraficos && (
+            <button
+              onClick={() => onVerGraficos(null)}
+              className="btn flex items-center gap-2 px-3 py-2.5 bg-[#c8f542]/10 border border-[#c8f542]/25 rounded-xl text-[#c8f542] text-xs font-semibold active:bg-[#c8f542]/20">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              Gráficos
+            </button>
+          )}
+        </div>
       </div>
 
       {/* filtro por split */}
