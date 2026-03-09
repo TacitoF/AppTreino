@@ -16,7 +16,7 @@ function LineChart({ dados, cor = '#c8f542', label = 'kg', height = 140 }) {
 
   const W = 320;
   const H = height;
-  const PAD = { top: 12, right: 16, bottom: 28, left: 40 };
+  const PAD = { top: 28, right: 20, bottom: 28, left: 40 };
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
 
@@ -80,11 +80,23 @@ function LineChart({ dados, cor = '#c8f542', label = 'kg', height = 140 }) {
           fill="#0a0a0a" stroke={cor} strokeWidth="2"/>
       ))}
 
-      {/* último valor destacado */}
-      <text x={toX(dados.length - 1)} y={toY(dados[dados.length - 1].valor) - 8}
-        textAnchor="middle" fill={cor} fontSize="10" fontWeight="bold" fontFamily="monospace">
-        {dados[dados.length - 1].valor}{label}
-      </text>
+      {/* último valor destacado — flip para baixo se perto do topo */}
+      {(() => {
+        const lx = toX(dados.length - 1);
+        const ly = toY(dados[dados.length - 1].valor);
+        const nearTop = ly < PAD.top + 18;
+        const ty = nearTop ? ly + 16 : ly - 8;
+        const txt = `${dados[dados.length - 1].valor}${label}`;
+        const txtW = txt.length * 6.5 + 8;
+        return (
+          <g>
+            <rect x={lx - txtW / 2} y={ty - 11} width={txtW} height={14} rx="3" fill="#0a0a0a" opacity="0.75"/>
+            <text x={lx} y={ty} textAnchor="middle" fill={cor} fontSize="10" fontWeight="bold" fontFamily="monospace">
+              {txt}
+            </text>
+          </g>
+        );
+      })()}
 
       {/* X labels */}
       {xTicks.map((d, i) => {
