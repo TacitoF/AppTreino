@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { apiFetch } from '../auth';
 import { ALIMENTOS_DB } from '../data/alimentosDB';
 
-// ─── ícones ──────────────────────────────────────────────────────────────────
+// ─── ícones ───────────────────────────────────────────────────────────────────
 const IconBack     = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
 const IconSearch   = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>;
 const IconPlus     = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>;
@@ -17,10 +17,85 @@ const IconLaticinios = () => <svg viewBox="0 0 24 24" fill="none" stroke="curren
 const IconFrutas   = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 2v4M15.5 6A6.5 6.5 0 1112 21a6.5 6.5 0 013.5-15z"/></svg>;
 const IconCalendar = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
 
+// ─── NumInput para gramas (polegar-friendly) ──────────────────────────────────
+function GramasInput({ value, onChange }) {
+  const [txt, setTxt] = useState(String(value || ''));
+  const ref = useRef(null);
+  const num = parseFloat(String(value)) || 0;
+
+  useEffect(() => {
+    if (document.activeElement !== ref.current) setTxt(String(value || ''));
+  }, [value]);
+
+  const confirmar = () => {
+    const n = parseFloat(txt.replace(',', '.'));
+    if (!isNaN(n) && n > 0) { onChange(n); setTxt(String(n)); }
+    else { setTxt(String(value || '')); }
+  };
+
+  const step = num >= 200 ? 50 : num >= 100 ? 25 : 10;
+
+  const dec = (e) => {
+    e.stopPropagation();
+    const novo = Math.max(1, num - step);
+    onChange(novo); setTxt(String(novo));
+  };
+  const inc = (e) => {
+    e.stopPropagation();
+    const novo = num + step;
+    onChange(novo); setTxt(String(novo));
+  };
+
+  return (
+    <div className="flex flex-col rounded-2xl overflow-hidden border border-zinc-700 bg-black">
+      <div className="pt-3 pb-1 text-center">
+        <span className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Quantidade</span>
+      </div>
+      <div className="flex items-stretch">
+        <button
+          onPointerDown={dec}
+          className="flex-1 flex items-center justify-center py-5 active:bg-zinc-800 select-none touch-none"
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+        >
+          <span className="text-white text-3xl font-light leading-none select-none">−</span>
+        </button>
+        <div className="w-px bg-zinc-800 my-2 flex-shrink-0"/>
+        <div className="flex-[2] flex items-center justify-center relative">
+          <input
+            ref={ref}
+            type="number"
+            inputMode="decimal"
+            value={txt}
+            onChange={e => setTxt(e.target.value)}
+            onBlur={confirmar}
+            onFocus={e => e.target.select()}
+            onKeyDown={e => e.key === 'Enter' && ref.current?.blur()}
+            autoFocus
+            placeholder="0"
+            className="w-full text-center text-4xl font-black bg-transparent outline-none text-[#c8f542] py-4 num"
+            style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+          />
+        </div>
+        <div className="w-px bg-zinc-800 my-2 flex-shrink-0"/>
+        <button
+          onPointerDown={inc}
+          className="flex-1 flex items-center justify-center py-5 active:bg-zinc-800 select-none touch-none"
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+        >
+          <span className="text-white text-3xl font-light leading-none select-none">+</span>
+        </button>
+      </div>
+      <div className="pb-2 text-center">
+        <span className="text-zinc-500 text-sm font-semibold">gramas</span>
+      </div>
+    </div>
+  );
+}
+
 export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   const [refeicoes, setRefeicoes]       = useState([]);
   const [loading, setLoading]           = useState(true);
-  const [abaPrincipal, setAbaPrincipal] = useState('hoje'); // 'hoje' | 'semana'
+  const [abaPrincipal, setAbaPrincipal] = useState('hoje');
   const [resumoSemanal, setResumoSemanal]   = useState([]);
   const [loadingSemana, setLoadingSemana]   = useState(false);
 
@@ -28,7 +103,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   const [termoBusca, setTermoBusca]               = useState('');
   const [alimentoSelecionado, setAlimentoSelecionado] = useState(null);
   const [itemParaExcluir, setItemParaExcluir]     = useState(null);
-  const [gramas, setGramas]                       = useState('');
+  const [gramas, setGramas]                       = useState(100);
   const [salvando, setSalvando]                   = useState(false);
   const inputBuscaRef = useRef(null);
 
@@ -58,12 +133,9 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   }, []);
 
   useEffect(() => {
-    if (modalBusca) {
-      setAbaAtiva(recentes.length > 0 ? 'recentes' : 'proteinas');
-    }
+    if (modalBusca) setAbaAtiva(recentes.length > 0 ? 'recentes' : 'proteinas');
   }, [modalBusca, recentes.length]);
 
-  // carrega dieta de hoje
   useEffect(() => {
     apiFetch(`/api/dieta/registro?id_usuario=${usuario.id}&data=${hoje}`)
       .then(r => setRefeicoes(r.registros || []))
@@ -71,13 +143,11 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
       .finally(() => setLoading(false));
   }, [usuario.id, hoje, mostrarToast]);
 
-  // carrega resumo semanal ao mudar de aba
   useEffect(() => {
     if (abaPrincipal !== 'semana') return;
     setLoadingSemana(true);
     const dias = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
+      const d = new Date(); d.setDate(d.getDate() - i);
       return d.toISOString().slice(0, 10);
     });
     Promise.all(
@@ -107,25 +177,15 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     const obj    = usuario.objetivo || 'Manutencao';
     let tmb = (10 * peso) + (6.25 * altura) - (5 * idade);
     tmb += (genero === 'M') ? 5 : -161;
-    const fatoresAtividade = {
-      sedentario: 1.2, leve: 1.375, moderado: 1.55, ativo: 1.725, muito_ativo: 1.9,
-    };
-    const fatorAtiv = fatoresAtividade[usuario.atividade] || 1.375;
-    let metaKcal = tmb * fatorAtiv;
+    const fatoresAtividade = { sedentario: 1.2, leve: 1.375, moderado: 1.55, ativo: 1.725, muito_ativo: 1.9 };
+    let metaKcal = tmb * (fatoresAtividade[usuario.atividade] || 1.375);
     if (obj === 'Emagrecimento') metaKcal -= 400;
     if (obj === 'Hipertrofia')   metaKcal += 300;
     const protPorKg    = obj === 'Emagrecimento' ? 2.2 : obj === 'Hipertrofia' ? 2.0 : 1.8;
     const metaProteina = Math.round(peso * protPorKg);
     const metaGordura  = Math.round(peso * 1.0);
-    const kcalProt     = metaProteina * 4;
-    const kcalGord     = metaGordura  * 9;
-    const metaCarbo    = Math.round((metaKcal - kcalProt - kcalGord) / 4);
-    return {
-      kcal:     Math.round(metaKcal),
-      proteina: metaProteina,
-      carbo:    Math.max(metaCarbo, 50),
-      gordura:  metaGordura,
-    };
+    const metaCarbo    = Math.round((metaKcal - metaProteina * 4 - metaGordura * 9) / 4);
+    return { kcal: Math.round(metaKcal), proteina: metaProteina, carbo: Math.max(metaCarbo, 50), gordura: metaGordura };
   }, [usuario]);
 
   const consumido = useMemo(() => refeicoes.reduce((acc, ref) => ({
@@ -151,17 +211,15 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     if (!g || g <= 0) return mostrarToast('Digite uma quantidade válida.', 'erro');
     setSalvando(true);
     const mult          = g / 100;
-    const kcalCalculada = Math.round(alimentoSelecionado.kcal * mult);
-    const protCalculada = Math.round(alimentoSelecionado.proteina * mult * 10) / 10;
     const novaRefeicao  = {
       id_registro:   `D${Date.now()}`,
       id_usuario:    String(usuario.id),
       data:          hoje,
       tipo_refeicao: `${alimentoSelecionado.nome} (${g}g)`,
-      calorias:      kcalCalculada,
-      proteinas_g:   protCalculada,
-      carbos_g:      Math.round(alimentoSelecionado.carbo   * mult * 10) / 10,
-      gorduras_g:    Math.round(alimentoSelecionado.gordura * mult * 10) / 10,
+      calorias:      Math.round(alimentoSelecionado.kcal * mult),
+      proteinas_g:   Math.round(alimentoSelecionado.proteina * mult * 10) / 10,
+      carbos_g:      Math.round(alimentoSelecionado.carbo    * mult * 10) / 10,
+      gorduras_g:    Math.round(alimentoSelecionado.gordura  * mult * 10) / 10,
       check_agua: '', check_whey: '', check_creatina: '',
     };
     try {
@@ -170,20 +228,18 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
       setRecentes(novosRecentes);
       localStorage.setItem('alimentos_recentes', JSON.stringify(novosRecentes));
       setRefeicoes(prev => [...prev, {
-        ID_Registro:  novaRefeicao.id_registro,
+        ID_Registro:   novaRefeicao.id_registro,
         Tipo_Refeicao: novaRefeicao.tipo_refeicao,
-        Calorias:    novaRefeicao.calorias,
-        Proteinas_g: novaRefeicao.proteinas_g,
-        Carbos_g:    novaRefeicao.carbos_g,
-        Gorduras_g:  novaRefeicao.gorduras_g,
+        Calorias:      novaRefeicao.calorias,
+        Proteinas_g:   novaRefeicao.proteinas_g,
+        Carbos_g:      novaRefeicao.carbos_g,
+        Gorduras_g:    novaRefeicao.gorduras_g,
       }]);
       mostrarToast('Refeição adicionada.', 'sucesso');
       fecharBusca();
     } catch {
       mostrarToast('Erro ao salvar. Verifique a conexão.', 'erro');
-    } finally {
-      setSalvando(false);
-    }
+    } finally { setSalvando(false); }
   };
 
   const confirmarExclusao = async () => {
@@ -193,32 +249,40 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
       await apiFetch(`/api/dieta/registro?id_registro=${id}`, { method: 'DELETE' });
       setRefeicoes(prev => prev.filter(r => r.ID_Registro !== id && r.id_registro !== id));
       mostrarToast('Alimento removido.', 'sucesso');
-    } catch {
-      mostrarToast('Erro ao remover.', 'erro');
-    } finally {
-      setItemParaExcluir(null);
-    }
+    } catch { mostrarToast('Erro ao remover.', 'erro'); }
+    finally { setItemParaExcluir(null); }
   };
 
   const fecharBusca = () => {
     setModalBusca(false);
     setAlimentoSelecionado(null);
     setTermoBusca('');
-    setGramas('');
+    setGramas(100);
   };
 
+  // preview calculado a partir do state `gramas`
+  const preview = alimentoSelecionado && gramas > 0 ? {
+    kcal:  Math.round(alimentoSelecionado.kcal    * (gramas / 100)),
+    prot:  Math.round(alimentoSelecionado.proteina * (gramas / 100) * 10) / 10,
+    carbo: Math.round(alimentoSelecionado.carbo    * (gramas / 100) * 10) / 10,
+    gord:  Math.round(alimentoSelecionado.gordura  * (gramas / 100) * 10) / 10,
+  } : { kcal: 0, prot: '0', carbo: '0', gord: '0' };
+
   const renderizarAlimento = (a) => (
-    <button key={a.id} onClick={() => setAlimentoSelecionado(a)}
-      className="w-full text-left bg-zinc-900 border border-zinc-800 active:border-[#c8f542] active:bg-[#c8f542]/5 rounded-2xl p-4 mb-3 transition-all flex flex-col gap-2 shadow-sm">
-      <div className="flex justify-between items-start">
-        <p className="text-white font-bold text-sm leading-tight pr-4">{a.nome}</p>
-        <span className="text-zinc-600 flex-shrink-0 bg-zinc-800 rounded-full p-1"><IconPlus/></span>
+    <button key={a.id} onClick={() => { setAlimentoSelecionado(a); setGramas(100); }}
+      className="w-full text-left bg-zinc-900 border border-zinc-800 active:border-[#c8f542]/40 active:bg-[#c8f542]/5 rounded-2xl p-4 mb-3 flex flex-col gap-2">
+      <div className="flex justify-between items-start gap-3">
+        <p className="text-white font-bold text-sm leading-tight">{a.nome}</p>
+        <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center flex-shrink-0 text-zinc-400">
+          <IconPlus/>
+        </div>
       </div>
-      <div className="flex items-center gap-3 text-xs font-semibold">
+      <div className="flex items-center gap-2 flex-wrap text-xs font-semibold">
         <span className="text-[#f97316] bg-[#f97316]/10 px-2 py-0.5 rounded-md">{a.kcal} kcal</span>
         <span className="text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md">{a.proteina}g P</span>
         <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">{a.carbo}g C</span>
         <span className="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">{a.gordura}g G</span>
+        <span className="text-zinc-600 ml-auto">por 100g</span>
       </div>
     </button>
   );
@@ -242,8 +306,8 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
       <div className="px-5 pt-4 pb-1">
         <div className="flex bg-zinc-900 border border-zinc-800 rounded-2xl p-1.5 gap-1">
           {[
-            { id: 'hoje',   label: 'Hoje',           icon: <IconFlame/> },
-            { id: 'semana', label: 'Últimos 7 dias',  icon: <IconCalendar/> },
+            { id: 'hoje',   label: 'Hoje',          icon: <IconFlame/> },
+            { id: 'semana', label: 'Últimos 7 dias', icon: <IconCalendar/> },
           ].map(({ id, label, icon }) => (
             <button key={id} onClick={() => setAbaPrincipal(id)}
               className={`btn flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${abaPrincipal === id ? 'bg-[#c8f542] text-black' : 'text-zinc-500'}`}>
@@ -254,13 +318,13 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 pt-4 pb-10 flex flex-col gap-6">
+      <div className="flex-1 overflow-y-auto px-5 pt-4 pb-10 flex flex-col gap-5">
 
         {/* ── ABA HOJE ── */}
         {abaPrincipal === 'hoje' && (<>
 
           {/* card calorias */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-lg relative overflow-hidden">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
             <div className="flex justify-between items-end mb-4">
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
@@ -272,12 +336,10 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                   <span className="text-zinc-500 text-sm font-semibold">/ {metas.kcal} kcal</span>
                 </div>
               </div>
-              <div className="text-right pb-1">
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${consumido.kcal > metas.kcal ? 'bg-red-500/10 text-red-500' : 'bg-[#c8f542]/10 text-[#c8f542]'}`}>
-                  {consumido.kcal > metas.kcal ? 'Passou ' : 'Faltam '}
-                  {Math.abs(metas.kcal - consumido.kcal)}
-                </span>
-              </div>
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${consumido.kcal > metas.kcal ? 'bg-red-500/10 text-red-500' : 'bg-[#c8f542]/10 text-[#c8f542]'}`}>
+                {consumido.kcal > metas.kcal ? 'Passou ' : 'Faltam '}
+                {Math.abs(metas.kcal - consumido.kcal)}
+              </span>
             </div>
             <div className="w-full h-3.5 bg-zinc-800 rounded-full overflow-hidden">
               <div
@@ -288,105 +350,82 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
           </div>
 
           {/* card macros */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-lg flex flex-col gap-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 flex flex-col gap-4">
             <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Macronutrientes</p>
-
-            <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <div className="flex items-center gap-1.5">
-                  <IconProteina/>
-                  <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Proteína</span>
+            {[
+              { icon: <IconProteina/>, label: 'Proteína',     val: consumido.proteina, meta: metas.proteina, pct: progressoProt, cor: 'bg-blue-500' },
+              { icon: <IconCarbo/>,   label: 'Carboidratos', val: consumido.carbo,    meta: metas.carbo,    pct: progressoCarb, cor: 'bg-emerald-500' },
+              { icon: <IconGordura/>, label: 'Gorduras',      val: consumido.gordura,  meta: metas.gordura,  pct: progressoGord, cor: 'bg-amber-400' },
+            ].map(m => (
+              <div key={m.label}>
+                <div className="flex justify-between items-baseline mb-2">
+                  <div className="flex items-center gap-1.5">
+                    {m.icon}
+                    <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider">{m.label}</span>
+                  </div>
+                  <span className="text-white font-black text-sm num">
+                    {Math.round(m.val * 10) / 10}
+                    <span className="text-zinc-500 font-semibold"> / {m.meta} g</span>
+                  </span>
                 </div>
-                <span className="text-white font-black text-sm num">
-                  {Math.round(consumido.proteina * 10) / 10}
-                  <span className="text-zinc-500 font-semibold"> / {metas.proteina} g</span>
-                </span>
-              </div>
-              <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 transition-all duration-1000 rounded-full" style={{ width: `${progressoProt}%` }}/>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <div className="flex items-center gap-1.5">
-                  <IconCarbo/>
-                  <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Carboidratos</span>
+                <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className={`h-full ${m.cor} transition-all duration-1000 rounded-full`} style={{ width: `${m.pct}%` }}/>
                 </div>
-                <span className="text-white font-black text-sm num">
-                  {Math.round(consumido.carbo * 10) / 10}
-                  <span className="text-zinc-500 font-semibold"> / {metas.carbo} g</span>
-                </span>
               </div>
-              <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 transition-all duration-1000 rounded-full" style={{ width: `${progressoCarb}%` }}/>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <div className="flex items-center gap-1.5">
-                  <IconGordura/>
-                  <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Gorduras</span>
-                </div>
-                <span className="text-white font-black text-sm num">
-                  {Math.round(consumido.gordura * 10) / 10}
-                  <span className="text-zinc-500 font-semibold"> / {metas.gordura} g</span>
-                </span>
-              </div>
-              <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-400 transition-all duration-1000 rounded-full" style={{ width: `${progressoGord}%` }}/>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* botão adicionar */}
           <button onClick={() => setModalBusca(true)}
-            className="btn w-full py-5 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold text-base rounded-2xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(200,245,66,0.1)]">
+            className="btn w-full py-5 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold text-base rounded-2xl flex items-center justify-center gap-2">
             <IconPlus/> Adicionar alimento
           </button>
 
           {/* lista de hoje */}
           <div>
-            <h2 className="text-white font-bold text-lg mb-4 mt-2">Consumido Hoje</h2>
+            <h2 className="text-white font-bold text-base mb-3">Consumido hoje</h2>
             {loading ? (
               <div className="flex justify-center py-8">
                 <div className="w-8 h-8 border-2 border-zinc-800 border-t-[#c8f542] rounded-full animate-spin"/>
               </div>
             ) : refeicoes.length === 0 ? (
-              <div className="text-center py-10 bg-zinc-900/50 border border-zinc-800/50 rounded-3xl border-dashed">
+              <div className="text-center py-10 bg-zinc-900/50 border border-dashed border-zinc-800 rounded-3xl">
                 <p className="text-zinc-500 text-sm">Nenhum registro ainda.</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
                 {refeicoes.map((ref, i) => (
-                  <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-white font-semibold text-sm leading-tight flex-1 pr-3">
+                  <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex items-center gap-3">
+                    {/* info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-semibold text-sm leading-tight truncate">
                         {ref.Tipo_Refeicao || ref.tipo_refeicao}
                       </p>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <div className="text-right">
-                          <p className="text-[#c8f542] font-black text-lg num leading-none">{ref.Calorias || ref.calorias}</p>
-                          <p className="text-zinc-600 text-xs font-semibold">kcal</p>
-                        </div>
-                        <button
-                          onClick={() => setItemParaExcluir(ref)}
-                          className="w-9 h-9 bg-red-500/10 active:bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
-                          <IconTrash/>
-                        </button>
+                      <div className="flex gap-2 flex-wrap mt-1.5">
+                        <span className="text-blue-400 text-xs font-semibold bg-blue-500/10 px-2 py-0.5 rounded-lg">
+                          {ref.Proteinas_g || ref.proteinas_g}g P
+                        </span>
+                        <span className="text-emerald-400 text-xs font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-lg">
+                          {ref.Carbos_g || ref.carbos_g || 0}g C
+                        </span>
+                        <span className="text-amber-400 text-xs font-semibold bg-amber-500/10 px-2 py-0.5 rounded-lg">
+                          {ref.Gorduras_g || ref.gorduras_g || 0}g G
+                        </span>
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <span className="text-blue-400 text-xs font-semibold bg-blue-500/10 px-2 py-0.5 rounded-lg">
-                        {ref.Proteinas_g || ref.proteinas_g}g P
-                      </span>
-                      <span className="text-emerald-400 text-xs font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-lg">
-                        {ref.Carbos_g || ref.carbos_g || 0}g C
-                      </span>
-                      <span className="text-amber-400 text-xs font-semibold bg-amber-500/10 px-2 py-0.5 rounded-lg">
-                        {ref.Gorduras_g || ref.gorduras_g || 0}g G
-                      </span>
+                    {/* kcal + delete */}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="text-right">
+                        <p className="text-[#c8f542] font-black text-lg num leading-none">{ref.Calorias || ref.calorias}</p>
+                        <p className="text-zinc-600 text-xs">kcal</p>
+                      </div>
+                      {/* botão delete maior */}
+                      <button
+                        onClick={() => setItemParaExcluir(ref)}
+                        className="w-11 h-11 bg-red-500/10 active:bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center"
+                      >
+                        <IconTrash/>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -412,7 +451,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
               } : null;
 
               return (<>
-                {/* cards de média */}
+                {/* cards média */}
                 {media ? (
                   <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
                     <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">
@@ -420,52 +459,72 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { label: 'Calorias',   value: `${media.kcal}`,      unit: 'kcal', cor: 'text-[#f97316]', bg: 'bg-[#f97316]/10' },
-                        { label: 'Proteína',   value: `${media.proteina}g`, unit: '',     cor: 'text-blue-400',  bg: 'bg-blue-500/10'  },
-                        { label: 'Carboidrato',value: `${media.carbo}g`,    unit: '',     cor: 'text-emerald-400',bg:'bg-emerald-500/10'},
-                        { label: 'Gordura',    value: `${media.gordura}g`,  unit: '',     cor: 'text-amber-400', bg: 'bg-amber-500/10' },
+                        { label: 'Calorias',    value: `${media.kcal}`,      unit: 'kcal', cor: 'text-[#f97316]', bg: 'bg-[#f97316]/10' },
+                        { label: 'Proteína',    value: `${media.proteina}g`, unit: '',     cor: 'text-blue-400',  bg: 'bg-blue-500/10'  },
+                        { label: 'Carboidrato', value: `${media.carbo}g`,    unit: '',     cor: 'text-emerald-400',bg:'bg-emerald-500/10'},
+                        { label: 'Gordura',     value: `${media.gordura}g`,  unit: '',     cor: 'text-amber-400', bg: 'bg-amber-500/10' },
                       ].map(x => (
                         <div key={x.label} className={`${x.bg} border border-zinc-800/50 rounded-2xl p-4 text-center`}>
-                          <div className={`font-black text-xl ${x.cor}`}>{x.value}</div>
+                          <div className={`font-black text-xl num ${x.cor}`}>{x.value}</div>
                           <div className="text-zinc-500 text-xs mt-0.5">{x.label}</div>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-10 bg-zinc-900/50 border border-zinc-800/50 rounded-3xl border-dashed">
+                  <div className="text-center py-10 bg-zinc-900/50 border border-dashed border-zinc-800 rounded-3xl">
                     <p className="text-zinc-500 text-sm">Nenhum registro nos últimos 7 dias.</p>
                   </div>
                 )}
 
-                {/* tabela dia a dia */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-                  <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">Por dia</p>
-                  <div className="flex flex-col">
-                    {resumoSemanal.map((d, i) => {
-                      const dt    = new Date(d.data + 'T00:00:00');
-                      const ehHoje = d.data === hoje;
-                      return (
-                        <div key={i} className="flex items-center justify-between py-3 border-b border-zinc-800 last:border-0">
-                          <div className="w-20 flex-shrink-0">
-                            <span className={`text-xs font-semibold ${ehHoje ? 'text-[#c8f542]' : 'text-zinc-400'}`}>
-                              {ehHoje ? 'Hoje' : dt.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
-                            </span>
+                {/* cards por dia — substituindo a tabela densa */}
+                <div className="flex flex-col gap-2">
+                  <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest px-1">Por dia</p>
+                  {resumoSemanal.map((d, i) => {
+                    const dt     = new Date(d.data + 'T00:00:00');
+                    const ehHoje = d.data === hoje;
+                    const diaSemana = dt.toLocaleDateString('pt-BR', { weekday: 'short' });
+                    const diaMes    = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+                    return (
+                      <div key={i} className={`rounded-2xl border px-4 py-3 flex items-center gap-3 ${
+                        ehHoje ? 'bg-[#c8f542]/5 border-[#c8f542]/20' : 'bg-zinc-900 border-zinc-800'
+                      }`}>
+                        {/* data */}
+                        <div className="w-14 flex-shrink-0 text-center">
+                          <div className={`text-xs font-bold capitalize ${ehHoje ? 'text-[#c8f542]' : 'text-zinc-500'}`}>
+                            {ehHoje ? 'Hoje' : diaSemana}
                           </div>
-                          {d.kcal > 0 ? (
-                            <div className="flex items-center gap-2 flex-1 justify-end flex-wrap">
-                              <span className="text-[#f97316] text-xs font-bold">{d.kcal} kcal</span>
-                              <span className="text-blue-400 text-xs">{Math.round(d.proteina)}g P</span>
-                              <span className="text-emerald-400 text-xs">{Math.round(d.carbo)}g C</span>
-                              <span className="text-amber-400 text-xs">{Math.round(d.gordura)}g G</span>
-                            </div>
-                          ) : (
-                            <span className="text-zinc-700 text-xs">sem registro</span>
-                          )}
+                          {!ehHoje && <div className="text-zinc-600 text-xs">{diaMes}</div>}
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        {d.kcal > 0 ? (
+                          <>
+                            {/* kcal em destaque */}
+                            <div className="flex-shrink-0 text-right min-w-[56px]">
+                              <span className="text-[#f97316] font-black text-base num">{d.kcal}</span>
+                              <span className="text-zinc-600 text-xs ml-1">kcal</span>
+                            </div>
+                            {/* macros como pills */}
+                            <div className="flex-1 flex items-center gap-1.5 flex-wrap justify-end">
+                              <span className="text-blue-400 text-xs font-semibold bg-blue-500/10 px-2 py-0.5 rounded-lg">
+                                {Math.round(d.proteina)}g P
+                              </span>
+                              <span className="text-emerald-400 text-xs font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-lg">
+                                {Math.round(d.carbo)}g C
+                              </span>
+                              <span className="text-amber-400 text-xs font-semibold bg-amber-500/10 px-2 py-0.5 rounded-lg">
+                                {Math.round(d.gordura)}g G
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex-1 text-right">
+                            <span className="text-zinc-700 text-sm">sem registro</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </>);
             })()}
@@ -475,39 +534,36 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
 
       {/* ── modal confirmar exclusão ── */}
       {itemParaExcluir && (
-        <div
-          className="fixed inset-0 z-[70] bg-black/80 flex flex-col justify-end slide-up"
-          onClick={() => setItemParaExcluir(null)}>
-          <div
-            className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl p-6 pb-8"
-            onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[70] bg-black/80 flex flex-col justify-end" onClick={() => setItemParaExcluir(null)}>
+          <div className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl p-6 pb-8" onClick={e => e.stopPropagation()}>
             <div className="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto mb-6"/>
             <h3 className="text-white font-black text-xl mb-2 text-center">Remover alimento?</h3>
             <p className="text-zinc-400 text-sm mb-8 text-center leading-relaxed">
               <strong className="text-white">{itemParaExcluir.Tipo_Refeicao || itemParaExcluir.tipo_refeicao}</strong>
               <br/>será removido do diário de hoje.
             </p>
-            <div className="flex gap-3 pb-safe">
+            <div className="flex gap-3">
               <button onClick={() => setItemParaExcluir(null)}
                 className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-bold rounded-2xl">
                 Cancelar
               </button>
               <button onClick={confirmarExclusao}
                 className="btn flex-1 py-4 bg-red-500/10 text-red-500 active:bg-red-500/20 font-bold rounded-2xl">
-                Sim, remover
+                Remover
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── modal buscar alimento (tela cheia) ── */}
+      {/* ── modal buscar alimento ── */}
       {modalBusca && (
         <div
-          className="fixed inset-0 z-50 bg-[#0a0a0a] flex flex-col slide-up"
-          style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-
-          <div className="px-4 pt-4 pb-3 flex items-center gap-3 bg-[#0a0a0a] z-10">
+          className="fixed inset-0 z-50 bg-[#0a0a0a] flex flex-col"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
+          {/* barra de busca */}
+          <div className="px-4 pt-4 pb-3 flex items-center gap-3">
             <button onClick={fecharBusca}
               className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
               <IconBack/>
@@ -530,6 +586,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
             </div>
           </div>
 
+          {/* resultados ou categorias */}
           <div className="flex-1 overflow-y-auto flex flex-col">
             {termoBusca.trim().length > 0 ? (
               <div className="px-4 py-4">
@@ -539,27 +596,32 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                   <div className="text-center py-10 text-zinc-500 text-sm">Alimento não encontrado.</div>
                 ) : (
                   <>
-                    <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3 px-1">Resultados da Busca</h3>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3 px-1">
+                      {resultadosBusca.length} resultado{resultadosBusca.length !== 1 ? 's' : ''}
+                    </p>
                     {resultadosBusca.map(renderizarAlimento)}
                   </>
                 )}
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto sticky top-0 bg-[#0a0a0a] z-10 border-b border-zinc-900 [&::-webkit-scrollbar]:hidden"
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+                {/* abas categorias — scroll horizontal */}
+                <div
+                  className="overflow-x-auto sticky top-0 bg-[#0a0a0a] z-10 border-b border-zinc-900"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
                   <div className="flex flex-nowrap w-max gap-2 px-4 py-3">
                     {recentes.length > 0 && (
                       <button onClick={() => setAbaAtiva('recentes')}
-                        className={`flex-none inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === 'recentes' ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
-                        <span className={`flex-shrink-0 ${abaAtiva === 'recentes' ? 'text-black' : 'text-zinc-500'}`}><IconClock/></span>
+                        className={`flex-none inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border ${abaAtiva === 'recentes' ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
+                        <span className={abaAtiva === 'recentes' ? 'text-black' : 'text-zinc-500'}><IconClock/></span>
                         Recentes
                       </button>
                     )}
                     {categoriasPopulares.map(cat => (
                       <button key={cat.id} onClick={() => setAbaAtiva(cat.id)}
-                        className={`flex-none inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${abaAtiva === cat.id ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
-                        <span className={`flex-shrink-0 ${abaAtiva === cat.id ? 'text-black' : 'text-zinc-500'}`}>{cat.icone}</span>
+                        className={`flex-none inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border ${abaAtiva === cat.id ? 'bg-[#c8f542] text-black border-[#c8f542]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}>
+                        <span className={abaAtiva === cat.id ? 'text-black' : 'text-zinc-500'}>{cat.icone}</span>
                         {cat.nome}
                       </button>
                     ))}
@@ -569,22 +631,19 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                 <div className="px-4 py-4 flex-1">
                   {abaAtiva === 'recentes' && (
                     <>
-                      <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3 px-1">Adicionados Recentemente</h3>
+                      <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3 px-1">Recentes</p>
                       {recentes.map(renderizarAlimento)}
                     </>
                   )}
                   {abaAtiva !== 'recentes' && (
                     categoriasPopulares.find(c => c.id === abaAtiva)?.itens.map(renderizarAlimento)
                   )}
-
-                  <div className="mt-4 mb-8 bg-zinc-900/30 border border-zinc-800/50 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center">
+                  <div className="mt-4 mb-8 bg-zinc-900/30 border border-dashed border-zinc-800/50 rounded-2xl p-6 flex flex-col items-center text-center">
                     <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center text-zinc-600 mb-3">
                       <IconSearch/>
                     </div>
                     <h4 className="text-white font-bold text-sm mb-1">Explore a base completa</h4>
-                    <p className="text-zinc-500 text-xs mb-5 max-w-[240px]">
-                      Temos diversas opções cadastradas. Use a pesquisa para encontrar a opção exata.
-                    </p>
+                    <p className="text-zinc-500 text-xs mb-5 max-w-[240px]">Use a pesquisa para encontrar qualquer alimento.</p>
                     <button onClick={() => inputBuscaRef.current?.focus()}
                       className="btn px-6 py-3 bg-zinc-800 active:bg-zinc-700 text-white font-bold text-xs rounded-xl flex items-center gap-2">
                       Pesquisar alimento
@@ -595,44 +654,49 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
             )}
           </div>
 
+          {/* ── bottom sheet: alimento selecionado ── */}
           {alimentoSelecionado && (
             <div
               className="absolute inset-0 bg-black/80 flex flex-col justify-end z-[60]"
-              onClick={() => setAlimentoSelecionado(null)}>
+              onClick={() => setAlimentoSelecionado(null)}
+            >
               <div
-                className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl p-6 slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"
-                onClick={e => e.stopPropagation()}>
-                <div className="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto mb-6"/>
-                <h3 className="text-white font-black text-xl mb-1 pr-4 leading-tight">{alimentoSelecionado.nome}</h3>
-                <p className="text-zinc-500 text-sm mb-6">Qual a quantidade consumida?</p>
-                <div className="flex items-center gap-3 bg-black border border-zinc-800 focus-within:border-[#c8f542] rounded-2xl px-5 py-4 mb-6 transition-colors">
-                  <input
-                    type="number" inputMode="decimal" autoFocus
-                    value={gramas} onChange={e => setGramas(e.target.value)}
-                    className="flex-1 bg-transparent text-[#c8f542] font-black text-4xl outline-none" placeholder="0"
-                  />
-                  <span className="text-zinc-500 font-bold text-lg">gramas</span>
+                className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl px-5 pt-5 pb-8 slide-up"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto mb-5"/>
+
+                {/* nome do alimento */}
+                <h3 className="text-white font-black text-xl mb-0.5 pr-4 leading-tight">
+                  {alimentoSelecionado.nome}
+                </h3>
+                <p className="text-zinc-500 text-sm mb-5">Qual a quantidade consumida?</p>
+
+                {/* input de gramas — polegar-friendly */}
+                <div className="mb-5">
+                  <GramasInput value={gramas} onChange={setGramas}/>
                 </div>
-                <div className="bg-zinc-800/40 border border-zinc-800/80 rounded-2xl p-4 mb-6">
+
+                {/* preview dos macros calculados */}
+                <div className="bg-zinc-800/40 border border-zinc-800/80 rounded-2xl p-4 mb-5">
                   <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3">Total a adicionar</p>
-                  <div className="flex justify-between items-center">
+                  <div className="grid grid-cols-4 gap-2">
                     {[
-                      { v: gramas ? Math.round(alimentoSelecionado.kcal * (gramas/100)) : 0, u: 'kcal', c: 'text-white' },
-                      { v: gramas ? `${Math.round(alimentoSelecionado.proteina * (gramas/100) * 10)/10}g` : '0g', u: 'Prot', c: 'text-blue-400' },
-                      { v: gramas ? `${Math.round(alimentoSelecionado.carbo    * (gramas/100) * 10)/10}g` : '0g', u: 'Carbo',c: 'text-emerald-400' },
-                      { v: gramas ? `${Math.round(alimentoSelecionado.gordura  * (gramas/100) * 10)/10}g` : '0g', u: 'Gord', c: 'text-amber-400' },
+                      { v: preview.kcal,  u: 'kcal', c: 'text-[#f97316]' },
+                      { v: `${preview.prot}g`,  u: 'Prot',  c: 'text-blue-400' },
+                      { v: `${preview.carbo}g`, u: 'Carbo', c: 'text-emerald-400' },
+                      { v: `${preview.gord}g`,  u: 'Gord',  c: 'text-amber-400' },
                     ].map((x, i) => (
-                      <React.Fragment key={i}>
-                        {i > 0 && <div className="w-px h-8 bg-zinc-800"/>}
-                        <div className="text-center">
-                          <p className={`${x.c} font-black text-lg`}>{x.v}</p>
-                          <p className="text-zinc-500 text-xs">{x.u}</p>
-                        </div>
-                      </React.Fragment>
+                      <div key={i} className="text-center">
+                        <p className={`${x.c} font-black text-lg num leading-none`}>{x.v}</p>
+                        <p className="text-zinc-500 text-xs mt-1">{x.u}</p>
+                      </div>
                     ))}
                   </div>
                 </div>
-                <div className="flex gap-3 pb-safe">
+
+                {/* ações */}
+                <div className="flex gap-3">
                   <button onClick={() => setAlimentoSelecionado(null)}
                     className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-bold rounded-2xl">
                     Cancelar
