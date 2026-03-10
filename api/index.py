@@ -86,7 +86,7 @@ def cache_del(key: str): _mem_cache.pop(key, None)
 def get_records(nome_aba: str) -> list:
     cached = cache_get(nome_aba)
     if cached is not None: return cached
-    data = com_retry(lambda: get_ws(nome_aba).get_all_records(value_render_option="UNFORMATTED_VALUE"))
+    data = com_retry(lambda: get_ws(nome_aba).get_all_records())
     cache_set(nome_aba, data)
     return data
 
@@ -554,7 +554,7 @@ def registrar_peso(r: RegistroPeso):
 @app.get("/api/peso")
 def buscar_pesos(id_usuario: str = Query(...)):
     try:
-        registros = get_records("Peso_Corporal")
+        registros = com_retry(lambda: get_ws("Peso_Corporal").get_all_records(value_render_option="UNFORMATTED_VALUE"))
         meus = [r for r in registros if str(r.get("id_usuario","")) == id_usuario]
         meus.sort(key=lambda x: str(x.get("data","")))
         return {"pesos": [
