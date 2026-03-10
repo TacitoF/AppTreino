@@ -86,7 +86,7 @@ def cache_del(key: str): _mem_cache.pop(key, None)
 def get_records(nome_aba: str) -> list:
     cached = cache_get(nome_aba)
     if cached is not None: return cached
-    data = com_retry(lambda: get_ws(nome_aba).get_all_records())
+    data = com_retry(lambda: get_ws(nome_aba).get_all_records(value_render_option="UNFORMATTED_VALUE"))
     cache_set(nome_aba, data)
     return data
 
