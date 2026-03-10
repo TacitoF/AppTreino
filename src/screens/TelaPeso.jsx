@@ -382,11 +382,15 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
             <IconMinus/>
           </button>
           <div className="flex-1 relative">
+            {/* type=text evita que o iOS interprete "62,7" como 627 —
+                o parse manual com replace(',','.') garante o valor correto */}
             <input
-              type="number" inputMode="decimal"
+              type="text"
+              inputMode="decimal"
               placeholder="80.5"
               value={valor}
               onChange={e => setValor(e.target.value)}
+              onFocus={e => e.target.select()}
               className="w-full bg-zinc-900 text-white text-center text-4xl font-black px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors placeholder-zinc-700"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-sm font-semibold">kg</span>
@@ -408,8 +412,10 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
         <h3 className="text-white font-black text-xl mb-1">Meta de peso</h3>
         <p className="text-zinc-500 text-sm mb-5">Qual é o seu peso alvo?</p>
         <div className="relative mb-5">
-          <input type="number" inputMode="decimal" placeholder="Ex: 75.0"
-            value={metaInput} onChange={e => setMetaInput(e.target.value)} autoFocus
+          <input type="text" inputMode="decimal" placeholder="Ex: 75.0"
+            value={metaInput} onChange={e => setMetaInput(e.target.value)}
+            onFocus={e => e.target.select()}
+            autoFocus
             className="w-full bg-zinc-900 text-white text-center text-3xl font-black px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors placeholder-zinc-700"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-sm font-semibold">kg</span>

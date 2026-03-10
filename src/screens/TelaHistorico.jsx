@@ -34,8 +34,18 @@ const fmtDataCurta = iso =>
   });
 
 function agruparTreinos(series) {
+  // deduplica por id_serie antes de qualquer agrupamento
+  // evita que a API retorne o mesmo registro duplicado (ex: apos voltar do treino)
+  const vistas = new Set();
+  const unicas = series.filter(s => {
+    const id = s.id_serie || `${s.data_treino}__${s.nome_exercicio}__${s.numero_serie}`;
+    if (vistas.has(id)) return false;
+    vistas.add(id);
+    return true;
+  });
+
   const mapaData = new Map();
-  series.forEach(s => {
+  unicas.forEach(s => {
     const chave = `${s.data_treino}__${s.nome_split || 'Treino'}`;
     if (!mapaData.has(chave)) mapaData.set(chave, { data: s.data_treino, split: s.nome_split || 'Treino', series: [] });
     mapaData.get(chave).series.push(s);
@@ -47,15 +57,21 @@ function agruparTreinos(series) {
       const mapaEx = new Map();
       t.series.forEach(s => {
         const nome = s.nome_exercicio || 'Exercício';
-        if (!mapaEx.has(nome)) mapaEx.set(nome, []);
-        mapaEx.get(nome).push(s);
+        if (!mapaEx.has(nome)) mapaEx.set(nome, new Map());
+        // deduplica por numero_serie dentro do mesmo exercicio
+        if (!mapaEx.get(nome).has(s.numero_serie)) {
+          mapaEx.get(nome).set(s.numero_serie, s);
+        }
       });
-      const exercicios = Array.from(mapaEx.entries()).map(([nome, ss]) => ({
-        nome:      nome.startsWith('[P]') ? nome.slice(3) : nome,
-        usaPlacas: nome.startsWith('[P]'),
-        series:    ss.sort((a, b) => a.numero_serie - b.numero_serie),
-        volume:    ss.reduce((acc, s) => acc + s.carga_kg * s.repeticoes, 0),
-      }));
+      const exercicios = Array.from(mapaEx.entries()).map(([nome, seriesMap]) => {
+        const ss = Array.from(seriesMap.values());
+        return {
+          nome:      nome.startsWith('[P]') ? nome.slice(3) : nome,
+          usaPlacas: nome.startsWith('[P]'),
+          series:    ss.sort((a, b) => a.numero_serie - b.numero_serie),
+          volume:    ss.reduce((acc, s) => acc + s.carga_kg * s.repeticoes, 0),
+        };
+      });
       const volumeTotal  = exercicios.reduce((a, e) => a + e.volume, 0);
       const totalSeries  = t.series.length;
       return { ...t, exercicios, volumeTotal, totalSeries };

@@ -2,10 +2,15 @@ import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from '
 import { apiFetch, apiFetchOffline, syncOfflineQueue, getOfflineQueue } from '../auth';
 import { R, REST_TIME_KEY } from '../config';
 import { IconBack, IconPlus, IconTrash, IconCheck, IconUndo, IconHistory } from '../components/icons';
-import { BarraDescanso, ModalConfigDescanso, RestEndBanner } from '../components/ui';
+import { BarraDescanso, ModalConfigDescanso } from '../components/ui';
 import { ModalExercicio } from '../components/ModalExercicio';
 
-// ─── Ícones locais ────────────────────────────────────────────────────────────
+// chave de persistencia de sessao — formato: volt_treino_<splitId>_<userId>_<data>
+const SESSAO_KEY = (splitId, userId) => {
+  const hoje = new Date().toISOString().slice(0, 10);
+  return `volt_treino_${splitId}_${userId}_${hoje}`;
+};
+
 const IconNote = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -33,16 +38,13 @@ const IconDots = () => (
 );
 
 // ─── NumInput Mobile ──────────────────────────────────────────────────────────
-// Botões maiores, área de toque fácil com polegar, step configurável por campo
 const NumInputMobile = memo(({ label, value, onChange, disabled, step = 1 }) => {
   const [txt, setTxt] = useState(String(value));
   const ref = useRef(null);
   const num = parseFloat(String(value)) || 0;
 
   useEffect(() => {
-    if (document.activeElement !== ref.current) {
-      setTxt(String(value));
-    }
+    if (document.activeElement !== ref.current) setTxt(String(value));
   }, [value]);
 
   const confirmar = useCallback(() => {
@@ -75,7 +77,6 @@ const NumInputMobile = memo(({ label, value, onChange, disabled, step = 1 }) => 
         <span className="text-zinc-500 text-xs font-bold uppercase tracking-wider">{label}</span>
       </div>
       <div className="flex items-stretch">
-        {/* botão − */}
         <button
           onPointerDown={dec}
           disabled={disabled}
@@ -84,10 +85,7 @@ const NumInputMobile = memo(({ label, value, onChange, disabled, step = 1 }) => 
         >
           <span className="text-white text-3xl font-light leading-none select-none">−</span>
         </button>
-
         <div className="w-px bg-zinc-800 my-2 flex-shrink-0"/>
-
-        {/* input */}
         <div className="flex-[1.4] flex items-center justify-center">
           <input
             ref={ref}
@@ -106,10 +104,7 @@ const NumInputMobile = memo(({ label, value, onChange, disabled, step = 1 }) => 
             style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
           />
         </div>
-
         <div className="w-px bg-zinc-800 my-2 flex-shrink-0"/>
-
-        {/* botão + */}
         <button
           onPointerDown={inc}
           disabled={disabled}
@@ -123,7 +118,7 @@ const NumInputMobile = memo(({ label, value, onChange, disabled, step = 1 }) => 
   );
 });
 
-// ─── Card de Série ────────────────────────────────────────────────────────────
+// ─── Card de Serie ────────────────────────────────────────────────────────────
 const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRemSerie, timerInfo }) => {
   const hS = hist?.find(h => h.numero_serie === serie.id);
   const PR = serie.enviada && hS && (
@@ -135,12 +130,9 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
   return (
     <div className={`rounded-3xl border overflow-hidden transition-all duration-300 ${
       serie.enviada
-        ? PR
-          ? 'bg-[#c8f542]/8 border-[#c8f542]/25'
-          : 'bg-zinc-800/40 border-zinc-700/30'
+        ? PR ? 'bg-[#c8f542]/8 border-[#c8f542]/25' : 'bg-zinc-800/40 border-zinc-700/30'
         : 'bg-zinc-800/20 border-zinc-800'
     }`}>
-      {/* cabeçalho da série */}
       <div className="flex items-center px-4 pt-3 pb-2 gap-2 min-h-[44px]">
         <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0 ${
           serie.enviada
@@ -151,12 +143,7 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
         </div>
 
         {PR && (
-          <span className="text-[#c8f542] text-xs font-black bg-[#c8f542]/10 px-2 py-0.5 rounded-lg flex items-center gap-1">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 21h8m-4-4v4M5 3h14l-2 8H7L5 3zm0 0a2 2 0 00-2 2v1h18V5a2 2 0 00-2-2"/>
-            </svg>
-            RECORDE
-          </span>
+          <span className="text-[#c8f542] text-xs font-black bg-[#c8f542]/10 px-2 py-0.5 rounded-lg">RECORDE</span>
         )}
 
         {timerInfo && (
@@ -165,14 +152,12 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
           </span>
         )}
 
-        {/* referência anterior inline */}
         {hS && !showHist && (
           <span className="text-zinc-700 text-xs ml-auto mr-1">
             ant: {hS.carga_kg}{ex.usaPlacas ? 'pl' : 'kg'} × {hS.repeticoes}
           </span>
         )}
 
-        {/* remover série — só quando não enviada */}
         {!serie.enviada && (
           <button
             onClick={(e) => { e.stopPropagation(); onRemSerie(); }}
@@ -184,7 +169,6 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
         )}
       </div>
 
-      {/* inputs carga + reps */}
       <div className="grid grid-cols-2 gap-2 px-3 pb-3">
         <NumInputMobile
           label={ex.usaPlacas ? 'Placas' : 'Carga kg'}
@@ -194,7 +178,7 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
           step={stepCarga}
         />
         <NumInputMobile
-          label="Repetições"
+          label="Repeticoes"
           value={serie.reps}
           onChange={v => onUpdSerie('reps', v)}
           disabled={serie.enviada}
@@ -202,7 +186,6 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
         />
       </div>
 
-      {/* botão confirmar — full width, polegar-friendly */}
       <div className="px-3 pb-3">
         <button
           onClick={() => !serie.salvandoNow && onToggle()}
@@ -232,7 +215,7 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
   );
 });
 
-// ─── Card de Exercício ────────────────────────────────────────────────────────
+// ─── Card de Exercicio ────────────────────────────────────────────────────────
 const CardExercicio = memo(({
   ex, idx, total, hist,
   onRemover, onUpdNome, onConfirmarNome,
@@ -248,7 +231,6 @@ const CardExercicio = memo(({
   const totalSeries    = ex.series.length;
   const concluido      = seriesEnviadas === totalSeries && totalSeries > 0;
 
-  // fecha menu ao clicar fora
   useEffect(() => {
     if (!showMenu) return;
     const handler = (e) => {
@@ -262,36 +244,29 @@ const CardExercicio = memo(({
     <div className={`bg-zinc-900 border rounded-3xl overflow-hidden transition-colors ${
       concluido ? 'border-[#c8f542]/15' : 'border-zinc-800'
     }`}>
-
-      {/* cabeçalho */}
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center gap-3 mb-3">
-          {/* número */}
           <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0 ${
             concluido ? 'bg-[#c8f542]/15 text-[#c8f542]' : 'bg-zinc-800 text-zinc-500'
           }`}>
             {concluido ? <IconCheck/> : idx + 1}
           </div>
 
-          {/* nome */}
           <input
             type="text"
             value={ex.nome}
             onChange={e => onUpdNome(e.target.value)}
             onBlur={onConfirmarNome}
-            placeholder="Nome do exercício"
+            placeholder="Nome do exercicio"
             className="flex-1 min-w-0 bg-transparent text-white font-bold text-lg outline-none placeholder-zinc-700 border-b border-transparent focus:border-zinc-700 pb-0.5"
           />
 
-          {/* contador séries */}
           <span className={`text-sm font-black num flex-shrink-0 ${concluido ? 'text-[#c8f542]' : 'text-zinc-500'}`}>
             {seriesEnviadas}/{totalSeries}
           </span>
         </div>
 
-        {/* linha de controles */}
         <div className="flex items-center gap-2">
-          {/* toggle kg/placas */}
           <button
             onClick={onAltModoPlacas}
             disabled={ex.series.some(s => s.enviada)}
@@ -307,7 +282,6 @@ const CardExercicio = memo(({
             </span>
           </button>
 
-          {/* histórico */}
           {hist.length > 0 && (
             <button
               onClick={() => setShowHist(h => !h)}
@@ -325,7 +299,6 @@ const CardExercicio = memo(({
 
           <div className="flex-1"/>
 
-          {/* menu contextual (3 pontos) */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(m => !m)}
@@ -365,10 +338,9 @@ const CardExercicio = memo(({
         </div>
       </div>
 
-      {/* histórico anterior */}
       {showHist && hist.length > 0 && (
         <div className="mx-4 mb-3 bg-amber-950/30 border border-amber-400/15 rounded-2xl p-4">
-          <p className="text-amber-400 text-xs font-bold uppercase tracking-wider mb-3">Sessão anterior</p>
+          <p className="text-amber-400 text-xs font-bold uppercase tracking-wider mb-3">Sessao anterior</p>
           <div className="flex flex-col">
             {[...hist].sort((a, b) => a.numero_serie - b.numero_serie).map((s, i) => (
               <div key={i} className="flex items-center justify-between py-2 border-b border-amber-400/10 last:border-0">
@@ -384,7 +356,6 @@ const CardExercicio = memo(({
         </div>
       )}
 
-      {/* séries */}
       <div className="flex flex-col gap-3 px-3 pb-3">
         {ex.series.map(serie => (
           <CardSerie
@@ -400,7 +371,6 @@ const CardExercicio = memo(({
           />
         ))}
 
-        {/* + série */}
         <button
           onClick={onAddSerie}
           className="btn w-full py-4 rounded-2xl border border-dashed border-zinc-800 active:border-zinc-600 text-zinc-600 active:text-zinc-400 text-sm font-semibold flex items-center justify-center gap-2"
@@ -413,62 +383,114 @@ const CardExercicio = memo(({
   );
 });
 
+// ─── Banner de fim de descanso — centro da tela, qualquer toque fecha
+// o banner fica na frente de tudo (z-200) e persiste ao voltar pro app
+function RestEndBanner({ onDismiss }) {
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.82)' }}
+      onClick={onDismiss}
+    >
+      <div
+        className="bg-zinc-900 border border-[#c8f542]/30 rounded-3xl px-8 py-10 mx-6 flex flex-col items-center gap-4 shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="w-16 h-16 rounded-2xl bg-[#c8f542]/10 flex items-center justify-center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2} className="w-8 h-8">
+            <circle cx="12" cy="12" r="10"/>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2"/>
+          </svg>
+        </div>
+        <div className="text-center">
+          <p className="text-white font-black text-xl">Descanco acabou!</p>
+          <p className="text-zinc-400 text-sm mt-1">Hora da proxima serie</p>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="btn w-full py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black font-black text-base rounded-2xl"
+        >
+          Continuar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, mostrarToast }) {
-  const [exerciciosInicializados, setExerciciosInicializados] = useState(false);
   const [isOnline, setIsOnline]   = useState(navigator.onLine);
   const [pendentes, setPendentes] = useState(() => getOfflineQueue().length);
 
+  // id da sessao persistido — mesmo id se o usuario voltar no mesmo dia pro mesmo split
   const idTreinoSessao = useRef((() => {
-    const hoje  = new Date().toISOString().slice(0, 10);
-    const chave = `fitapp_sessao_${split.id}_${usuario.id}_${hoje}`;
-    const salvo = sessionStorage.getItem(chave);
+    const chave = SESSAO_KEY(split.id, usuario.id);
+    const salvo = localStorage.getItem(chave + '_id');
     if (salvo) return salvo;
-    const novo  = `${split.id}_${usuario.id}_${hoje}_${Date.now()}`;
-    sessionStorage.setItem(chave, novo);
+    const novo  = `${split.id}_${usuario.id}_${new Date().toISOString().slice(0,10)}_${Date.now()}`;
+    localStorage.setItem(chave + '_id', novo);
     return novo;
   })());
 
-  const [exercicios, setExercicios] = useState([]);
+  // exercicios carregados do localStorage se houver sessao do dia em andamento
+  const [exercicios, setExercicios] = useState(() => {
+    try {
+      const chave = SESSAO_KEY(split.id, usuario.id);
+      const salvo = localStorage.getItem(chave + '_ex');
+      if (salvo) return JSON.parse(salvo);
+    } catch {}
+    return [];
+  });
 
-  // online/offline
-  useEffect(() => {
-    const onOnline = async () => {
-      setIsOnline(true);
-      const { synced } = await syncOfflineQueue();
-      setPendentes(getOfflineQueue().length);
-      if (synced > 0) mostrarToast(`${synced} série${synced > 1 ? 's' : ''} sincronizada${synced > 1 ? 's' : ''}.`, 'sucesso');
-    };
-    const onOffline = () => setIsOnline(false);
-    window.addEventListener('online', onOnline);
-    window.addEventListener('offline', onOffline);
-    return () => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); };
-  }, [mostrarToast]);
+  const [inicializadoDeHistorico, setInicializadoDeHistorico] = useState(() => {
+    try {
+      const chave = SESSAO_KEY(split.id, usuario.id);
+      return !!localStorage.getItem(chave + '_ex');
+    } catch { return false; }
+  });
 
-  // inicializar com histórico
+  // persiste exercicios sempre que mudam (nao persiste estado salvandoNow)
   useEffect(() => {
-    if (exerciciosInicializados) return;
+    try {
+      const chave = SESSAO_KEY(split.id, usuario.id);
+      const semFlag = exercicios.map(x => ({
+        ...x, series: x.series.map(s => ({ ...s, salvandoNow: false })),
+      }));
+      localStorage.setItem(chave + '_ex', JSON.stringify(semFlag));
+    } catch {}
+  }, [exercicios, split.id, usuario.id]);
+
+  // inicializa a partir do historico somente se nao ha sessao salva
+  useEffect(() => {
+    if (inicializadoDeHistorico) return;
     if (!historicoAnterior?.length) return;
-    const mapaExercicios = new Map();
+    // deduplica: para cada (exercicio, numero_serie) pega apenas a entrada mais recente
+    const mapaFinal = new Map();
     historicoAnterior.forEach(s => {
-      const nome = s.nome_exercicio?.trim() || '';
-      if (!mapaExercicios.has(nome)) mapaExercicios.set(nome, []);
-      mapaExercicios.get(nome).push(s);
+      const nome  = s.nome_exercicio?.trim() || '';
+      const chave = `${nome}__${s.numero_serie}`;
+      if (!mapaFinal.has(chave)) mapaFinal.set(chave, s);
     });
-    const lista = Array.from(mapaExercicios.entries()).map(([nome, series], exIdx) => {
-      const seriesOrdenadas = [...series].sort((a, b) => a.numero_serie - b.numero_serie);
+    const mapaEx = new Map();
+    mapaFinal.forEach((s) => {
+      const nome = s.nome_exercicio?.trim() || '';
+      if (!mapaEx.has(nome)) mapaEx.set(nome, []);
+      mapaEx.get(nome).push(s);
+    });
+    const lista = Array.from(mapaEx.entries()).map(([nome, series], exIdx) => {
+      const ordenadas = [...series].sort((a, b) => a.numero_serie - b.numero_serie);
       const usaPlacas = nome.startsWith('[P]');
       const nomeLimpo = usaPlacas ? nome.slice(3) : nome;
       return {
         id: Date.now() + exIdx, nome: nomeLimpo, nomeAnterior: nomeLimpo, usaPlacas,
-        series: seriesOrdenadas.map((s, i) => ({
+        series: ordenadas.map((s, i) => ({
           id: i + 1, reps: s.repeticoes, carga: s.carga_kg, enviada: false, id_banco: null,
         })),
       };
     });
     setExercicios(lista);
-    setExerciciosInicializados(true);
-  }, [historicoAnterior, exerciciosInicializados]);
+    setInicializadoDeHistorico(true);
+  }, [historicoAnterior, inicializadoDeHistorico]);
 
   const [showExModal, setShowExModal] = useState(false);
   const [tempoConfig, setTempoConfig] = useState(() => {
@@ -489,6 +511,19 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   const timerFimRef    = useRef(null);
   const tempoConfigRef = useRef(tempoConfig);
   useEffect(() => { tempoConfigRef.current = tempoConfig; }, [tempoConfig]);
+
+  useEffect(() => {
+    const onOnline = async () => {
+      setIsOnline(true);
+      const { synced } = await syncOfflineQueue();
+      setPendentes(getOfflineQueue().length);
+      if (synced > 0) mostrarToast(`${synced} série${synced > 1 ? 's' : ''} sincronizada${synced > 1 ? 's' : ''}.`, 'sucesso');
+    };
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); };
+  }, [mostrarToast]);
 
   const calcRestante = useCallback(() => {
     if (!timerFimRef.current) return 0;
@@ -514,9 +549,11 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     return () => clearInterval(intervalRef.current);
   }, [timerAtivo, calcRestante, dispararFim]);
 
+  // ao voltar pro app via pageshow ou visibilitychange, re-checa o timer
+  // garante que o banner apareca mesmo que o usuario estivesse fora do app
   useEffect(() => {
     const onVisible = () => {
-      if (!timerAtivo || !timerFimRef.current) return;
+      if (!timerFimRef.current) return;
       const r = calcRestante();
       setTimerRestante(r);
       if (r <= 0) dispararFim();
@@ -527,7 +564,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('pageshow', onVisible);
     };
-  }, [timerAtivo, calcRestante, dispararFim]);
+  }, [calcRestante, dispararFim]);
 
   const iniciarDescanso = useCallback(() => {
     clearInterval(intervalRef.current);
@@ -545,13 +582,22 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     setTimerRestante(0);
   }, []);
 
+  // formata segundos: "45s", "1min", "1min 30s" — nunca trunca os segundos
+  const fmtTempo = useCallback((s) => {
+    if (s <= 0) return '0s';
+    const min = Math.floor(s / 60);
+    const seg  = s % 60;
+    if (min === 0) return `${seg}s`;
+    if (seg === 0) return `${min}min`;
+    return `${min}min ${seg}s`;
+  }, []);
+
   const salvarConfig = useCallback((novoTempo) => {
     setTempoConfig(novoTempo);
     localStorage.setItem(REST_TIME_KEY, String(novoTempo));
     setShowConfig(false);
-    const fmt = s => s >= 60 ? `${Math.floor(s / 60)}min${s % 60 ? ` ${s % 60}s` : ''}` : `${s}s`;
-    mostrarToast(`Descanso: ${fmt(novoTempo)}`, 'info');
-  }, [mostrarToast]);
+    mostrarToast(`Descanso: ${fmtTempo(novoTempo)}`, 'info');
+  }, [mostrarToast, fmtTempo]);
 
   const onSelecionarExercicio = useCallback((nome) => {
     setShowExModal(false);
@@ -638,9 +684,9 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
         ...x, series: x.series.map(s => s.id === serie.id ? { ...s, enviada: false, id_banco: null } : s),
       }));
       try { await apiFetch(`${R.serie}?id=${serie.id_banco}`, { method: 'DELETE' }); }
-      catch { setExercicios(snapshot); mostrarToast('Sem conexão. Não removido.', 'erro'); }
+      catch { setExercicios(snapshot); mostrarToast('Sem conexao. Nao removido.', 'erro'); }
     } else {
-      if (!ex.nome.trim()) { mostrarToast('Digite o nome do exercício.', 'erro'); return; }
+      if (!ex.nome.trim()) { mostrarToast('Digite o nome do exercicio.', 'erro'); return; }
       const inicioSerie = serieTimerRef.current[timerKey] || Date.now();
       const duracaoSeg  = Math.round((Date.now() - inicioSerie) / 1000);
       setSerieTimers(t => ({ ...t, [timerKey]: { duracao: duracaoSeg } }));
@@ -649,11 +695,14 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       const nid      = 'S' + Date.now();
       const idTreino = idTreinoSessao.current;
 
+      // marca como enviada imediatamente para feedback visual rapido
+      // salvandoNow indica que ainda esta aguardando confirmacao do servidor
       setExercicios(cur => cur.map(x => x.id !== ex.id ? x : {
         ...x, series: x.series.map(s => s.id === serie.id ? { ...s, enviada: true, salvandoNow: true, id_banco: nid } : s),
       }));
       pendentesRef.current += 1;
       setSalvando(true);
+      iniciarDescanso();
 
       try {
         await apiFetchOffline(R.serie, {
@@ -668,31 +717,46 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
         setExercicios(cur => cur.map(x => x.id !== ex.id ? x : {
           ...x, series: x.series.map(s => s.id === serie.id ? { ...s, salvandoNow: false } : s),
         }));
-        iniciarDescanso();
       } catch {
         setExercicios(snapshot);
-        mostrarToast('Sem conexão. Série não salva.', 'erro');
+        pararDescanso();
+        mostrarToast('Sem conexao. Serie nao salva.', 'erro');
       } finally {
         pendentesRef.current = Math.max(0, pendentesRef.current - 1);
         if (pendentesRef.current === 0) setSalvando(false);
       }
     }
-  }, [exercicios, mostrarToast, iniciarDescanso]);
-
-  const histEx = useCallback((nome, nomeOriginal) => {
-    if (!historicoAnterior?.length) return [];
-    const chave = (nomeOriginal || nome)?.trim().toLowerCase();
-    if (!chave) return [];
-    return historicoAnterior.filter(s => {
-      const nomeNorm = (s.nome_exercicio || '').replace(/^\[P\]/, '').trim().toLowerCase();
-      return nomeNorm === chave;
-    });
-  }, [historicoAnterior]);
+  }, [exercicios, mostrarToast, iniciarDescanso, pararDescanso]);
 
   const { totalEnv, totalSer } = useMemo(() => ({
     totalEnv: exercicios.reduce((a, ex) => a + ex.series.filter(s => s.enviada).length, 0),
     totalSer: exercicios.reduce((a, ex) => a + ex.series.length, 0),
   }), [exercicios]);
+
+  // limpa sessao do localStorage ao finalizar — proxima vez o treino comeca do zero
+  const finalizarTreino = useCallback(() => {
+    if (salvando) return;
+    if (totalEnv === 0) { mostrarToast('Registre ao menos uma serie antes de finalizar.', 'erro'); return; }
+    try {
+      const chave = SESSAO_KEY(split.id, usuario.id);
+      localStorage.removeItem(chave + '_ex');
+      localStorage.removeItem(chave + '_id');
+    } catch {}
+    onFinalizar({ exercicios, split });
+  }, [salvando, totalEnv, exercicios, split, usuario.id, onFinalizar, mostrarToast]);
+
+  // deduplica historico para o painel "Anterior" de cada exercicio
+  const histEx = useCallback((nome, nomeOriginal) => {
+    if (!historicoAnterior?.length) return [];
+    const chave = (nomeOriginal || nome)?.trim().toLowerCase();
+    if (!chave) return [];
+    const mapa = new Map();
+    historicoAnterior.forEach(s => {
+      const nomeNorm = (s.nome_exercicio || '').replace(/^\[P\]/, '').trim().toLowerCase();
+      if (nomeNorm === chave && !mapa.has(s.numero_serie)) mapa.set(s.numero_serie, s);
+    });
+    return Array.from(mapa.values());
+  }, [historicoAnterior]);
 
   const fmt2 = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
@@ -702,7 +766,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       {showRestEnd && <RestEndBanner onDismiss={() => setShowRestEnd(false)}/>}
       {showConfig  && <ModalConfigDescanso tempoAtual={tempoConfig} onSalvar={salvarConfig} onFechar={() => setShowConfig(false)}/>}
 
-      {/* ─── Header ───────────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-30 bg-[#0a0a0a]/96 backdrop-blur-md border-b border-zinc-900 px-4 pt-12 pb-3">
         <div className="flex items-center gap-3 mb-3">
           <button
@@ -738,7 +801,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
           )}
         </div>
 
-        {/* barra de progresso */}
         <div className="flex items-center gap-3">
           <div className="flex-1 h-2 bg-zinc-900 rounded-full overflow-hidden">
             <div
@@ -752,7 +814,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
         </div>
       </div>
 
-      {/* ─── Exercícios ───────────────────────────────────────────────────── */}
       <div className="px-4 pt-4 flex flex-col gap-4">
         {exercicios.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
@@ -762,8 +823,8 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
               </svg>
             </div>
             <div className="text-center">
-              <p className="text-white font-bold">Nenhum exercício ainda</p>
-              <p className="text-zinc-500 text-sm mt-1">Toque em "Adicionar exercício" abaixo</p>
+              <p className="text-white font-bold">Nenhum exercicio ainda</p>
+              <p className="text-zinc-500 text-sm mt-1">Toque em "Adicionar exercicio" abaixo</p>
             </div>
           </div>
         )}
@@ -788,21 +849,18 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
           />
         ))}
 
-        {/* botão adicionar exercício */}
         <button
           onClick={() => setShowExModal(true)}
           className="btn w-full border-2 border-dashed border-zinc-800 active:border-zinc-600 active:bg-zinc-900 text-zinc-500 font-semibold py-6 rounded-3xl flex items-center justify-center gap-2"
         >
-          <IconPlus/><span>Adicionar exercício</span>
+          <IconPlus/><span>Adicionar exercicio</span>
         </button>
       </div>
 
-      {/* modal exercício */}
       {showExModal && (
         <ModalExercicio onSelecionar={onSelecionarExercicio} onFechar={() => setShowExModal(false)}/>
       )}
 
-      {/* ─── Barra inferior fixa ──────────────────────────────────────────── */}
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 pb-8 pt-3 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/98 to-transparent">
         <div className="mb-3">
           <BarraDescanso
@@ -812,10 +870,10 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
             timerAtivo={timerAtivo}
             timerRestante={timerRestante}
             onPararTimer={pararDescanso}
+            fmtTempo={fmtTempo}
           />
         </div>
         <div className="flex gap-3">
-          {/* nota */}
           <button
             onClick={() => setShowNota(true)}
             className={`btn w-14 h-14 rounded-2xl border flex items-center justify-center flex-shrink-0 ${
@@ -828,13 +886,8 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
             <IconNote/>
           </button>
 
-          {/* finalizar */}
           <button
-            onClick={() => {
-              if (salvando) return;
-              if (totalEnv === 0) { mostrarToast('Registre ao menos uma série antes de finalizar.', 'erro'); return; }
-              onFinalizar({ exercicios, split });
-            }}
+            onClick={finalizarTreino}
             disabled={salvando}
             className="btn flex-1 py-5 bg-zinc-900 border border-zinc-700 active:bg-zinc-800 text-white font-bold text-base rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2"
             style={{ WebkitTapHighlightColor: 'transparent' }}
@@ -851,7 +904,6 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
         </div>
       </div>
 
-      {/* ─── Modal nota ───────────────────────────────────────────────────── */}
       {showNota && (
         <div
           className="fixed inset-0 z-[100] flex items-end"
@@ -864,7 +916,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
           >
             <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-5"/>
             <h3 className="text-white font-black text-lg mb-1">Nota do treino</h3>
-            <p className="text-zinc-500 text-sm mb-4">Como foi? Dores, observações, PRs quase batidos...</p>
+            <p className="text-zinc-500 text-sm mb-4">Como foi? Dores, observacoes, PRs quase batidos...</p>
             <textarea
               value={notaTexto}
               onChange={e => setNotaTexto(e.target.value)}
