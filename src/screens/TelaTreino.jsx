@@ -172,7 +172,7 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
         {/* remover série — só quando não enviada */}
         {!serie.enviada && (
           <button
-            onPointerDown={(e) => { e.stopPropagation(); onRemSerie(); }}
+            onClick={(e) => { e.stopPropagation(); onRemSerie(); }}
             className="ml-auto w-10 h-10 rounded-xl flex items-center justify-center text-zinc-700 active:text-red-400 active:bg-zinc-800"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
@@ -202,7 +202,7 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
       {/* botão confirmar — full width, polegar-friendly */}
       <div className="px-3 pb-3">
         <button
-          onPointerDown={() => !serie.salvandoNow && onToggle()}
+          onClick={() => !serie.salvandoNow && onToggle()}
           disabled={serie.salvandoNow}
           className={`btn w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
             serie.salvandoNow
@@ -290,7 +290,7 @@ const CardExercicio = memo(({
         <div className="flex items-center gap-2">
           {/* toggle kg/placas */}
           <button
-            onPointerDown={onAltModoPlacas}
+            onClick={onAltModoPlacas}
             disabled={ex.series.some(s => s.enviada)}
             className="btn flex items-center rounded-xl overflow-hidden border border-zinc-700 disabled:opacity-40"
             style={{ padding: 0, WebkitTapHighlightColor: 'transparent' }}
@@ -307,7 +307,7 @@ const CardExercicio = memo(({
           {/* histórico */}
           {hist.length > 0 && (
             <button
-              onPointerDown={() => setShowHist(h => !h)}
+              onClick={() => setShowHist(h => !h)}
               className={`btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border ${
                 showHist
                   ? 'bg-amber-400/15 text-amber-400 border-amber-400/25'
@@ -325,7 +325,7 @@ const CardExercicio = memo(({
           {/* menu contextual (3 pontos) */}
           <div className="relative" ref={menuRef}>
             <button
-              onPointerDown={() => setShowMenu(m => !m)}
+              onClick={() => setShowMenu(m => !m)}
               className="btn w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 active:bg-zinc-700"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
@@ -336,7 +336,7 @@ const CardExercicio = memo(({
               <div className="absolute right-0 top-12 z-40 bg-zinc-800 border border-zinc-700 rounded-2xl overflow-hidden shadow-2xl min-w-[168px]">
                 {idx > 0 && (
                   <button
-                    onPointerDown={() => { onMover(-1); setShowMenu(false); }}
+                    onClick={() => { onMover(-1); setShowMenu(false); }}
                     className="w-full flex items-center gap-3 px-4 py-3.5 text-white text-sm font-semibold active:bg-zinc-700"
                   >
                     <IconChevronUp/> Mover acima
@@ -344,14 +344,14 @@ const CardExercicio = memo(({
                 )}
                 {idx < total - 1 && (
                   <button
-                    onPointerDown={() => { onMover(1); setShowMenu(false); }}
+                    onClick={() => { onMover(1); setShowMenu(false); }}
                     className={`w-full flex items-center gap-3 px-4 py-3.5 text-white text-sm font-semibold active:bg-zinc-700 ${idx > 0 ? 'border-t border-zinc-700' : ''}`}
                   >
                     <IconChevronDown/> Mover abaixo
                   </button>
                 )}
                 <button
-                  onPointerDown={() => { onRemover(); setShowMenu(false); }}
+                  onClick={() => { onRemover(); setShowMenu(false); }}
                   className="w-full flex items-center gap-3 px-4 py-3.5 text-red-400 text-sm font-semibold active:bg-zinc-700 border-t border-zinc-700"
                 >
                   <IconTrash/> Remover
@@ -399,7 +399,7 @@ const CardExercicio = memo(({
 
         {/* + série */}
         <button
-          onPointerDown={onAddSerie}
+          onClick={onAddSerie}
           className="btn w-full py-4 rounded-2xl border border-dashed border-zinc-800 active:border-zinc-600 text-zinc-600 active:text-zinc-400 text-sm font-semibold flex items-center justify-center gap-2"
           style={{ WebkitTapHighlightColor: 'transparent' }}
         >
@@ -725,7 +725,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
           {timerAtivo && (
             <button
-              onPointerDown={pararDescanso}
+              onClick={pararDescanso}
               className="flex items-center gap-1.5 bg-zinc-900 border border-[#c8f542]/30 rounded-xl px-3 py-2 active:bg-zinc-800"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
@@ -787,9 +787,8 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
         {/* botão adicionar exercício */}
         <button
-          onPointerDown={() => setShowExModal(true)}
+          onClick={() => setShowExModal(true)}
           className="btn w-full border-2 border-dashed border-zinc-800 active:border-zinc-600 active:bg-zinc-900 text-zinc-500 font-semibold py-6 rounded-3xl flex items-center justify-center gap-2"
-          style={{ WebkitTapHighlightColor: 'transparent' }}
         >
           <IconPlus/><span>Adicionar exercício</span>
         </button>
@@ -815,7 +814,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
         <div className="flex gap-3">
           {/* nota */}
           <button
-            onPointerDown={() => setShowNota(true)}
+            onClick={() => setShowNota(true)}
             className={`btn w-14 h-14 rounded-2xl border flex items-center justify-center flex-shrink-0 ${
               notaSalva
                 ? 'bg-[#c8f542]/10 border-[#c8f542]/30 text-[#c8f542]'
@@ -828,7 +827,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
           {/* finalizar */}
           <button
-            onPointerDown={() => {
+            onClick={() => {
               if (salvando) return;
               if (totalEnv === 0) { mostrarToast('Registre ao menos uma série antes de finalizar.', 'erro'); return; }
               onFinalizar({ exercicios, split });
