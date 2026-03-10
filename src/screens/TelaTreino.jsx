@@ -906,15 +906,14 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
       {showNota && (
         <div
-          className="fixed inset-0 z-[100] flex items-end"
+          className="fixed inset-0 z-[100] flex items-center justify-center px-5"
           style={{ background: 'rgba(0,0,0,0.75)' }}
           onClick={() => setShowNota(false)}
         >
           <div
-            className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl px-5 pt-5 pb-10 slide-up"
+            className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl px-5 pt-6 pb-6"
             onClick={e => e.stopPropagation()}
           >
-            <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-5"/>
             <h3 className="text-white font-black text-lg mb-1">Nota do treino</h3>
             <p className="text-zinc-500 text-sm mb-4">Como foi? Dores, observacoes, PRs quase batidos...</p>
             <textarea

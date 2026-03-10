@@ -88,10 +88,11 @@ export const ModalConfigDescanso = memo(({ tempoAtual, onSalvar, onFechar }) => 
   );
 });
 
-// ─── BARRA DE DESCANSO — memo, recebe apenas o necessário ─────────────────────
+// ─── BARRA DE DESCANSO ────────────────────────────────────────────────────────
 export const BarraDescanso = memo(({ tempoConfig, onAbrirConfig, onIniciar, timerAtivo, timerRestante, onPararTimer }) => {
   const fmt  = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-  const fmtC = s => s >= 60 ? `${Math.floor(s/60)}min` : `${s}s`;
+  // corrigido: incluir segundos residuais — "2min 30s" em vez de "2min"
+  const fmtC = s => s >= 60 ? `${Math.floor(s/60)}min${s%60 ? ` ${s%60}s` : ''}` : `${s}s`;
   const R = 10, C = 2 * Math.PI * R;
   const pct = timerAtivo ? (tempoConfig - timerRestante) / tempoConfig : 0;
 
@@ -136,17 +137,14 @@ export const Spinner = memo(() => (
   </div>
 ));
 
-// ─── INPUT NUMÉRICO — um toque abre teclado numérico no iOS ─────────────────
-// Estratégia: input sempre renderizado e visível, nunca escondido.
-// O iOS abre o teclado no primeiro toque quando o input já está no DOM e focável.
-// Evitar display:none / pointer-events:none — ambos impedem o focus no primeiro tap.
+// ─── INPUT NUMERICO ───────────────────────────────────────────────────────────
+// input sempre no DOM e visivel — iOS abre teclado no primeiro toque corretamente
+// evitar display:none ou pointer-events:none pois ambos impedem o focus no primeiro tap
 export const NumInput = memo(({ label, value, onChange, disabled }) => {
   const [txt, setTxt] = useState(String(Math.round(value)));
   const ref           = useRef(null);
   const val           = Math.round(value);
 
-  // Sincroniza o texto quando o valor externo muda (ex: botão +/−)
-  // mas NÃO enquanto o usuário está digitando (o input está focado)
   useEffect(() => {
     if (document.activeElement !== ref.current) {
       setTxt(String(Math.round(value)));
@@ -159,7 +157,7 @@ export const NumInput = memo(({ label, value, onChange, disabled }) => {
       onChange(Math.round(n));
       setTxt(String(Math.round(n)));
     } else {
-      setTxt(String(val)); // reverte se inválido
+      setTxt(String(val));
     }
   }, [txt, onChange, val]);
 
@@ -181,7 +179,6 @@ export const NumInput = memo(({ label, value, onChange, disabled }) => {
     }
   }, [disabled, val, onChange]);
 
-  // Seleciona tudo ao focar — facilita digitar novo valor sem apagar manualmente
   const onFocus = useCallback((e) => {
     e.target.select();
   }, []);
@@ -222,7 +219,6 @@ export const NumInput = memo(({ label, value, onChange, disabled }) => {
     </div>
   );
 });
-
 
 export const IOSInstallBanner = memo(() => {
   const [visible, setVisible] = useState(false);
