@@ -317,8 +317,10 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
                       <span className="text-zinc-600 text-xs w-14 text-right">{vol} kg</span>
                       <button
                         onClick={() => setSerieParaDeletar(s)}
-                        className="btn w-8 h-8 rounded-lg flex items-center justify-center text-zinc-700 active:text-red-400 active:bg-zinc-800 flex-shrink-0">
-                        <IconTrash/>
+                        className="btn w-11 h-11 rounded-xl flex items-center justify-center text-zinc-600 active:text-red-400 active:bg-red-500/10 flex-shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"/>
+                        </svg>
                       </button>
                     </div>
                   );
@@ -400,11 +402,14 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
 
       {/* filtro por split */}
       {splitNames.length > 2 && (
-        <div className="px-5 pt-4 pb-1 flex gap-2 overflow-x-auto no-scrollbar">
+        <div
+          className="px-5 pt-4 pb-2 flex gap-2 overflow-x-auto"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
           {splitNames.map(s => (
             <button key={s} onClick={() => setFiltro(s)}
-              className={`btn flex-shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                filtroSplit === s ? 'bg-[#c8f542] text-black' : 'bg-zinc-900 border border-zinc-800 text-zinc-400'
+              className={`btn flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-semibold transition-all ${
+                filtroSplit === s ? 'bg-[#c8f542] text-black' : 'bg-zinc-900 border border-zinc-800 text-zinc-400 active:bg-zinc-800'
               }`}>
               {s === 'todos' ? 'Todos' : s}
             </button>
