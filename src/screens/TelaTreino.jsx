@@ -151,8 +151,11 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
         </div>
 
         {PR && (
-          <span className="text-[#c8f542] text-xs font-black bg-[#c8f542]/10 px-2 py-0.5 rounded-lg">
-            🏆 RECORDE
+          <span className="text-[#c8f542] text-xs font-black bg-[#c8f542]/10 px-2 py-0.5 rounded-lg flex items-center gap-1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 21h8m-4-4v4M5 3h14l-2 8H7L5 3zm0 0a2 2 0 00-2 2v1h18V5a2 2 0 00-2-2"/>
+            </svg>
+            RECORDE
           </span>
         )}
 

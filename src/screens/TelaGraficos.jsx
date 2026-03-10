@@ -250,7 +250,13 @@ function TelaGraficos({ usuario, splitInicial, onVoltar, mostrarToast }) {
         <div className="flex-1 flex items-center justify-center"><Spinner/></div>
       ) : series.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-8">
-          <div className="text-5xl mb-1">📊</div>
+          <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#52525b" strokeWidth={2} className="w-8 h-8">
+                <rect x="3" y="3" width="4" height="18" rx="1"/>
+                <rect x="10" y="8" width="4" height="13" rx="1"/>
+                <rect x="17" y="5" width="4" height="16" rx="1"/>
+              </svg>
+            </div>
           <p className="text-white font-black text-lg">Sem dados ainda</p>
           <p className="text-zinc-500 text-sm">Finalize alguns treinos para ver seus gráficos de evolução.</p>
         </div>

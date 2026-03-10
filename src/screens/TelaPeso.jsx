@@ -150,7 +150,7 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
         method: 'POST',
         body: { id_registro: `peso_${usuario.id}_${hoje}_${Date.now()}`, id_usuario: usuario.id, data: hoje, peso_kg: kg },
       });
-      mostrarToast('Peso registrado! 💪', 'sucesso');
+      mostrarToast('Peso registrado!', 'sucesso');
       setSheetReg(false);
       await carregar();
     } catch { mostrarToast('Erro ao salvar.', 'erro'); }
@@ -174,7 +174,7 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
     if (!v || v < 20 || v > 300) { mostrarToast('Meta inválida (20–300 kg).', 'erro'); return; }
     try { localStorage.setItem(META_KEY, String(v)); } catch {}
     setMetaPeso(String(v)); setSheetMeta(false);
-    mostrarToast('Meta definida! 🎯', 'sucesso');
+    mostrarToast('Meta definida!', 'sucesso');
   };
 
   const removerMeta = () => {
@@ -266,9 +266,14 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
                   {metaNum && progresso !== null && (
                     <div className="pt-4 border-t border-zinc-800">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-zinc-500 text-xs">
-                          {atingiu ? '🎯 Meta atingida!' : `Faltam ${Math.abs(faltam)} kg para a meta`}
-                        </span>
+                        <span className="text-zinc-500 text-xs flex items-center gap-1">
+                            {atingiu && (
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2} className="w-3 h-3 flex-shrink-0">
+                                <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+                              </svg>
+                            )}
+                            {atingiu ? 'Meta atingida!' : `Faltam ${Math.abs(faltam)} kg para a meta`}
+                          </span>
                         <span className="text-zinc-500 text-xs">{progresso}%</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -283,7 +288,11 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
                 </>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-4xl mb-2">⚖️</p>
+                  <div className="w-14 h-14 rounded-2xl bg-zinc-800 flex items-center justify-center mx-auto mb-2">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#52525b" strokeWidth={1.8} className="w-7 h-7">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+                    </svg>
+                  </div>
                   <p className="text-white font-bold">Nenhum registro ainda</p>
                   <p className="text-zinc-500 text-sm mt-1">Use o botão abaixo para começar</p>
                 </div>

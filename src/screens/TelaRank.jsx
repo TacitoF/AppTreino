@@ -42,16 +42,36 @@ function CardRanking({ p, i, meuId }) {
     'bg-zinc-900 border-zinc-800',
     'bg-zinc-900 border-zinc-800',
   ];
-  const medalhas = ['🥇', '🥈', '🥉'];
   const maxPontos = 30; // referência visual
+
+  // SVGs de medalha por posição
+  const IconMedal1 = () => (
+    <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
+      <circle cx="12" cy="12" r="8" fill="#fbbf24" opacity="0.9"/>
+      <path d="M12 7v10M9.5 9l2.5-2 2.5 2" stroke="#78350f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+  const IconMedal2 = () => (
+    <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
+      <circle cx="12" cy="12" r="8" fill="#94a3b8" opacity="0.9"/>
+      <path d="M9.5 9.5C9.5 8.1 10.6 7 12 7s2.5 1.1 2.5 2.5c0 1-0.6 1.8-1.5 2.2L11 14h4" stroke="#1e293b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+  const IconMedal3 = () => (
+    <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
+      <circle cx="12" cy="12" r="8" fill="#c2692a" opacity="0.85"/>
+      <path d="M10 7.5h3.5c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5H10h2.5c1.1 0 2 .9 2 2s-.9 2-2 2H10" stroke="#431407" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+  const medals = [<IconMedal1/>, <IconMedal2/>, <IconMedal3/>];
 
   return (
     <div className={`rounded-2xl border px-4 py-4 flex items-center gap-3.5 ${estilos[i] ?? 'bg-zinc-900 border-zinc-800'} ${eu ? 'ring-1 ring-[#c8f542]/30' : ''}`}>
       {/* Medalha / posição */}
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 font-black ${
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-black ${
         i === 0 ? 'bg-amber-400/15' : i === 1 ? 'bg-zinc-700/60' : i === 2 ? 'bg-orange-900/30' : 'bg-zinc-800'
       }`}>
-        {i < 3 ? medalhas[i] : <span className="text-zinc-500 text-sm">{i + 1}</span>}
+        {i < 3 ? medals[i] : <span className="text-zinc-500 text-sm">{i + 1}</span>}
       </div>
 
       {/* Nome + barra de progresso */}
@@ -136,7 +156,9 @@ function TelaLobby({ lobby, usuario, onVoltar, mostrarToast }) {
       <div className="flex-1 px-4 pt-4 pb-10">
         {encerrado && (
           <div className="bg-amber-400/8 border border-amber-400/20 rounded-2xl px-4 py-3 flex items-center gap-3 mb-4">
-            <span className="text-xl">🏆</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth={2} className="w-5 h-5 flex-shrink-0">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 21h8m-4-4v4M5 3h14l-2 8H7L5 3zm0 0a2 2 0 00-2 2v1h18V5a2 2 0 00-2-2"/>
+            </svg>
             <p className="text-amber-300 font-bold text-sm">Resultado final</p>
           </div>
         )}
@@ -145,7 +167,11 @@ function TelaLobby({ lobby, usuario, onVoltar, mostrarToast }) {
           <div className="flex items-center justify-center py-16"><Spinner/></div>
         ) : ranking.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-            <div className="text-5xl">😴</div>
+            <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#52525b" strokeWidth={1.8} className="w-8 h-8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
             <p className="text-white font-bold">Ninguém treinou ainda</p>
             <p className="text-zinc-500 text-sm">Convide seus amigos e treinem juntos!</p>
           </div>
@@ -219,7 +245,7 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
         method: 'POST',
         body: { id_usuario: usuario.id, nome_usuario: usuario.nome, nome: nomeLobby.trim(), data_fim: dataFim },
       });
-      mostrarToast('Lobby criado! 🏆', 'sucesso');
+      mostrarToast('Lobby criado!', 'sucesso');
       setNomeLobby(''); setDataFim('');
       await carregarMeus();
       setLobby(r.lobby);
@@ -287,7 +313,11 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
             <div className="flex items-center justify-center py-16"><Spinner/></div>
           ) : meusLobbies.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-              <div className="w-20 h-20 rounded-3xl bg-[#c8f542]/10 border border-[#c8f542]/20 flex items-center justify-center text-4xl">🏆</div>
+              <div className="w-20 h-20 rounded-3xl bg-[#c8f542]/10 border border-[#c8f542]/20 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={1.8} className="w-9 h-9">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 21h8m-4-4v4M5 3h14l-2 8H7L5 3zm0 0a2 2 0 00-2 2v1h18V5a2 2 0 00-2-2"/>
+                </svg>
+              </div>
               <div>
                 <p className="text-white font-black text-lg">Sem lobbies ainda</p>
                 <p className="text-zinc-500 text-sm mt-1 max-w-xs">Crie um lobby e desafie seus amigos a treinar mais</p>
@@ -304,8 +334,17 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
                 return (
                   <button key={lb.codigo} onClick={() => setLobby(lb)}
                     className="btn w-full bg-zinc-900 border border-zinc-800 active:bg-zinc-800 rounded-2xl p-4 text-left flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 text-2xl ${enc ? 'bg-zinc-800' : 'bg-[#c8f542]/10'}`}>
-                      {enc ? '🔒' : '🏆'}
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${enc ? 'bg-zinc-800' : 'bg-[#c8f542]/10'}`}>
+                      {enc ? (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth={2} className="w-5 h-5">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4"/>
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={1.8} className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 21h8m-4-4v4M5 3h14l-2 8H7L5 3zm0 0a2 2 0 00-2 2v1h18V5a2 2 0 00-2-2"/>
+                        </svg>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-white font-bold text-base truncate">{lb.nome}</div>
@@ -334,7 +373,11 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
 
             {/* Preview vivo */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#c8f542]/10 flex items-center justify-center text-2xl flex-shrink-0">🏆</div>
+              <div className="w-12 h-12 rounded-2xl bg-[#c8f542]/10 flex items-center justify-center flex-shrink-0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={1.8} className="w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 21h8m-4-4v4M5 3h14l-2 8H7L5 3zm0 0a2 2 0 00-2 2v1h18V5a2 2 0 00-2-2"/>
+                </svg>
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="text-white font-bold truncate">
                   {nomeLobby.trim() || <span className="text-zinc-600 font-normal">Nome do lobby</span>}
@@ -365,19 +408,31 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
 
             <button onClick={criarLobby} disabled={loading || !nomeLobby.trim() || !dataFim}
               className="btn w-full py-5 bg-[#c8f542] active:bg-[#b0d93b] text-black font-black text-base rounded-2xl disabled:opacity-40">
-              {loading ? 'Criando...' : 'Criar lobby 🚀'}
+              {loading ? 'Criando...' : 'Criar lobby'}
             </button>
 
             {/* Regras */}
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl px-4 py-4 flex flex-col gap-3">
               <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Como funciona</p>
               {[
-                { ic: '✅', txt: <>Treinou hoje → <span className="text-[#c8f542] font-bold">+1 ponto</span></> },
-                { ic: '❌', txt: <>Não treinou → <span className="text-zinc-500 font-semibold">0 pontos</span></> },
-                { ic: '🔗', txt: 'Compartilhe o código com os amigos' },
-              ].map(({ ic, txt }, i) => (
+                {
+                  ic: <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2.5} className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>,
+                  bg: 'bg-[#c8f542]/10',
+                  txt: <>Treinou hoje → <span className="text-[#c8f542] font-bold">+1 ponto</span></>
+                },
+                {
+                  ic: <svg viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth={2.5} className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>,
+                  bg: 'bg-zinc-800',
+                  txt: <>Não treinou → <span className="text-zinc-500 font-semibold">0 pontos</span></>
+                },
+                {
+                  ic: <svg viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth={2} className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>,
+                  bg: 'bg-zinc-800',
+                  txt: 'Compartilhe o código com os amigos'
+                },
+              ].map(({ ic, bg, txt }, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center flex-shrink-0 text-base">{ic}</div>
+                  <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>{ic}</div>
                   <span className="text-zinc-300 text-sm">{txt}</span>
                 </div>
               ))}
@@ -389,7 +444,11 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
         {aba === 'entrar' && (
           <div className="flex flex-col gap-5 pt-4">
             <div className="text-center">
-              <div className="text-5xl mb-3">🔑</div>
+            <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-3">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={1.8} className="w-8 h-8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+              </svg>
+            </div>
               <p className="text-white font-black text-xl">Entrar no lobby</p>
               <p className="text-zinc-500 text-sm mt-1">Digite o código de 6 letras que seu amigo compartilhou</p>
             </div>
