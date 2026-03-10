@@ -545,7 +545,7 @@ def registrar_peso(r: RegistroPeso):
         ws = get_ws("Peso_Corporal")
         com_retry(lambda: ws.append_row([
             r.id_registro, r.id_usuario, r.data, r.peso_kg
-        ], value_input_option="RAW"))
+        ], value_input_option="USER_ENTERED"))
         cache_del("Peso_Corporal")
         return {"ok": True}
     except Exception as e:
@@ -558,7 +558,7 @@ def buscar_pesos(id_usuario: str = Query(...)):
         meus = [r for r in registros if str(r.get("id_usuario","")) == id_usuario]
         meus.sort(key=lambda x: str(x.get("data","")))
         return {"pesos": [
-            {"id_registro": r.get("id_registro", ""), "data": r["data"], "peso_kg": float(r["peso_kg"])}
+            {"id_registro": r.get("id_registro", ""), "data": r["data"], "peso_kg": float(str(r["peso_kg"]).replace(",", "."))}
             for r in meus
         ]}
     except Exception as e:
