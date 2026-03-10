@@ -16,11 +16,7 @@ const IconNote = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
   </svg>
 );
-const IconStopwatch = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
-    <circle cx="12" cy="13" r="8"/><path strokeLinecap="round" d="M12 9v4l2 2M9.5 2.5h5M12 2.5V5"/>
-  </svg>
-);
+
 const IconChevronDown = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
@@ -119,7 +115,7 @@ const NumInputMobile = memo(({ label, value, onChange, disabled, step = 1 }) => 
 });
 
 // ─── Card de Serie ────────────────────────────────────────────────────────────
-const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRemSerie, timerInfo }) => {
+const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRemSerie }) => {
   const hS = hist?.find(h => h.numero_serie === serie.id);
   const PR = serie.enviada && hS && (
     serie.carga > hS.carga_kg ||
@@ -146,11 +142,7 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
           <span className="text-[#c8f542] text-xs font-black bg-[#c8f542]/10 px-2 py-0.5 rounded-lg">RECORDE</span>
         )}
 
-        {timerInfo && (
-          <span className="text-zinc-600 text-xs flex items-center gap-1">
-            <IconStopwatch/>{timerInfo.duracao}s
-          </span>
-        )}
+
 
         {hS && !showHist && (
           <span className="text-zinc-700 text-xs ml-auto mr-1">
@@ -364,7 +356,6 @@ const CardExercicio = memo(({
             serie={serie}
             hist={hist}
             showHist={showHist}
-            timerInfo={serieTimers[`${ex.id}_${serie.id}`]}
             onToggle={() => onAlternarSerie(ex, serie)}
             onUpdSerie={(campo, val) => onUpdSerie(serie.id, campo, val)}
             onRemSerie={() => onRemSerie(serie.id)}
@@ -418,6 +409,61 @@ function RestEndBanner({ onDismiss }) {
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
+// ─── MODAL NOTA — sobe com o teclado iOS via visualViewport ──────────────────
+function ModalNota({ notaTexto, setNotaTexto, onFechar, onSalvar }) {
+  const [bottom, setBottom] = React.useState(0);
+
+  React.useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const kb = window.innerHeight - vv.height - vv.offsetTop;
+      setBottom(Math.max(0, kb));
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    update();
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-end justify-center px-5"
+      style={{ background: 'rgba(0,0,0,0.75)' }}
+      onClick={onFechar}
+    >
+      <div
+        className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl px-5 pt-6 pb-6 transition-all duration-150"
+        style={{ marginBottom: bottom }}
+        onClick={e => e.stopPropagation()}
+      >
+        <h3 className="text-white font-black text-lg mb-1">Nota do treino</h3>
+        <p className="text-zinc-500 text-sm mb-4">Como foi? Dores, observacoes, PRs quase batidos...</p>
+        <textarea
+          value={notaTexto}
+          onChange={e => setNotaTexto(e.target.value)}
+          placeholder="Ex: joelho doeu no agachamento, quase bati PR no supino..."
+          rows={4}
+          className="w-full bg-zinc-800 text-white px-4 py-3 rounded-2xl border border-zinc-700 outline-none focus:border-[#c8f542] transition-colors text-sm placeholder-zinc-600 resize-none mb-4"
+          autoFocus
+        />
+        <div className="flex gap-3">
+          <button onClick={onFechar} className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-semibold rounded-2xl">
+            Fechar
+          </button>
+          <button onClick={onSalvar} className="btn flex-1 py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold rounded-2xl">
+            Salvar nota
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, mostrarToast }) {
   const [isOnline, setIsOnline]   = useState(navigator.onLine);
   const [pendentes, setPendentes] = useState(() => getOfflineQueue().length);
@@ -905,56 +951,30 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       </div>
 
       {showNota && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center px-5"
-          style={{ background: 'rgba(0,0,0,0.75)' }}
-          onClick={() => setShowNota(false)}
-        >
-          <div
-            className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl px-5 pt-6 pb-6"
-            onClick={e => e.stopPropagation()}
-          >
-            <h3 className="text-white font-black text-lg mb-1">Nota do treino</h3>
-            <p className="text-zinc-500 text-sm mb-4">Como foi? Dores, observacoes, PRs quase batidos...</p>
-            <textarea
-              value={notaTexto}
-              onChange={e => setNotaTexto(e.target.value)}
-              placeholder="Ex: joelho doeu no agachamento, quase bati PR no supino..."
-              rows={4}
-              className="w-full bg-zinc-800 text-white px-4 py-3 rounded-2xl border border-zinc-700 outline-none focus:border-[#c8f542] transition-colors text-sm placeholder-zinc-600 resize-none mb-4"
-              autoFocus
-            />
-            <div className="flex gap-3">
-              <button onClick={() => setShowNota(false)} className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-semibold rounded-2xl">
-                Fechar
-              </button>
-              <button
-                onClick={async () => {
-                  if (!notaTexto.trim()) { setShowNota(false); return; }
-                  try {
-                    await apiFetch(R.notaTreino, {
-                      method: 'POST',
-                      body: {
-                        id_nota:    `nota_${usuario.id}_${Date.now()}`,
-                        id_usuario: usuario.id,
-                        id_treino:  idTreinoSessao.current,
-                        data:       new Date().toISOString().slice(0, 10),
-                        split:      split.nome,
-                        nota:       notaTexto.trim(),
-                      },
-                    });
-                    setNotaSalva(true);
-                    mostrarToast('Nota salva.', 'sucesso');
-                  } catch { mostrarToast('Erro ao salvar nota.', 'erro'); }
-                  setShowNota(false);
-                }}
-                className="btn flex-1 py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold rounded-2xl"
-              >
-                Salvar nota
-              </button>
-            </div>
-          </div>
-        </div>
+        <ModalNota
+          notaTexto={notaTexto}
+          setNotaTexto={setNotaTexto}
+          onFechar={() => setShowNota(false)}
+          onSalvar={async () => {
+            if (!notaTexto.trim()) { setShowNota(false); return; }
+            try {
+              await apiFetch(R.notaTreino, {
+                method: 'POST',
+                body: {
+                  id_nota:    `nota_${usuario.id}_${Date.now()}`,
+                  id_usuario: usuario.id,
+                  id_treino:  idTreinoSessao.current,
+                  data:       new Date().toISOString().slice(0, 10),
+                  split:      split.nome,
+                  nota:       notaTexto.trim(),
+                },
+              });
+              setNotaSalva(true);
+              mostrarToast('Nota salva.', 'sucesso');
+            } catch { mostrarToast('Erro ao salvar nota.', 'erro'); }
+            setShowNota(false);
+          }}
+        />
       )}
     </div>
   );
