@@ -116,11 +116,9 @@ html.tema-claro body         { background: var(--bg-base); }
 html.tema-claro .min-h-screen { background: var(--bg-base) !important; }
 
 /* ── Headers sticky (bg-[#0a0a0a]/95 em todas as telas) ─────────────────────
-   Tailwind gera rgb(10 10 10/0.95) — o seletor [class*=] captura a string
-   independente do escape. .sticky.top-0 cobre qualquer header restante.     */
-html.tema-claro [class*="bg-[#0a0a0a]"] {
-  background-color: rgba(240,242,245,0.97) !important;
-}
+   [class*=] captura a string independente de como o Tailwind escapou o #.
+   .sticky.top-0 é o fallback para qualquer header não coberto.              */
+html.tema-claro [class*="bg-[#0a0a0a]"],
 html.tema-claro .sticky.top-0 {
   background-color: rgba(240,242,245,0.97) !important;
 }
@@ -165,31 +163,26 @@ html.tema-claro textarea:focus {
 }
 
 /* ── Acento índigo — todas as variantes do verde neon ────────────────────── */
+/* Usamos [class*=] pois o Tailwind pode escapar o # de formas diferentes
+   dependendo da versão. O seletor de substring sempre funciona.             */
+
 /* texto */
-html.tema-claro .text-\[#c8f542\]     { color: var(--ac-txt) !important; }
-html.tema-claro .text-\[#c8f542\]\/60 { color: rgba(55,48,163,0.70) !important; }
+html.tema-claro [class*="text-[#c8f542]"]      { color: var(--ac-txt) !important; }
 
-/* fundo sólido — botão primário */
-html.tema-claro .bg-\[#c8f542\]       { background: var(--ac-bg) !important; }
-html.tema-claro .bg-\[#c8f542\] *     { color: #ffffff !important; }
-html.tema-claro .bg-\[#c8f542\]:active { background: var(--ac-hover) !important; }
+/* fundo sólido — botão primário (sem barra = classe exata) */
+html.tema-claro [class~="bg-[#c8f542]"]        { background: var(--ac-bg) !important; }
+html.tema-claro [class~="bg-[#c8f542]"] *      { color: #ffffff !important; }
+html.tema-claro [class~="bg-[#c8f542]"]:active { background: var(--ac-hover) !important; }
 
-/* fundos translúcidos */
-html.tema-claro .bg-\[#c8f542\]\/5,
-html.tema-claro .bg-\[#c8f542\]\/8,
-html.tema-claro .bg-\[#c8f542\]\/10,
-html.tema-claro .bg-\[#c8f542\]\/15,
-html.tema-claro .bg-\[#c8f542\]\/20   { background: var(--ac-subtle) !important; }
+/* fundos translúcidos (contém bg-[#c8f542] seguido de /) */
+html.tema-claro [class*="bg-[#c8f542]/"]       { background: var(--ac-subtle) !important; }
 
-/* bordas */
-html.tema-claro .border-\[#c8f542\]       { border-color: var(--ac-bg)               !important; }
-html.tema-claro .border-\[#c8f542\]\/15   { border-color: rgba(79,70,229,0.18)        !important; }
-html.tema-claro .border-\[#c8f542\]\/20,
-html.tema-claro .border-\[#c8f542\]\/25   { border-color: var(--ac-border)            !important; }
-html.tema-claro .border-\[#c8f542\]\/30   { border-color: rgba(79,70,229,0.35)        !important; }
-html.tema-claro .border-\[#c8f542\]\/50   { border-color: rgba(79,70,229,0.55)        !important; }
+/* bordas sólidas */
+html.tema-claro [class~="border-[#c8f542]"]    { border-color: var(--ac-bg) !important; }
+/* bordas translúcidas */
+html.tema-claro [class*="border-[#c8f542]/"]   { border-color: var(--ac-border) !important; }
 
-/* SVGs com stroke/fill hardcoded inline */
+/* SVGs com stroke/fill hardcoded como atributos DOM */
 html.tema-claro [stroke="#c8f542"] { stroke: var(--ac-txt) !important; }
 html.tema-claro [fill="#c8f542"]   { fill:   var(--ac-txt) !important; }
 
