@@ -554,13 +554,26 @@ def registrar_peso(r: RegistroPeso):
 @app.get("/api/peso")
 def buscar_pesos(id_usuario: str = Query(...)):
     try:
-        registros = com_retry(lambda: get_ws("Peso_Corporal").get_all_records(value_render_option="UNFORMATTED_VALUE"))
+        # get_all_values retorna tudo como string — evita distorcao de locale (62,7) e serial de datas
+        rows = com_retry(lambda: get_ws("Peso_Corporal").get_all_values())
+        if not rows or len(rows) < 2:
+            return {"pesos": []}
+        # header na linha 0, dados nas seguintes
+        header = [h.lower().strip() for h in rows[0]]
+        def row_to_dict(r):
+            return {header[i]: r[i] if i < len(r) else "" for i in range(len(header))}
+        registros = [row_to_dict(r) for r in rows[1:] if any(r)]
         meus = [r for r in registros if str(r.get("id_usuario","")) == id_usuario]
         meus.sort(key=lambda x: str(x.get("data","")))
-        return {"pesos": [
-            {"id_registro": r.get("id_registro", ""), "data": r["data"], "peso_kg": float(str(r["peso_kg"]).replace(",", "."))}
-            for r in meus
-        ]}
+        result = []
+        for r in meus:
+            try:
+                # substitui virgula por ponto para suportar locale BR
+                kg = float(str(r.get("peso_kg","0")).replace(",", "."))
+                result.append({"id_registro": r.get("id_registro",""), "data": r.get("data",""), "peso_kg": kg})
+            except (ValueError, KeyError):
+                continue
+        return {"pesos": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
