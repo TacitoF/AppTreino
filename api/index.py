@@ -258,7 +258,7 @@ def buscar_historico_todos(id_usuario: str = Query(...)):
             for row in com_retry(lambda: get_ws("Treinos").get_all_values()):
                 if row and len(row) > 1 and row[0].strip() == id_usuario.strip():
                     for s in json.loads(row[1]):
-                        splits_data[s.get("id", "")] = s.get("nomeHistorico") or s.get("nome", "")
+                        splits_data[s.get("id", "")] = s.get("nome") or s.get("nomeHistorico") or ""
         except Exception:
             pass
 
@@ -358,15 +358,17 @@ def relatorio_semanal(id_usuario: str = Query(...)):
     """Relatório das últimas 4 semanas + streak atual de treinos."""
     from datetime import timedelta
     series   = get_records("Series_Exercicios")
-    treinos_ws = get_records("Treinos")
 
-    # mapa split_id → nome
+    # mapa split_id → nome (aba Treinos tem formato: [id_usuario, json_splits])
     splits_data = {}
-    for row in treinos_ws:
-        sid = str(row.get("ID_Split", "")).strip()
-        uid = str(row.get("ID_Usuario", "")).strip()
-        if uid == id_usuario and sid:
-            splits_data[sid] = str(row.get("Nome_Split", sid))
+    try:
+        for row in com_retry(lambda: get_ws("Treinos").get_all_values()):
+            if row and len(row) > 1 and str(row[0]).strip() == id_usuario.strip():
+                for s in json.loads(row[1]):
+                    # usa nome atual; nomeHistorico serve só para busca de series, nao para exibicao
+                    splits_data[s.get("id", "")] = s.get("nome") or s.get("nomeHistorico") or ""
+    except Exception:
+        pass
 
     hoje = date.today()
     # pega séries do usuário
@@ -398,12 +400,19 @@ def relatorio_semanal(id_usuario: str = Query(...)):
             tw["series"] += 1
         except: pass
 
-        split_id_raw = id_treino.split("_")[0] if "_" in id_treino else ""
-        nome_split = splits_data.get(split_id_raw, split_id_raw)
-        tw["splits"].add(nome_split)
+        # extrai split_id completo (tudo antes de "_userId_")
+        partes_split = id_treino.split(f"_{id_usuario}_")
+        split_id_raw = partes_split[0] if partes_split else ""
+        nome_split_direto = str(s.get("Nome_Split", "")).strip()
+        if not nome_split_direto:
+            nome_split_direto = splits_data.get(split_id_raw, "") or split_id_raw
+        if nome_split_direto.startswith("split_") and "_" in nome_split_direto[6:]:
+            nome_split_direto = "Treino removido"
+        tw["splits"].add(nome_split_direto)
 
         # rastreia cargas para PRs
-        nome_ex = str(s.get("Nome_Exercicio","")).lstrip("[P]").strip()
+        nome_ex_raw = str(s.get("Nome_Exercicio","")).strip()
+        nome_ex = nome_ex_raw[3:] if nome_ex_raw.startswith("[P]") else nome_ex_raw
         try: carga_f = float(s.get("Carga_kg", 0) or 0)
         except: carga_f = 0
         if nome_ex:
