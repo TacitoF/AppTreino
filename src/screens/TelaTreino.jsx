@@ -140,7 +140,7 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
   return (
     <div className={`rounded-3xl border overflow-hidden transition-all duration-300 ${
       serie.enviada
-        ? PR ? 'bg-[#c8f542]/10 border-[#c8f542]/25' : 'bg-zinc-800/40 border-zinc-700/30'
+        ? PR ? 'bg-[#c8f542]/8 border-[#c8f542]/25' : 'bg-zinc-800/40 border-zinc-700/30'
         : 'bg-zinc-800/20 border-zinc-800'
     }`}>
       <div className="flex items-center px-4 pt-3 pb-2 gap-2 min-h-[44px]">
@@ -252,123 +252,124 @@ const CardExercicio = memo(({
     <div className={`bg-zinc-900 border rounded-3xl overflow-hidden transition-colors ${
       concluido ? 'border-[#c8f542]/15' : 'border-zinc-800'
     }`}>
-      <div className="px-4 pt-4 pb-3">
-        <div className="flex items-center gap-3 mb-3">
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0 ${
-            concluido ? 'bg-[#c8f542]/15 text-[#c8f542]' : 'bg-zinc-800 text-zinc-500'
-          }`}>
-            {concluido ? <IconCheck/> : idx + 1}
-          </div>
-
-          <input
-            type="text"
-            value={ex.nome}
-            onChange={e => onUpdNome(e.target.value)}
-            onBlur={onConfirmarNome}
-            placeholder="Nome do exercicio"
-            className="flex-1 min-w-0 bg-transparent text-white font-bold text-lg outline-none placeholder-zinc-700 border-b border-transparent focus:border-zinc-700 pb-0.5"
-          />
-
-          <span className={`text-sm font-black num flex-shrink-0 ${concluido ? 'text-[#c8f542]' : 'text-zinc-500'}`}>
-            {seriesEnviadas}/{totalSeries}
-          </span>
+      {/* ── Linha 1: índice + nome + contador + menu ── */}
+      <div className="px-4 pt-4 pb-2 flex items-center gap-3">
+        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0 ${
+          concluido ? 'bg-[#c8f542]/15 text-[#c8f542]' : 'bg-zinc-800 text-zinc-500'
+        }`}>
+          {concluido ? <IconCheck/> : idx + 1}
         </div>
 
-        <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={ex.nome}
+          onChange={e => onUpdNome(e.target.value)}
+          onBlur={onConfirmarNome}
+          placeholder="Nome do exercicio"
+          className="flex-1 min-w-0 bg-transparent text-white font-bold text-lg outline-none placeholder-zinc-700 border-b border-transparent focus:border-zinc-700 pb-0.5"
+        />
+
+        <span className={`text-sm font-black num flex-shrink-0 ${concluido ? 'text-[#c8f542]' : 'text-zinc-500'}`}>
+          {seriesEnviadas}/{totalSeries}
+        </span>
+
+        {/* Menu de contexto (mover / remover) */}
+        <div className="relative flex-shrink-0" ref={menuRef}>
           <button
-            onClick={onAltModoPlacas}
-            disabled={ex.series.some(s => s.enviada)}
-            className="btn flex items-center rounded-xl overflow-hidden border border-zinc-700 disabled:opacity-40"
-            style={{ padding: 0, WebkitTapHighlightColor: 'transparent' }}
+            onClick={() => setShowMenu(m => !m)}
+            className="btn w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 active:bg-zinc-700"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            <span className={`px-3 py-2 text-xs font-bold transition-colors ${!ex.usaPlacas ? 'bg-[#c8f542] text-black' : 'bg-zinc-800 text-zinc-500'}`}>
-              kg
-            </span>
-            <span className="w-px h-full bg-zinc-700"/>
-            <span className={`px-3 py-2 text-xs font-bold transition-colors ${ex.usaPlacas ? 'bg-blue-500 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
-              Placas
-            </span>
+            <IconDots/>
           </button>
 
-          {hist.length > 0 && (
-            <button
-              onClick={() => setShowHist(h => !h)}
-              className={`btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border ${
-                showHist
-                  ? 'bg-amber-400/15 text-amber-400 border-amber-400/25'
-                  : 'bg-zinc-800 text-zinc-400 border-zinc-700'
-              }`}
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <IconHistory/>
-              {showHist ? 'Ocultar' : 'Anterior'}
-            </button>
+          {showMenu && (
+            <div className="absolute right-0 top-11 z-40 bg-zinc-800 border border-zinc-700 rounded-2xl overflow-hidden shadow-2xl min-w-[168px]">
+              {idx > 0 && (
+                <button
+                  onClick={() => { onMover(-1); setShowMenu(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 text-white text-sm font-semibold active:bg-zinc-700"
+                >
+                  <IconChevronUp/> Mover acima
+                </button>
+              )}
+              {idx < total - 1 && (
+                <button
+                  onClick={() => { onMover(1); setShowMenu(false); }}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 text-white text-sm font-semibold active:bg-zinc-700 ${idx > 0 ? 'border-t border-zinc-700' : ''}`}
+                >
+                  <IconChevronDown/> Mover abaixo
+                </button>
+              )}
+              <button
+                onClick={() => { onRemover(); setShowMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-red-400 text-sm font-semibold active:bg-zinc-700 border-t border-zinc-700"
+              >
+                <IconTrash/> Remover
+              </button>
+            </div>
           )}
+        </div>
+      </div>
 
-          {/* Botão de nota do exercício */}
+      {/* ── Linha 2: kg/Placas (fixo) + Anterior e Nota (flex-1 cada) ── */}
+      <div className="px-4 pb-3 flex items-center gap-2">
+        {/* Toggle kg / Placas — largura fixa para nao encolher */}
+        <button
+          onClick={onAltModoPlacas}
+          disabled={ex.series.some(s => s.enviada)}
+          className="btn flex items-center rounded-xl overflow-hidden border border-zinc-700 disabled:opacity-40 flex-shrink-0"
+          style={{ padding: 0, WebkitTapHighlightColor: 'transparent' }}
+        >
+          <span className={`px-3 py-2.5 text-xs font-bold transition-colors ${!ex.usaPlacas ? 'bg-[#c8f542] text-black' : 'bg-zinc-800 text-zinc-500'}`}>
+            kg
+          </span>
+          <span className="w-px self-stretch bg-zinc-700"/>
+          <span className={`px-3 py-2.5 text-xs font-bold transition-colors ${ex.usaPlacas ? 'bg-blue-500 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
+            Placas
+          </span>
+        </button>
+
+        {/* Anterior — so aparece se tiver historico, cresce para preencher */}
+        {hist.length > 0 && (
           <button
-            onClick={() => setShowNota(n => !n)}
-            className={`btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border ${
-              ex.nota
-                ? 'bg-violet-400/15 text-violet-400 border-violet-400/25'
-                : showNota
-                ? 'bg-zinc-700 text-zinc-300 border-zinc-600'
+            onClick={() => setShowHist(h => !h)}
+            className={`btn flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold border ${
+              showHist
+                ? 'bg-amber-400/15 text-amber-400 border-amber-400/25'
                 : 'bg-zinc-800 text-zinc-400 border-zinc-700'
             }`}
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            <IconNote/>
-            {ex.nota ? 'Editar' : 'Nota'}
+            <IconHistory/>
+            {showHist ? 'Ocultar' : 'Anterior'}
           </button>
+        )}
 
-          <div className="flex-1"/>
-
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setShowMenu(m => !m)}
-              className="btn w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 active:bg-zinc-700"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <IconDots/>
-            </button>
-
-            {showMenu && (
-              <div className="absolute right-0 top-12 z-40 bg-zinc-800 border border-zinc-700 rounded-2xl overflow-hidden shadow-2xl min-w-[168px]">
-                {idx > 0 && (
-                  <button
-                    onClick={() => { onMover(-1); setShowMenu(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 text-white text-sm font-semibold active:bg-zinc-700"
-                  >
-                    <IconChevronUp/> Mover acima
-                  </button>
-                )}
-                {idx < total - 1 && (
-                  <button
-                    onClick={() => { onMover(1); setShowMenu(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-white text-sm font-semibold active:bg-zinc-700 ${idx > 0 ? 'border-t border-zinc-700' : ''}`}
-                  >
-                    <IconChevronDown/> Mover abaixo
-                  </button>
-                )}
-                <button
-                  onClick={() => { onRemover(); setShowMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 text-red-400 text-sm font-semibold active:bg-zinc-700 border-t border-zinc-700"
-                >
-                  <IconTrash/> Remover
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Nota — cresce para preencher o espaco restante */}
+        <button
+          onClick={() => setShowNota(n => !n)}
+          className={`btn flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold border ${
+            ex.nota
+              ? 'bg-violet-400/15 text-violet-400 border-violet-400/25'
+              : showNota
+              ? 'bg-zinc-700 text-zinc-300 border-zinc-600'
+              : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+          }`}
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+        >
+          <IconNote/>
+          {ex.nota ? 'Editar nota' : 'Nota'}
+        </button>
       </div>
 
-      {/* Campo de nota do exercício — expansível */}
+      {/* Campo de nota do exercicio — expansivel */}
       {showNota && (
         <div className="mx-4 mb-3">
           <textarea
             value={ex.nota || ''}
             onChange={e => onUpdNota(e.target.value)}
-            placeholder="Observações: dor, técnica, sensação..."
+            placeholder="Observacoes: dor, tecnica, sensacao..."
             rows={2}
             autoFocus
             className="w-full bg-zinc-800 text-white px-4 py-3 rounded-2xl border border-zinc-700 outline-none focus:border-violet-400/60 transition-colors text-sm placeholder-zinc-600 resize-none"
@@ -820,6 +821,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
           method: 'POST',
           body: {
             id_serie: nid, id_treino: idTreino,
+            nome_split:     split.nome,
             nome_exercicio: ex.usaPlacas ? `[P]${ex.nome}` : ex.nome,
             numero_serie: serie.id, repeticoes: serie.reps, carga_kg: serie.carga,
           },

@@ -102,7 +102,7 @@ class EditarUsuarioReq(BaseModel): id_usuario: str; nome: str; email: str; senha
 class ResetReq(BaseModel): email: str; senha_nova: str
 class SplitItem(BaseModel): id: str; id_usuario: str; nome: str; nomeHistorico: Optional[str] = None; ultimo_treino: Optional[str] = None
 class SalvarSplitsReq(BaseModel): id_usuario: str; splits: List[SplitItem]
-class SerieTreino(BaseModel): id_serie: str; id_treino: str; nome_exercicio: str; numero_serie: int; repeticoes: int; carga_kg: float
+class SerieTreino(BaseModel): id_serie: str; id_treino: str; nome_exercicio: str; numero_serie: int; repeticoes: int; carga_kg: float; nome_split: Optional[str] = ""
 class AtualizarNomeSerie(BaseModel): ids: List[str]; nome_exercicio: str
 class RegistroDieta(BaseModel): id_registro: str; id_usuario: str; data: str; tipo_refeicao: str; calorias: int; proteinas_g: float; carbos_g: float; gorduras_g: float; check_agua: str; check_whey: str; check_creatina: str
 class RegistroCardio(BaseModel): id_registro: str; id_usuario: str; data: str; atividade: str; label: str; intensidade: str; minutos: int; peso_kg: float; kcal: int; met: float
@@ -221,7 +221,7 @@ def salvar_splits(req: SalvarSplitsReq):
 @app.post("/api/treino/serie")
 def registrar_serie(s: SerieTreino):
     try:
-        com_retry(lambda: get_ws("Series_Exercicios").append_row([s.id_serie, s.id_treino, s.nome_exercicio, s.numero_serie, s.repeticoes, s.carga_kg]))
+        com_retry(lambda: get_ws("Series_Exercicios").append_row([s.id_serie, s.id_treino, s.nome_exercicio, s.numero_serie, s.repeticoes, s.carga_kg, s.nome_split or ""]))
         return {"status": "sucesso"}
     except Exception as e: raise HTTPException(500, str(e))
 
@@ -266,10 +266,13 @@ def buscar_historico_todos(id_usuario: str = Query(...)):
         for r in minhas:
             id_treino = str(r.get("ID_Treino", ""))
             data_treino = extrair_data_de_id_treino(id_treino)
-            # split_id é a primeira parte do ID_Treino antes do primeiro _userId_
-            partes = id_treino.split(f"_{id_usuario}_")
-            split_id_raw = partes[0] if partes else ""
-            nome_split = splits_data.get(split_id_raw, split_id_raw)
+            # 1. usa o Nome_Split salvo diretamente na linha (campo novo)
+            nome_split_direto = str(r.get("Nome_Split", "")).strip()
+            # 2. fallback: resolve pelo split_id extraido do ID_Treino
+            if not nome_split_direto:
+                partes = id_treino.split(f"_{id_usuario}_")
+                split_id_raw = partes[0] if partes else ""
+                nome_split_direto = splits_data.get(split_id_raw, split_id_raw)
             series.append({
                 "id_serie":       str(r.get("ID_Serie", "")),
                 "id_treino":      id_treino,
@@ -278,7 +281,7 @@ def buscar_historico_todos(id_usuario: str = Query(...)):
                 "repeticoes":     int(r.get("Repeticoes", 0)),
                 "carga_kg":       float(r.get("Carga_kg", 0)),
                 "data_treino":    data_treino,
-                "nome_split":     nome_split,
+                "nome_split":     nome_split_direto,
             })
         series.sort(key=lambda s: (s["data_treino"], s["id_treino"]))
         return {"series": series}
