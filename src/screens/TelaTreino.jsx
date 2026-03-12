@@ -140,7 +140,7 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
   return (
     <div className={`rounded-3xl border overflow-hidden transition-all duration-300 ${
       serie.enviada
-        ? PR ? 'bg-[#c8f542]/8 border-[#c8f542]/25' : 'bg-zinc-800/40 border-zinc-700/30'
+        ? PR ? 'bg-[#c8f542]/10 border-[#c8f542]/25' : 'bg-zinc-800/40 border-zinc-700/30'
         : 'bg-zinc-800/20 border-zinc-800'
     }`}>
       <div className="flex items-center px-4 pt-3 pb-2 gap-2 min-h-[44px]">

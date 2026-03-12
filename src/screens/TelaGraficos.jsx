@@ -209,9 +209,11 @@ function TelaGraficos({ usuario, splitInicial, onVoltar, mostrarToast }) {
   );
 
   useEffect(() => {
-    if (exerciciosProcessados.length > 0 && !exSelecionado)
-      setEx(exerciciosProcessados[0].nome);
-  }, [exerciciosProcessados]);
+    if (exerciciosProcessados.length === 0) return;
+    // se o exercício selecionado não existe na lista atual (troca de split), reseta para o primeiro
+    const existe = exerciciosProcessados.some(e => e.nome === exSelecionado);
+    if (!exSelecionado || !existe) setEx(exerciciosProcessados[0].nome);
+  }, [exerciciosProcessados, exSelecionado]);
 
   const exAtual = exerciciosProcessados.find(e => e.nome === exSelecionado);
 

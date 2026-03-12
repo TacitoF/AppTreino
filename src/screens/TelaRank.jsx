@@ -108,7 +108,8 @@ function TelaLobby({ lobby, usuario, onVoltar, mostrarToast }) {
       .finally(() => setLoading(false));
   }, [lobby.codigo]);
 
-  const encerrado = new Date(lobby.data_fim) < new Date();
+  const hoje = new Date().toISOString().slice(0, 10);
+  const encerrado = lobby.data_fim < hoje;
 
   const copiar = (texto, label) => {
     navigator.clipboard.writeText(texto).then(() => {
@@ -330,7 +331,7 @@ function TelaRank({ usuario, mostrarToast, onVoltar }) {
           ) : (
             <div className="flex flex-col gap-3">
               {meusLobbies.map(lb => {
-                const enc = new Date(lb.data_fim) < new Date();
+                const enc = lb.data_fim < new Date().toISOString().slice(0, 10);
                 return (
                   <button key={lb.codigo} onClick={() => setLobby(lb)}
                     className="btn w-full bg-zinc-900 border border-zinc-800 active:bg-zinc-800 rounded-2xl p-4 text-left flex items-center gap-4">

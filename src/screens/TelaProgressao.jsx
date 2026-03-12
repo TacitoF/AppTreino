@@ -143,7 +143,7 @@ export default function TelaProgressao({ usuario, splits, onUsarTemplate, onVolt
                       <div className="text-zinc-400 text-lg font-bold">{s.carga_atual} kg</div>
                       <div className="text-zinc-600 text-xs mt-0.5">atual</div>
                     </div>
-                    <div className="bg-[#c8f542]/8 border border-[#c8f542]/20 rounded-xl p-3 text-center">
+                    <div className="bg-[#c8f542]/10 border border-[#c8f542]/20 rounded-xl p-3 text-center">
                       <div className="text-[#c8f542] text-lg font-black">
                         {s.sugestao === 'carga' ? `${s.nova_carga} kg` : `+1 rep`}
                       </div>

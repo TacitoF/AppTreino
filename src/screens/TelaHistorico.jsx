@@ -97,12 +97,15 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
         apiFetch(`${R.historicoTodos}?id_usuario=${usuario.id}`),
         apiFetch(`${R.notaTreino}?id_usuario=${usuario.id}`).catch(() => ({ notas: [] })),
       ]);
-      setTreinos(agruparTreinos(r.series || []));
+      const listAtualizada = agruparTreinos(r.series || []);
+      setTreinos(listAtualizada);
       const mapaNotas = {};
       (n.notas || []).forEach(nota => { mapaNotas[nota.id_treino] = nota.nota; });
       setNotas(mapaNotas);
+      return listAtualizada;
     } catch {
       mostrarToast('Erro ao carregar histórico.', 'erro');
+      return null;
     } finally {
       setLoading(false);
     }
@@ -110,13 +113,18 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
 
   const deletarSerie = async () => {
     if (!serieParaDeletar) return;
+    const chave = treinoAberto ? `${treinoAberto.data}__${treinoAberto.split}` : null;
     setDeletandoSerie(true);
     try {
       await apiFetch(`${R.serie}?id=${serieParaDeletar.id_serie}`, { method: 'DELETE' });
       mostrarToast('Série removida.', 'sucesso');
       setSerieParaDeletar(null);
-      setAberto(null);
-      await carregar();
+      const lista = await carregar();
+      // reabre o mesmo treino com os dados atualizados, ou fecha se ficou vazio
+      if (chave && lista) {
+        const atualizado = lista.find(t => `${t.data}__${t.split}` === chave);
+        setAberto(atualizado || null);
+      }
     } catch { mostrarToast('Erro ao remover série.', 'erro'); }
     finally { setDeletandoSerie(false); }
   };
