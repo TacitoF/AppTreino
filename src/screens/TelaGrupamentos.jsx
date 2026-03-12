@@ -5,215 +5,61 @@ import { R } from '../config';
 import { Spinner } from '../components/ui';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   ÍCONES — todos 20×20 via w-5 h-5, stroke uniforme 2px
+   ÍCONES
+   Todos encapsulados no mesmo wrapper fixo w-5 h-5 (20×20 px).
+   O SVG interno usa w-full h-full — tamanho visual 100% idêntico.
 ───────────────────────────────────────────────────────────────────────────── */
-const Icon = {
-  Menu: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="w-5 h-5">
-      <line x1="3" y1="6"  x2="21" y2="6"/>
-      <line x1="3" y1="12" x2="15" y2="12"/>
-      <line x1="3" y1="18" x2="21" y2="18"/>
+const Ic = ({ children }) => (
+  <span className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
+      strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+      {children}
     </svg>
-  ),
-  Close: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="w-5 h-5">
-      <line x1="18" y1="6" x2="6" y2="18"/>
-      <line x1="6"  y1="6" x2="18" y2="18"/>
-    </svg>
-  ),
-  User: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-      <circle cx="12" cy="7" r="4"/>
-    </svg>
-  ),
-  Moon: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-    </svg>
-  ),
-  Sun: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <circle cx="12" cy="12" r="5"/>
-      <line x1="12" y1="1"  x2="12" y2="3"/>
-      <line x1="12" y1="21" x2="12" y2="23"/>
-      <line x1="4.22" y1="4.22"   x2="5.64"  y2="5.64"/>
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-      <line x1="1"  y1="12" x2="3"  y2="12"/>
-      <line x1="21" y1="12" x2="23" y2="12"/>
-      <line x1="4.22" y1="19.78"  x2="5.64"  y2="18.36"/>
-      <line x1="18.36" y1="5.64"  x2="19.78" y2="4.22"/>
-    </svg>
-  ),
-  Logout: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-      <polyline points="16 17 21 12 16 7"/>
-      <line x1="21" y1="12" x2="9" y2="12"/>
-    </svg>
-  ),
-  Diet: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
-      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
-      <line x1="6" y1="1" x2="6" y2="4"/>
-      <line x1="10" y1="1" x2="10" y2="4"/>
-      <line x1="14" y1="1" x2="14" y2="4"/>
-    </svg>
-  ),
-  Cardio: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-    </svg>
-  ),
-  History: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-      <line x1="16" y1="13" x2="8" y2="13"/>
-      <line x1="16" y1="17" x2="8" y2="17"/>
-      <polyline points="10 9 9 9 8 9"/>
-    </svg>
-  ),
-  Trophy: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
-      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
-      <path d="M4 22h16"/>
-      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
-      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
-      <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
-    </svg>
-  ),
-  Report: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <line x1="18" y1="20" x2="18" y2="10"/>
-      <line x1="12" y1="20" x2="12" y2="4"/>
-      <line x1="6"  y1="20" x2="6"  y2="14"/>
-    </svg>
-  ),
-  Scale: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <circle cx="12" cy="12" r="10"/>
-      <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
-      <line x1="9" y1="9" x2="9.01" y2="9"/>
-      <line x1="15" y1="9" x2="15.01" y2="9"/>
-    </svg>
-  ),
-  Progress: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-      <polyline points="17 6 23 6 23 12"/>
-    </svg>
-  ),
-  Settings: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-    </svg>
-  ),
-  Chevron: () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <polyline points="9 18 15 12 9 6"/>
-    </svg>
-  ),
-  Fire: () => (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+  </span>
+);
+
+const IcMenu     = () => <Ic><path d="M4 6h16M4 12h10M4 18h16"/></Ic>;
+const IcClose    = () => <Ic><path d="M6 18L18 6M6 6l12 12"/></Ic>;
+const IcUser     = () => <Ic><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></Ic>;
+const IcMoon     = () => <Ic><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></Ic>;
+const IcSun      = () => <Ic><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.22 4.22l1.77 1.77M18.01 18.01l1.77 1.77M2 12h2.5M19.5 12H22M4.22 19.78l1.77-1.77M18.01 5.99l1.77-1.77"/></Ic>;
+const IcLogout   = () => <Ic><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></Ic>;
+const IcDiet     = () => <Ic><path d="M9 5H7a2 2 0 00-2 2v3a6 6 0 006 6 6 6 0 006-6V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5h6M12 14v4M9 18h6"/></Ic>;
+const IcCardio   = () => <Ic><path d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"/></Ic>;
+const IcHistory  = () => <Ic><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></Ic>;
+const IcTrophy   = () => <Ic><path d="M8 21h8m-4-4v4M5 3H3a2 2 0 000 4c0 2.21 1.343 4.124 3.273 5.12M19 3h2a2 2 0 010 4c0 2.21-1.343 4.124-3.273 5.12M12 17c-3.866 0-7-3.134-7-7V3h14v7c0 3.866-3.134 7-7 7z"/></Ic>;
+const IcReport   = () => <Ic><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></Ic>;
+const IcScale    = () => <Ic><path d="M3 10h18M3 10a9 9 0 009 9m-9-9a9 9 0 0118 0M12 19v-9"/><path d="M8 14l4-4 4 4"/></Ic>;
+const IcProgress = () => <Ic><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></Ic>;
+const IcGear     = () => <Ic><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></Ic>;
+const IcArrow    = () => <Ic><path d="M9 5l7 7-7 7"/></Ic>;
+const IcFire     = () => (
+  <span className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
       <path d="M12 23a7.5 7.5 0 01-5.138-12.963C8.204 8.774 11.5 6.5 11 1.5c6 4 9 8 3 14 1 0 2.5 0 3-1.5.5 1.5.5 3-.5 4.5A7.5 7.5 0 0112 23z"/>
     </svg>
-  ),
-};
+  </span>
+);
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   BOTTOM SHEET
+   ITEM DO BOTTOM SHEET
 ───────────────────────────────────────────────────────────────────────────── */
-function BottomSheet({ open, onClose, children }) {
-  const sheetRef = useRef(null);
-  const startY   = useRef(null);
-  const currentY = useRef(0);
-
-  // fecha ao arrastar pra baixo
-  const onTouchStart = (e) => { startY.current = e.touches[0].clientY; };
-  const onTouchMove  = (e) => {
-    const dy = e.touches[0].clientY - startY.current;
-    if (dy > 0) {
-      currentY.current = dy;
-      if (sheetRef.current) sheetRef.current.style.transform = `translateY(${dy}px)`;
-    }
-  };
-  const onTouchEnd = () => {
-    if (currentY.current > 100) { onClose(); }
-    else if (sheetRef.current)  { sheetRef.current.style.transform = ''; }
-    currentY.current = 0;
-  };
-
-  useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [open]);
-
-  return (
-    <>
-      {/* backdrop */}
-      <div
-        onClick={onClose}
-        className="fixed inset-0 z-40 transition-all duration-300"
-        style={{
-          background:    open ? 'rgba(0,0,0,0.65)' : 'transparent',
-          backdropFilter: open ? 'blur(3px)' : 'none',
-          pointerEvents: open ? 'auto' : 'none',
-        }}
-      />
-
-      {/* painel */}
-      <div
-        ref={sheetRef}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-[#111111] rounded-t-3xl border-t border-zinc-800 flex flex-col"
-        style={{
-          maxHeight: '90dvh',
-          transform: open ? 'translateY(0)' : 'translateY(100%)',
-          transition: 'transform 0.35s cubic-bezier(0.32,0.72,0,1)',
-          willChange: 'transform',
-        }}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      >
-        {/* alça */}
-        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-          <div className="w-10 h-1 rounded-full bg-zinc-700"/>
-        </div>
-        {children}
-      </div>
-    </>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   ITEM DO MENU
-───────────────────────────────────────────────────────────────────────────── */
-function MenuItem({ icon, label, sub, accent, onClick }) {
+function NavItem({ icon, label, sublabel, iconColor, iconBg, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-4 w-full px-5 py-4 active:bg-white/5 rounded-2xl transition-colors text-left"
-      style={{ WebkitTapHighlightColor: 'transparent' }}
+      className="btn w-full flex items-center gap-4 px-4 rounded-2xl active:bg-zinc-800/70 text-left"
+      style={{ minHeight: '68px' }}
     >
-      {/* ícone num quadrado fixo 44×44 */}
-      <div
-        className="flex-shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center"
-        style={{ background: `${accent}18`, border: `1px solid ${accent}28` }}
-      >
-        <span style={{ color: accent }}>{icon}</span>
+      {/* container 44×44 — área mínima de toque recomendada para mobile */}
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg} ${iconColor}`}>
+        {icon}
       </div>
-
-      {/* texto */}
       <div className="flex-1 min-w-0">
-        <p className="text-white font-semibold text-[15px] leading-tight">{label}</p>
-        {sub && <p className="text-zinc-500 text-[13px] mt-0.5 truncate">{sub}</p>}
+        <p className={`font-semibold text-[15px] leading-tight ${iconColor}`}>{label}</p>
+        {sublabel && <p className="text-zinc-500 text-[13px] mt-0.5">{sublabel}</p>}
       </div>
-
-      <span className="text-zinc-700 flex-shrink-0"><Icon.Chevron/></span>
+      <span className="text-zinc-700 flex-shrink-0"><IcArrow /></span>
     </button>
   );
 }
@@ -227,205 +73,254 @@ export default function TelaGrupamentos({
   onHistorico, onRelatorio, onLogout, onPerfil, onPeso, onProgressao,
   tema, onToggleTema,
 }) {
-  const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  const [streak,     setStreak]     = useState(null);
-  const [menuOpen,   setMenuOpen]   = useState(false);
+  const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const [streak, setStreak]       = useState(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [dragY, setDragY]         = useState(0);
+  const dragStart = useRef(null);
 
   useEffect(() => {
     if (!usuario?.id) return;
     apiFetch(`${R.relatorio}?id_usuario=${usuario.id}`)
       .then(r => setStreak({
-        dias:        r.streak_dias,
-        semanas:     r.streak_semanas,
+        dias: r.streak_dias,
+        semanas: r.streak_semanas,
         totalTreinos: r.total_treinos_historico,
       }))
       .catch(() => {});
   }, [usuario?.id]);
 
-  // fecha menu e navega depois da animação sair
-  const nav = (fn) => { setMenuOpen(false); setTimeout(fn, 280); };
+  useEffect(() => {
+    document.body.style.overflow = sheetOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sheetOpen]);
 
-  const MENU_ITEMS = [
-    { icon: <Icon.Diet/>,     label: 'Dieta & Macros',          sub: 'Calorias e nutrientes',   accent: '#60a5fa', fn: onDieta      },
-    { icon: <Icon.Cardio/>,   label: 'Cardio & Calorias',       sub: 'Atividades aeróbicas',    accent: '#fb923c', fn: onCardio     },
-    { icon: <Icon.History/>,  label: 'Histórico & Gráficos',    sub: 'Seus treinos passados',   accent: '#a78bfa', fn: onHistorico  },
-    { icon: <Icon.Trophy/>,   label: 'Ranking',                 sub: 'Compare com amigos',      accent: '#c8f542', fn: onRank       },
-    { icon: <Icon.Report/>,   label: 'Relatório Semanal',       sub: 'Sua semana em números',   accent: '#fbbf24', fn: onRelatorio  },
-    { icon: <Icon.Scale/>,    label: 'Peso Corporal',           sub: 'Acompanhe a evolução',    accent: '#38bdf8', fn: onPeso       },
-    { icon: <Icon.Progress/>, label: 'Progressão & Templates',  sub: 'Sugestões de carga',      accent: '#34d399', fn: onProgressao },
-    { icon: <Icon.Settings/>, label: 'Gerenciar grupos',        sub: 'Editar splits',           accent: '#94a3b8', fn: onGerenciar  },
+  const closeSheet = () => { setSheetOpen(false); setDragY(0); };
+  const nav = (fn) => { closeSheet(); setTimeout(fn, 260); };
+
+  const onTouchStart = (e) => { dragStart.current = e.touches[0].clientY; };
+  const onTouchMove  = (e) => {
+    const delta = e.touches[0].clientY - (dragStart.current ?? e.touches[0].clientY);
+    if (delta > 0) setDragY(delta);
+  };
+  const onTouchEnd = () => {
+    if (dragY > 90) closeSheet(); else setDragY(0);
+    dragStart.current = null;
+  };
+
+  const NAV = [
+    { icon: <IcDiet/>,     label: 'Dieta & Macros',         sublabel: 'Calorias e nutrientes', iconColor: 'text-blue-400',    iconBg: 'bg-blue-500/15',    action: onDieta },
+    { icon: <IcCardio/>,   label: 'Cardio & Calorias',      sublabel: 'Atividades aeróbicas',  iconColor: 'text-orange-400',  iconBg: 'bg-orange-500/15',  action: onCardio },
+    { icon: <IcHistory/>,  label: 'Histórico & Gráficos',   sublabel: 'Seus treinos passados', iconColor: 'text-violet-400',  iconBg: 'bg-violet-500/15',  action: onHistorico },
+    { icon: <IcTrophy/>,   label: 'Ranking',                sublabel: 'Compare com amigos',    iconColor: 'text-[#c8f542]',   iconBg: 'bg-[#c8f542]/10',   action: onRank },
+    { icon: <IcReport/>,   label: 'Relatório Semanal',      sublabel: 'Sua semana em números', iconColor: 'text-amber-400',   iconBg: 'bg-amber-500/15',   action: onRelatorio },
+    { icon: <IcScale/>,    label: 'Peso Corporal',          sublabel: 'Acompanhe a evolução',  iconColor: 'text-sky-400',     iconBg: 'bg-sky-500/15',     action: onPeso },
+    { icon: <IcProgress/>, label: 'Progressão & Templates', sublabel: 'Sugestões de carga',    iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/15', action: onProgressao },
   ];
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
 
-      {/* ══════════════════════════════════════
-          HEADER
-      ══════════════════════════════════════ */}
+      {/* ── HEADER ──────────────────────────────────────────────────────────── */}
       <div className="px-5 pt-14 pb-4">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <p className="text-[#c8f542] text-xs font-bold uppercase tracking-widest">
-              {dias[new Date().getDay()]} · {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-            </p>
-            <h1 className="text-[28px] font-black text-white leading-tight mt-1">
-              Bora treinar,{' '}
-              <span className="text-[#c8f542]">{usuario.nome.split(' ')[0]}</span>!
-            </h1>
-          </div>
-
-          {/* botão de menu — canto superior direito, 48×48 para toque fácil */}
+        <div className="flex items-center gap-3 mb-3">
           <button
-            onClick={() => setMenuOpen(true)}
-            className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center text-zinc-300 active:bg-zinc-800 flex-shrink-0"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
+            onClick={() => setSheetOpen(true)}
+            className="btn w-11 h-11 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center text-zinc-300 active:bg-zinc-800 flex-shrink-0"
+            aria-label="Abrir menu"
           >
-            <Icon.Menu/>
+            <IcMenu />
           </button>
+          <span className="text-[#c8f542] text-xs font-semibold uppercase tracking-widest">
+            {DIAS[new Date().getDay()]} · {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+          </span>
         </div>
+        <h1 className="text-3xl font-black text-white leading-snug">
+          Qual treino de hoje,{' '}
+          <span className="text-[#c8f542]">{usuario.nome.split(' ')[0]}</span>?
+        </h1>
+      </div>
 
-        {/* ── Streak banner ── */}
-        {streak && (streak.dias > 0 || streak.semanas > 0) && (
+      {/* ── STREAK ──────────────────────────────────────────────────────────── */}
+      {streak && (streak.dias > 0 || streak.semanas > 0) && (
+        <div className="px-5 mb-3">
           <button
             onClick={onRelatorio}
-            className="w-full bg-[#c8f542]/8 border border-[#c8f542]/20 active:bg-[#c8f542]/12 rounded-2xl px-4 py-3.5 flex items-center gap-3"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
+            className="btn w-full bg-[#c8f542]/5 border border-[#c8f542]/20 active:bg-[#c8f542]/10 rounded-2xl px-4 py-3.5 flex items-center gap-3"
           >
-            <div className="w-9 h-9 rounded-xl bg-[#c8f542]/15 flex items-center justify-center text-[#c8f542] flex-shrink-0">
-              <Icon.Fire/>
+            <div className="w-10 h-10 rounded-xl bg-[#c8f542]/15 flex items-center justify-center flex-shrink-0 text-[#c8f542]">
+              <IcFire />
             </div>
-            <div className="flex-1 text-left min-w-0">
-              <p className="text-[#c8f542] font-bold text-sm leading-tight">
-                {streak.semanas > 1
-                  ? `${streak.semanas} semanas seguidas 🔥`
-                  : streak.dias > 0
-                  ? `${streak.dias} dia${streak.dias > 1 ? 's' : ''} de streak 🔥`
-                  : 'Treino registrado!'}
+            <div className="flex-1 text-left">
+              <p className="text-[#c8f542] font-bold text-sm">
+                {streak.semanas > 1 ? `${streak.semanas} semanas seguidas`
+                  : streak.dias > 0 ? `${streak.dias} dia${streak.dias > 1 ? 's' : ''} de streak`
+                  : 'Treino registrado'}
               </p>
-              <p className="text-zinc-600 text-xs mt-0.5 truncate">
+              <p className="text-zinc-500 text-xs mt-0.5">
                 {streak.totalTreinos} treino{streak.totalTreinos !== 1 ? 's' : ''} no histórico · ver relatório
               </p>
             </div>
-            <Icon.Chevron/>
-          </button>
-        )}
-      </div>
-
-      {/* ══════════════════════════════════════
-          SPLITS
-      ══════════════════════════════════════ */}
-      <div className="px-5 flex flex-col gap-3 pb-32 flex-1">
-        {loadingSplits ? (
-          <Spinner/>
-        ) : splits.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600">
-              <IconDumbbell/>
-            </div>
-            <div className="text-center">
-              <p className="text-white font-bold">Nenhum grupo ainda</p>
-              <p className="text-zinc-500 text-sm mt-1">Configure seus grupos musculares</p>
-            </div>
-            <button
-              onClick={onGerenciar}
-              className="px-8 py-4 bg-[#c8f542] text-black font-bold rounded-2xl text-base"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              Configurar grupos
-            </button>
-          </div>
-        ) : (
-          splits.map(split => (
-            <button
-              key={split.id}
-              onClick={() => onSelecionarSplit(split)}
-              className="w-full bg-zinc-900 border border-zinc-800 active:border-zinc-600 active:bg-zinc-800 rounded-2xl p-5 text-left flex items-center gap-4"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 flex-shrink-0">
-                <IconDumbbell/>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-white text-[17px] truncate">{split.nome}</p>
-                <p className="text-zinc-500 text-sm mt-0.5">
-                  {split.ultimo_treino ? `Último: ${split.ultimo_treino}` : 'Nenhum treino registrado'}
-                </p>
-              </div>
-              <span className="text-zinc-600 flex-shrink-0"><Icon.Chevron/></span>
-            </button>
-          ))
-        )}
-      </div>
-
-      {/* ══════════════════════════════════════
-          BOTTOM SHEET (menu)
-      ══════════════════════════════════════ */}
-      <BottomSheet open={menuOpen} onClose={() => setMenuOpen(false)}>
-
-        {/* cabeçalho do sheet */}
-        <div className="px-5 pt-2 pb-4 flex items-center justify-between flex-shrink-0 border-b border-zinc-800/60">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#c8f542]/10 border border-[#c8f542]/20 flex items-center justify-center text-[#c8f542]">
-              <Icon.User/>
-            </div>
-            <div>
-              <p className="text-white font-bold text-[15px] leading-tight">{usuario.nome.split(' ')[0]}</p>
-              <p className="text-zinc-500 text-xs">{usuario.email || 'Voltapp'}</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setMenuOpen(false)}
-            className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 active:bg-zinc-700"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-          >
-            <Icon.Close/>
+            <span className="text-zinc-600"><IcArrow /></span>
           </button>
         </div>
+      )}
 
-        {/* lista scrollável */}
-        <div className="overflow-y-auto flex-1 px-2 py-3" style={{ overscrollBehavior: 'contain' }}>
-          {MENU_ITEMS.map((item) => (
-            <MenuItem
-              key={item.label}
+      {/* ── SPLITS ──────────────────────────────────────────────────────────── */}
+      <div className="px-5 flex flex-col gap-3 pb-10 flex-1">
+        {loadingSplits ? <Spinner /> : (
+          <>
+            {splits.length === 0 && (
+              <div className="text-center py-16 flex flex-col items-center gap-4">
+                <p className="text-zinc-500 text-sm">Nenhum grupo muscular configurado.</p>
+                <button
+                  onClick={onGerenciar}
+                  className="btn px-8 py-4 bg-[#c8f542] text-black font-bold rounded-2xl text-base"
+                >
+                  Configurar grupos
+                </button>
+              </div>
+            )}
+            {splits.map(split => (
+              <button
+                key={split.id}
+                onClick={() => onSelecionarSplit(split)}
+                className="btn w-full bg-zinc-900 border border-zinc-800 active:border-zinc-600 active:bg-zinc-800 rounded-2xl p-5 text-left flex items-center gap-4"
+                style={{ minHeight: '76px' }}
+              >
+                <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 flex-shrink-0">
+                  <IconDumbbell />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-white text-base truncate">{split.nome}</p>
+                  <p className="text-zinc-500 text-sm mt-0.5">
+                    {split.ultimo_treino ? `Último: ${split.ultimo_treino}` : 'Nenhum treino registrado'}
+                  </p>
+                </div>
+                <span className="text-zinc-600 flex-shrink-0"><IconChevronRight /></span>
+              </button>
+            ))}
+
+            {splits.length > 0 && (
+              <button
+                onClick={onGerenciar}
+                className="btn w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl border border-dashed border-zinc-700 text-zinc-500 active:bg-zinc-900 active:border-zinc-600 active:text-zinc-300"
+                style={{ minHeight: '56px' }}
+              >
+                <IcGear />
+                <span className="text-sm font-semibold">Gerenciar grupos</span>
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          BOTTOM SHEET — sobe a partir da parte de baixo da tela
+          Ideal para mobile: polegar alcança naturalmente a partir de baixo.
+      ═══════════════════════════════════════════════════════════════════════ */}
+
+      {/* Backdrop */}
+      {sheetOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)' }}
+          onClick={closeSheet}
+        />
+      )}
+
+      {/* Painel */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 bg-[#111111] rounded-t-3xl border-t border-zinc-800 flex flex-col"
+        style={{
+          maxHeight: '90dvh',
+          transform: sheetOpen ? `translateY(${dragY}px)` : 'translateY(100%)',
+          transition: dragY > 0 ? 'none' : 'transform 0.35s cubic-bezier(0.32,0.72,0,1)',
+          willChange: 'transform',
+        }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        {/* Cabeçalho fixo do sheet */}
+        <div className="flex-shrink-0">
+          {/* Pill de arraste */}
+          <div className="pt-3 pb-2 flex justify-center">
+            <div className="w-10 h-1 rounded-full bg-zinc-700" />
+          </div>
+
+          {/* Linha do usuário + botões de ação */}
+          <div className="flex items-center justify-between px-5 pb-4 border-b border-zinc-800">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#c8f542]/15 border border-[#c8f542]/25 flex items-center justify-center text-[#c8f542]">
+                <IcUser />
+              </div>
+              <div>
+                <p className="text-white font-bold text-[15px] leading-tight">{usuario.nome.split(' ')[0]}</p>
+                <p className="text-zinc-500 text-xs">{usuario.email || 'Volt'}</p>
+              </div>
+            </div>
+
+            {/* Botões 44×44 — tamanho mínimo recomendado para toque */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onToggleTema}
+                className="btn w-11 h-11 bg-zinc-800 border border-zinc-700 rounded-xl flex items-center justify-center text-zinc-400 active:bg-zinc-700"
+                aria-label="Alternar tema"
+              >
+                {tema === 'claro' ? <IcMoon /> : <IcSun />}
+              </button>
+              <button
+                onClick={() => nav(onPerfil)}
+                className="btn w-11 h-11 bg-zinc-800 border border-zinc-700 rounded-xl flex items-center justify-center text-zinc-400 active:bg-zinc-700"
+                aria-label="Perfil"
+              >
+                <IcUser />
+              </button>
+              <button
+                onClick={closeSheet}
+                className="btn w-11 h-11 bg-zinc-800 border border-zinc-700 rounded-xl flex items-center justify-center text-zinc-400 active:bg-zinc-700"
+                aria-label="Fechar"
+              >
+                <IcClose />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Lista scrollável */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-2">
+          {NAV.map((item, i) => (
+            <NavItem
+              key={i}
               icon={item.icon}
               label={item.label}
-              sub={item.sub}
-              accent={item.accent}
-              onClick={() => nav(item.fn)}
+              sublabel={item.sublabel}
+              iconColor={item.iconColor}
+              iconBg={item.iconBg}
+              onClick={() => nav(item.action)}
             />
           ))}
-        </div>
 
-        {/* rodapé fixo — tema + perfil + sair */}
-        <div className="flex-shrink-0 border-t border-zinc-800/60 px-4 pt-3 pb-8 flex flex-col gap-2">
-          <div className="flex gap-2">
-            <button
-              onClick={onToggleTema}
-              className="flex-1 h-12 bg-zinc-800/80 border border-zinc-700/50 rounded-2xl flex items-center justify-center gap-2 text-zinc-300 active:bg-zinc-700 text-sm font-semibold"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              {tema === 'claro' ? <Icon.Moon/> : <Icon.Sun/>}
-              {tema === 'claro' ? 'Escuro' : 'Claro'}
-            </button>
-            <button
-              onClick={() => nav(onPerfil)}
-              className="flex-1 h-12 bg-zinc-800/80 border border-zinc-700/50 rounded-2xl flex items-center justify-center gap-2 text-zinc-300 active:bg-zinc-700 text-sm font-semibold"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <Icon.User/>
-              Perfil
-            </button>
-          </div>
+          {/* Divisor */}
+          <div className="h-px bg-zinc-800/70 mx-4 my-2" />
+
+          {/* Sair */}
           <button
-            onClick={() => { setMenuOpen(false); onLogout(); }}
-            className="w-full h-12 rounded-2xl flex items-center justify-center gap-2 text-red-400 font-semibold text-sm active:bg-red-500/10 border border-red-500/15"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
+            onClick={() => { closeSheet(); onLogout(); }}
+            className="btn w-full flex items-center gap-4 px-4 rounded-2xl active:bg-red-500/10 text-left"
+            style={{ minHeight: '68px' }}
           >
-            <Icon.Logout/>
-            Sair da conta
+            <div className="w-11 h-11 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0 text-red-400">
+              <IcLogout />
+            </div>
+            <span className="text-red-400 font-semibold text-[15px]">Sair da conta</span>
           </button>
+
+          {/* Safe area para home indicator do iPhone */}
+          <div style={{ height: 'max(24px, env(safe-area-inset-bottom))' }} />
         </div>
-      </BottomSheet>
+      </div>
     </div>
   );
 }
