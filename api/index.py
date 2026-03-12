@@ -272,7 +272,10 @@ def buscar_historico_todos(id_usuario: str = Query(...)):
             if not nome_split_direto:
                 partes = id_treino.split(f"_{id_usuario}_")
                 split_id_raw = partes[0] if partes else ""
-                nome_split_direto = splits_data.get(split_id_raw, split_id_raw)
+                nome_split_direto = splits_data.get(split_id_raw, "") or split_id_raw
+            # 3. se ainda for um ID tecnico (split deletado), exibe nome legivel
+            if nome_split_direto.startswith("split_") and "_" in nome_split_direto[6:]:
+                nome_split_direto = "Treino removido"
             series.append({
                 "id_serie":       str(r.get("ID_Serie", "")),
                 "id_treino":      id_treino,
@@ -365,7 +368,6 @@ def relatorio_semanal(id_usuario: str = Query(...)):
         for row in com_retry(lambda: get_ws("Treinos").get_all_values()):
             if row and len(row) > 1 and str(row[0]).strip() == id_usuario.strip():
                 for s in json.loads(row[1]):
-                    # usa nome atual; nomeHistorico serve só para busca de series, nao para exibicao
                     splits_data[s.get("id", "")] = s.get("nome") or s.get("nomeHistorico") or ""
     except Exception:
         pass
@@ -400,7 +402,6 @@ def relatorio_semanal(id_usuario: str = Query(...)):
             tw["series"] += 1
         except: pass
 
-        # extrai split_id completo (tudo antes de "_userId_")
         partes_split = id_treino.split(f"_{id_usuario}_")
         split_id_raw = partes_split[0] if partes_split else ""
         nome_split_direto = str(s.get("Nome_Split", "")).strip()
