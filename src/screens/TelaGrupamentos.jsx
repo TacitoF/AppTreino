@@ -44,11 +44,11 @@ const IcFire     = () => (
 /* ─────────────────────────────────────────────────────────────────────────────
    ITEM DO BOTTOM SHEET
 ───────────────────────────────────────────────────────────────────────────── */
-function NavItem({ icon, label, sublabel, iconColor, iconBg, onClick }) {
+function NavItem({ icon, label, sublabel, iconColor, iconBg, tema, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="btn w-full flex items-center gap-4 px-4 rounded-2xl active:bg-zinc-800/70 text-left"
+      className={`btn w-full flex items-center gap-4 px-4 rounded-2xl text-left ${tema === 'claro' ? 'active:bg-zinc-100' : 'active:bg-zinc-800/70'}`}
       style={{ minHeight: '68px' }}
     >
       {/* container 44×44 — área mínima de toque recomendada para mobile */}
@@ -59,7 +59,7 @@ function NavItem({ icon, label, sublabel, iconColor, iconBg, onClick }) {
         <p className={`font-semibold text-[15px] leading-tight ${iconColor}`}>{label}</p>
         {sublabel && <p className="text-zinc-500 text-[13px] mt-0.5">{sublabel}</p>}
       </div>
-      <span className="text-zinc-700 flex-shrink-0"><IcArrow /></span>
+      <span className={`flex-shrink-0 ${tema === 'claro' ? 'text-zinc-400' : 'text-zinc-700'}`}><IcArrow /></span>
     </button>
   );
 }
@@ -231,7 +231,7 @@ export default function TelaGrupamentos({
 
       {/* Painel */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 bg-[#111111] rounded-t-3xl border-t border-zinc-800 flex flex-col"
+        className={`fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl border-t flex flex-col ${tema === 'claro' ? 'bg-white border-zinc-200' : 'bg-[#111111] border-zinc-800'}`}
         style={{
           maxHeight: '90dvh',
           transform: sheetOpen ? `translateY(${dragY}px)` : 'translateY(100%)',
@@ -246,17 +246,17 @@ export default function TelaGrupamentos({
         <div className="flex-shrink-0">
           {/* Pill de arraste */}
           <div className="pt-3 pb-2 flex justify-center">
-            <div className="w-10 h-1 rounded-full bg-zinc-700" />
+            <div className={`w-10 h-1 rounded-full ${tema === 'claro' ? 'bg-zinc-300' : 'bg-zinc-700'}`} />
           </div>
 
           {/* Linha do usuário + botões de ação */}
-          <div className="flex items-center justify-between px-5 pb-4 border-b border-zinc-800">
+          <div className={`flex items-center justify-between px-5 pb-4 border-b ${tema === 'claro' ? 'border-zinc-200' : 'border-zinc-800'}`}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#c8f542]/15 border border-[#c8f542]/25 flex items-center justify-center text-[#c8f542]">
                 <IcUser />
               </div>
               <div>
-                <p className="text-white font-bold text-[15px] leading-tight">{usuario.nome.split(' ')[0]}</p>
+                <p className={`font-bold text-[15px] leading-tight ${tema === 'claro' ? 'text-zinc-900' : 'text-white'}`}>{usuario.nome.split(' ')[0]}</p>
                 <p className="text-zinc-500 text-xs">{usuario.email || 'Volt'}</p>
               </div>
             </div>
@@ -265,21 +265,21 @@ export default function TelaGrupamentos({
             <div className="flex items-center gap-2">
               <button
                 onClick={onToggleTema}
-                className="btn w-11 h-11 bg-zinc-800 border border-zinc-700 rounded-xl flex items-center justify-center text-zinc-400 active:bg-zinc-700"
+                className={`btn w-11 h-11 rounded-xl flex items-center justify-center text-zinc-500 ${tema === 'claro' ? 'bg-zinc-100 border border-zinc-200 active:bg-zinc-200' : 'bg-zinc-800 border border-zinc-700 active:bg-zinc-700'}`}
                 aria-label="Alternar tema"
               >
                 {tema === 'claro' ? <IcMoon /> : <IcSun />}
               </button>
               <button
                 onClick={() => nav(onPerfil)}
-                className="btn w-11 h-11 bg-zinc-800 border border-zinc-700 rounded-xl flex items-center justify-center text-zinc-400 active:bg-zinc-700"
+                className={`btn w-11 h-11 rounded-xl flex items-center justify-center text-zinc-500 ${tema === 'claro' ? 'bg-zinc-100 border border-zinc-200 active:bg-zinc-200' : 'bg-zinc-800 border border-zinc-700 active:bg-zinc-700'}`}
                 aria-label="Perfil"
               >
                 <IcUser />
               </button>
               <button
                 onClick={closeSheet}
-                className="btn w-11 h-11 bg-zinc-800 border border-zinc-700 rounded-xl flex items-center justify-center text-zinc-400 active:bg-zinc-700"
+                className={`btn w-11 h-11 rounded-xl flex items-center justify-center text-zinc-500 ${tema === 'claro' ? 'bg-zinc-100 border border-zinc-200 active:bg-zinc-200' : 'bg-zinc-800 border border-zinc-700 active:bg-zinc-700'}`}
                 aria-label="Fechar"
               >
                 <IcClose />
@@ -298,12 +298,13 @@ export default function TelaGrupamentos({
               sublabel={item.sublabel}
               iconColor={item.iconColor}
               iconBg={item.iconBg}
+              tema={tema}
               onClick={() => nav(item.action)}
             />
           ))}
 
           {/* Divisor */}
-          <div className="h-px bg-zinc-800/70 mx-4 my-2" />
+          <div className={`h-px mx-4 my-2 ${tema === 'claro' ? 'bg-zinc-200' : 'bg-zinc-800/70'}`} />
 
           {/* Sair */}
           <button

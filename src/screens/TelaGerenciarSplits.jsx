@@ -23,7 +23,8 @@ function TelaGerenciarSplits({ usuario, splits, onSalvar, onVoltar, mostrarToast
     setLista(l => l.map(s => s.id === id ? {
       ...s,
       nome,
-      nomeHistorico: s.nomeHistorico || nome,
+      // nomeHistorico permanece fixo no nome original — usado pelo backend para
+      // resolver o nome do split nas séries já gravadas no histórico
     } : s))
   , []);
 

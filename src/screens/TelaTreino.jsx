@@ -11,6 +11,20 @@ const SESSAO_KEY = (splitId, userId) => {
   return `volt_treino_${splitId}_${userId}_${hoje}`;
 };
 
+// Chave permanente de nota por exercício — independente de sessão ou split
+const NOTA_EX_KEY  = (userId, nomeEx) =>
+  `volt_nota_ex_${userId}_${nomeEx.trim().toLowerCase().replace(/\s+/g, '_')}`;
+
+const lerNotaEx    = (userId, nomeEx) => {
+  try { return localStorage.getItem(NOTA_EX_KEY(userId, nomeEx)) || ''; } catch { return ''; }
+};
+const salvarNotaEx = (userId, nomeEx, texto) => {
+  try {
+    if (texto.trim()) localStorage.setItem(NOTA_EX_KEY(userId, nomeEx), texto);
+    else localStorage.removeItem(NOTA_EX_KEY(userId, nomeEx));
+  } catch {}
+};
+
 const IconNote = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -126,7 +140,7 @@ const CardSerie = memo(({ ex, serie, hist, showHist, onToggle, onUpdSerie, onRem
   return (
     <div className={`rounded-3xl border overflow-hidden transition-all duration-300 ${
       serie.enviada
-        ? PR ? 'bg-[#c8f542]/8 border-[#c8f542]/25' : 'bg-zinc-800/40 border-zinc-700/30'
+        ? PR ? 'bg-[#c8f542]/10 border-[#c8f542]/25' : 'bg-zinc-800/40 border-zinc-700/30'
         : 'bg-zinc-800/20 border-zinc-800'
     }`}>
       <div className="flex items-center px-4 pt-3 pb-2 gap-2 min-h-[44px]">
@@ -213,10 +227,12 @@ const CardExercicio = memo(({
   onRemover, onUpdNome, onConfirmarNome,
   onAltModoPlacas, onMover,
   onAddSerie, onAlternarSerie, onRemSerie, onUpdSerie,
+  onUpdNota,
   serieTimers,
 }) => {
   const [showHist, setShowHist] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showNota, setShowNota] = useState(false);
   const menuRef = useRef(null);
 
   const seriesEnviadas = ex.series.filter(s => s.enviada).length;
@@ -289,6 +305,22 @@ const CardExercicio = memo(({
             </button>
           )}
 
+          {/* Botão de nota do exercício */}
+          <button
+            onClick={() => setShowNota(n => !n)}
+            className={`btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border ${
+              ex.nota
+                ? 'bg-violet-400/15 text-violet-400 border-violet-400/25'
+                : showNota
+                ? 'bg-zinc-700 text-zinc-300 border-zinc-600'
+                : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+            }`}
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            <IconNote/>
+            {ex.nota ? 'Editar' : 'Nota'}
+          </button>
+
           <div className="flex-1"/>
 
           <div className="relative" ref={menuRef}>
@@ -329,6 +361,20 @@ const CardExercicio = memo(({
           </div>
         </div>
       </div>
+
+      {/* Campo de nota do exercício — expansível */}
+      {showNota && (
+        <div className="mx-4 mb-3">
+          <textarea
+            value={ex.nota || ''}
+            onChange={e => onUpdNota(e.target.value)}
+            placeholder="Observações: dor, técnica, sensação..."
+            rows={2}
+            autoFocus
+            className="w-full bg-zinc-800 text-white px-4 py-3 rounded-2xl border border-zinc-700 outline-none focus:border-violet-400/60 transition-colors text-sm placeholder-zinc-600 resize-none"
+          />
+        </div>
+      )}
 
       {showHist && hist.length > 0 && (
         <div className="mx-4 mb-3 bg-amber-950/30 border border-amber-400/15 rounded-2xl p-4">
@@ -383,10 +429,7 @@ function RestEndBanner({ onDismiss }) {
       style={{ background: 'rgba(0,0,0,0.82)' }}
       onClick={onDismiss}
     >
-      <div
-        className="bg-zinc-900 border border-[#c8f542]/30 rounded-3xl px-8 py-10 mx-6 flex flex-col items-center gap-4 shadow-2xl"
-        onClick={e => e.stopPropagation()}
-      >
+      <div className="bg-zinc-900 border border-[#c8f542]/30 rounded-3xl px-8 py-10 mx-6 flex flex-col items-center gap-4 shadow-2xl">
         <div className="w-16 h-16 rounded-2xl bg-[#c8f542]/10 flex items-center justify-center">
           <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2} className="w-8 h-8">
             <circle cx="12" cy="12" r="10"/>
@@ -483,7 +526,11 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     try {
       const chave = SESSAO_KEY(split.id, usuario.id);
       const salvo = localStorage.getItem(chave + '_ex');
-      if (salvo) return JSON.parse(salvo);
+      if (salvo) {
+        const lista = JSON.parse(salvo);
+        // recarrega nota persistida (pode ter mudado fora da sessão)
+        return lista.map(x => ({ ...x, nota: lerNotaEx(usuario.id, x.nome) }));
+      }
     } catch {}
     return [];
   });
@@ -529,6 +576,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       const nomeLimpo = usaPlacas ? nome.slice(3) : nome;
       return {
         id: Date.now() + exIdx, nome: nomeLimpo, nomeAnterior: nomeLimpo, usaPlacas,
+        nota: lerNotaEx(usuario.id, nomeLimpo),
         series: ordenadas.map((s, i) => ({
           id: i + 1, reps: s.repeticoes, carga: s.carga_kg, enviada: false, id_banco: null,
         })),
@@ -649,6 +697,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     setShowExModal(false);
     setExercicios(e => [...e, {
       id: Date.now(), nome, nomeAnterior: nome, usaPlacas: false,
+      nota: lerNotaEx(usuario.id, nome),
       series: [{ id: 1, reps: 12, carga: 0, enviada: false, id_banco: null }],
     }]);
   }, []);
@@ -681,8 +730,16 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   }, [exercicios]);
 
   const updNome = useCallback((id, novoNome) => {
-    setExercicios(e => e.map(x => x.id === id ? { ...x, nome: novoNome } : x));
-  }, []);
+    setExercicios(e => e.map(x => {
+      if (x.id !== id) return x;
+      // migra nota para a nova chave se o nome mudou
+      if (novoNome !== x.nome && x.nota) {
+        salvarNotaEx(usuario.id, novoNome, x.nota);
+        salvarNotaEx(usuario.id, x.nome, ''); // remove chave antiga
+      }
+      return { ...x, nome: novoNome };
+    }));
+  }, [usuario.id]);
 
   const confirmarNome = useCallback(async (ex) => {
     const nomeNovo   = ex.nome.trim();
@@ -716,6 +773,14 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
   const remSerie = useCallback((exId, sId) =>
     setExercicios(e => e.map(x => x.id !== exId ? x : { ...x, series: x.series.filter(s => s.id !== sId) }))
   , []);
+
+  const updNota = useCallback((exId, nota) => {
+    setExercicios(e => {
+      const ex = e.find(x => x.id === exId);
+      if (ex) salvarNotaEx(usuario.id, ex.nome, nota);
+      return e.map(x => x.id !== exId ? x : { ...x, nota });
+    });
+  }, [usuario.id]);
 
   const pendentesRef = useRef(0);
   const [salvando, setSalvando] = useState(false);
@@ -892,6 +957,7 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
             onRemSerie={sId => remSerie(ex.id, sId)}
             onAlternarSerie={alternarSerie}
             onUpdSerie={(sId, campo, val) => updSerie(ex.id, sId, campo, val)}
+            onUpdNota={nota => updNota(ex.id, nota)}
           />
         ))}
 
