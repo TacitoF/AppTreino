@@ -4,7 +4,6 @@ import { R } from '../config';
 import { IconBack } from '../components/icons';
 import { Spinner } from '../components/ui';
 
-const META_KEY = 'volt_meta_peso';
 
 // ─── Ícones locais ────────────────────────────────────────────────────────────
 const IconTarget = () => (
@@ -120,14 +119,17 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
   const [sheetReg, setSheetReg]     = useState(false);
   const [metaInput, setMetaInput]   = useState('');
   const [histAberto, setHistAberto] = useState(false);
-  const [metaPeso, setMetaPeso]     = useState(() => {
-    try { return localStorage.getItem(META_KEY) || ''; } catch { return ''; }
-  });
+  const [metaPeso, setMetaPeso]     = useState('');
 
   const carregar = useCallback(async () => {
     try {
       const r = await apiFetch(`${R.peso}?id_usuario=${usuario.id}`);
-      setPesos(r.pesos || []);
+      const todos = r.pesos || [];
+      // Registro especial meta_<id> armazena a meta de peso na mesma sheet
+      const metaReg = todos.find(p => p.id_registro === `meta_${usuario.id}`);
+      const normais = todos.filter(p => p.id_registro !== `meta_${usuario.id}`);
+      setPesos(normais);
+      if (metaReg) setMetaPeso(String(metaReg.peso_kg));
     } catch { mostrarToast('Erro ao carregar pesagens.', 'erro'); }
     finally { setLoading(false); }
   }, [usuario.id, mostrarToast]);
@@ -169,17 +171,25 @@ export default function TelaPeso({ usuario, onVoltar, mostrarToast }) {
     finally { setDeletando(false); }
   };
 
-  const salvarMeta = () => {
+  const salvarMeta = async () => {
     const v = parseFloat(String(metaInput).replace(',', '.'));
     if (!v || v < 20 || v > 300) { mostrarToast('Meta inválida (20–300 kg).', 'erro'); return; }
-    try { localStorage.setItem(META_KEY, String(v)); } catch {}
-    setMetaPeso(String(v)); setSheetMeta(false);
-    mostrarToast('Meta definida!', 'sucesso');
+    try {
+      await apiFetch(R.peso, {
+        method: 'POST',
+        body: { id_registro: `meta_${usuario.id}`, id_usuario: usuario.id, data: new Date().toISOString().slice(0, 10), peso_kg: v },
+      });
+      setMetaPeso(String(v)); setSheetMeta(false);
+      mostrarToast('Meta definida!', 'sucesso');
+    } catch { mostrarToast('Erro ao salvar meta.', 'erro'); }
   };
 
-  const removerMeta = () => {
-    try { localStorage.removeItem(META_KEY); } catch {}
-    setMetaPeso(''); setSheetMeta(false);
+  const removerMeta = async () => {
+    try {
+      await apiFetch(`${R.peso}?id_registro=${encodeURIComponent(`meta_${usuario.id}`)}`, { method: 'DELETE' });
+      setMetaPeso(''); setSheetMeta(false);
+      mostrarToast('Meta removida.', 'sucesso');
+    } catch { mostrarToast('Erro ao remover meta.', 'erro'); }
   };
 
   const { variacao, variacaoTotal } = useMemo(() => {

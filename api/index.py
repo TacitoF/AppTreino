@@ -12,6 +12,7 @@ import logging
 import os
 import string
 import random
+from uuid import uuid4
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -142,7 +143,8 @@ def registrar_usuario(req: RegReq):
         usuarios = get_records("Usuarios")
         for user in usuarios:
             if str(user.get("Email", "")) == req.email: raise HTTPException(400, "E-mail já cadastrado")
-        novo_id = f"U{len(usuarios) + 1:03d}"
+        # uuid4 garante unicidade mesmo se usuários forem deletados da planilha
+        novo_id = "U" + uuid4().hex[:8].upper()
         com_retry(lambda: get_ws("Usuarios").append_row([novo_id, req.nome, req.email, req.senha, date.today().isoformat(), req.peso_atual, req.objetivo, req.altura, req.idade, req.genero, req.atividade or ""]))
         cache_del("Usuarios")
         return {"status": "sucesso"}
@@ -178,7 +180,6 @@ def editar_usuario(req: EditarUsuarioReq):
     except Exception as e: raise HTTPException(500, str(e))
 
 @app.post("/api/reset-senha")
-@app.post("/api/reset_senha")
 def reset_senha(req: ResetReq):
     try:
         usuarios = get_records("Usuarios")
@@ -202,7 +203,6 @@ def buscar_splits(id_usuario: str = Query(...)):
     except Exception as e: raise HTTPException(500, str(e))
 
 @app.post("/api/splits")
-@app.post("/api/splits/salvar")
 def salvar_splits(req: SalvarSplitsReq):
     try:
         ws, dados = get_ws("Treinos"), com_retry(lambda: get_ws("Treinos").get_all_values())

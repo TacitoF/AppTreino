@@ -185,7 +185,7 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
 
           <div>
             <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-3">Tempo</p>
-            <div className="grid grid-cols-4 gap-2 mb-3">
+            <div className="grid grid-cols-3 gap-2 mb-3">
               {[15, 20, 30, 45, 60, 90].map(m => (
                 <button key={m} onClick={() => setMinutos(m)}
                   className={`btn py-4 rounded-2xl font-bold text-sm ${

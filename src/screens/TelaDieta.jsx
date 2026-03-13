@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { apiFetch } from '../auth';
+import { R } from '../config';
 import { ALIMENTOS_DB } from '../data/alimentosDB';
 
 // ─── ícones ───────────────────────────────────────────────────────────────────
@@ -137,7 +138,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
   }, [modalBusca, recentes.length]);
 
   useEffect(() => {
-    apiFetch(`/api/dieta/registro?id_usuario=${usuario.id}&data=${hoje}`)
+    apiFetch(`${R.dietaRegistro}?id_usuario=${usuario.id}&data=${hoje}`)
       .then(r => setRefeicoes(r.registros || []))
       .catch(() => mostrarToast('Erro ao carregar dieta', 'erro'))
       .finally(() => setLoading(false));
@@ -152,7 +153,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     });
     Promise.all(
       dias.map(data =>
-        apiFetch(`/api/dieta/registro?id_usuario=${usuario.id}&data=${data}`)
+        apiFetch(`${R.dietaRegistro}?id_usuario=${usuario.id}&data=${data}`)
           .then(r => ({ data, registros: r.registros || [] }))
           .catch(() => ({ data, registros: [] }))
       )
@@ -223,7 +224,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
       check_agua: '', check_whey: '', check_creatina: '',
     };
     try {
-      await apiFetch('/api/dieta/registro', { method: 'POST', body: novaRefeicao });
+      await apiFetch(R.dietaRegistro, { method: 'POST', body: novaRefeicao });
       const novosRecentes = [alimentoSelecionado, ...recentes.filter(r => r.id !== alimentoSelecionado.id)].slice(0, 10);
       setRecentes(novosRecentes);
       localStorage.setItem('alimentos_recentes', JSON.stringify(novosRecentes));
@@ -246,7 +247,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     if (!itemParaExcluir) return;
     const id = itemParaExcluir.ID_Registro || itemParaExcluir.id_registro;
     try {
-      await apiFetch(`/api/dieta/registro?id_registro=${id}`, { method: 'DELETE' });
+      await apiFetch(`${R.dietaRegistro}?id_registro=${id}`, { method: 'DELETE' });
       setRefeicoes(prev => prev.filter(r => r.ID_Registro !== id && r.id_registro !== id));
       mostrarToast('Alimento removido.', 'sucesso');
     } catch { mostrarToast('Erro ao remover.', 'erro'); }

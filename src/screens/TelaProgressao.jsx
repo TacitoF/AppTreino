@@ -62,7 +62,8 @@ export default function TelaProgressao({ usuario, splits, onUsarTemplate, onVolt
   const [sugestoes, setSugestoes] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [aba, setAba]             = useState('progressao');
-  const [templateSel, setTemplateSel] = useState(null);
+  const [templateSel, setTemplateSel]     = useState(null);
+  const [confirmando, setConfirmando]     = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -173,26 +174,80 @@ export default function TelaProgressao({ usuario, splits, onUsarTemplate, onVolt
           )}
 
           {templateSel && (
-            <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => setTemplateSel(null)}>
+            <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => { setTemplateSel(null); setConfirmando(false); }}>
               <div className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl px-5 pt-5 pb-10" onClick={e => e.stopPropagation()}>
                 <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-5"/>
-                <h3 className="text-white font-black text-lg mb-1">{templateSel.nome}</h3>
-                <p className="text-zinc-500 text-sm mb-5">{templateSel.descricao}</p>
-                <div className="flex flex-col gap-2 mb-6">
-                  {templateSel.splits.map((s, i) => (
-                    <div key={i} className="flex items-center gap-3 bg-zinc-800 rounded-2xl px-4 py-3">
-                      <div className="w-6 h-6 rounded-full bg-[#c8f542]/15 flex items-center justify-center flex-shrink-0">
-                        <span className="text-[#c8f542] text-xs font-black">{i + 1}</span>
+
+                {/* ── Step de confirmação — só aparece se já há splits E o user clicou em usar ── */}
+                {confirmando ? (
+                  <>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-2xl bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth={2.5} className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        </svg>
                       </div>
-                      <span className="text-zinc-300 text-sm font-medium">{s}</span>
+                      <div>
+                        <p className="text-white font-black text-base">Substituir grupos atuais?</p>
+                        <p className="text-zinc-500 text-xs mt-0.5">Esta ação não pode ser desfeita.</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={() => setTemplateSel(null)} className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-semibold rounded-2xl">Cancelar</button>
-                  <button onClick={() => { onUsarTemplate(templateSel); setTemplateSel(null); }}
-                    className="btn flex-1 py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold rounded-2xl">Usar este template</button>
-                </div>
+                    <div className="bg-zinc-800 rounded-2xl px-4 py-3 mb-5">
+                      <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-2">Seus grupos atuais serão removidos</p>
+                      {splits.map((s, i) => (
+                        <div key={s.id} className="flex items-center gap-2 py-1">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth={2} className="w-3.5 h-3.5 flex-shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                          <span className="text-zinc-400 text-sm">{s.nome}</span>
+                        </div>
+                      ))}
+                      <div className="h-px bg-zinc-700 my-3"/>
+                      <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-2">Serão substituídos por</p>
+                      {templateSel.splits.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2 py-1">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2.5} className="w-3.5 h-3.5 flex-shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                          <span className="text-zinc-300 text-sm">{s.split(' —')[0].split(' (')[0]}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-3">
+                      <button onClick={() => setConfirmando(false)} className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-semibold rounded-2xl">Voltar</button>
+                      <button
+                        onClick={() => { onUsarTemplate(templateSel); setTemplateSel(null); setConfirmando(false); }}
+                        className="btn flex-1 py-4 bg-amber-500 active:bg-amber-600 text-black font-bold rounded-2xl"
+                      >
+                        Sim, substituir
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-white font-black text-lg mb-1">{templateSel.nome}</h3>
+                    <p className="text-zinc-500 text-sm mb-5">{templateSel.descricao}</p>
+                    <div className="flex flex-col gap-2 mb-6">
+                      {templateSel.splits.map((s, i) => (
+                        <div key={i} className="flex items-center gap-3 bg-zinc-800 rounded-2xl px-4 py-3">
+                          <div className="w-6 h-6 rounded-full bg-[#c8f542]/15 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[#c8f542] text-xs font-black">{i + 1}</span>
+                          </div>
+                          <span className="text-zinc-300 text-sm font-medium">{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-3">
+                      <button onClick={() => { setTemplateSel(null); setConfirmando(false); }} className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-semibold rounded-2xl">Cancelar</button>
+                      <button
+                        onClick={() => {
+                          // Se não há splits existentes, aplica direto. Se há, pede confirmação.
+                          if (splits.length === 0) { onUsarTemplate(templateSel); setTemplateSel(null); }
+                          else { setConfirmando(true); }
+                        }}
+                        className="btn flex-1 py-4 bg-[#c8f542] active:bg-[#b0d93b] text-black font-bold rounded-2xl"
+                      >
+                        Usar este template
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}

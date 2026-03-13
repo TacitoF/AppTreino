@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { IconDumbbell, IconChevronRight } from '../components/icons';
 import { apiFetch } from '../auth';
 import { R } from '../config';
@@ -74,6 +74,26 @@ export default function TelaGrupamentos({
   tema, onToggleTema,
 }) {
   const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+  // Atualiza a data exibida no header automaticamente à meia-noite
+  const [agora, setAgora] = useState(() => new Date());
+  useEffect(() => {
+    const calcMs = () => {
+      const n = new Date();
+      // ms até o próximo minuto (re-checa a cada minuto para não depender de precisão exata)
+      return (60 - n.getSeconds()) * 1000 - n.getMilliseconds();
+    };
+    let timer;
+    const agendar = () => {
+      timer = setTimeout(() => { setAgora(new Date()); agendar(); }, calcMs());
+    };
+    agendar();
+    return () => clearTimeout(timer);
+  }, []);
+
+  const diaLabel = useMemo(() =>
+    `${DIAS[agora.getDay()]} · ${agora.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}`,
+  [agora]);
   const [streak, setStreak]       = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [dragY, setDragY]         = useState(0);
@@ -132,7 +152,7 @@ export default function TelaGrupamentos({
             <IcMenu />
           </button>
           <span className="text-[#c8f542] text-xs font-semibold uppercase tracking-widest">
-            {DIAS[new Date().getDay()]} · {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+            {diaLabel}
           </span>
         </div>
         <h1 className="text-3xl font-black text-white leading-snug">

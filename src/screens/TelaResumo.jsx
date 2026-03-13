@@ -28,13 +28,13 @@ function TelaResumo({ resultado, onVoltar, mostrarToast }) {
 
   const compartilhar = async () => {
     const linhas = [
-      `Treino concluido - ${split.nome}`,
+      `Treino concluído - ${split.nome}`,
       `${totalS} series | ${Math.round(vol)} kg volume`,
       '',
       ...exercicios
         .filter(ex => ex.series.some(s => s.enviada))
         .map(ex => {
-          const header = ex.nome || 'Exercicio';
+          const header = ex.nome || 'Exercício';
           const series = ex.series
             .filter(s => s.enviada)
             .map(s => `  Serie ${s.id}: ${s.carga}${ex.usaPlacas ? ' pl' : 'kg'} x ${s.reps} reps`)

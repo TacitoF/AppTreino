@@ -587,7 +587,8 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     setInicializadoDeHistorico(true);
   }, [historicoAnterior, inicializadoDeHistorico]);
 
-  const [showExModal, setShowExModal] = useState(false);
+  const [showExModal,    setShowExModal]    = useState(false);
+  const [showSairModal,  setShowSairModal]  = useState(false);
   const [tempoConfig, setTempoConfig] = useState(() => {
     const s = localStorage.getItem(REST_TIME_KEY);
     return s ? parseInt(s, 10) : 90;
@@ -761,7 +762,8 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     setExercicios(e => e.map(x => {
       if (x.id !== exId) return x;
       const u = x.series[x.series.length - 1];
-      return { ...x, series: [...x.series, { id: x.series.length + 1, reps: u?.reps || 12, carga: u?.carga || 0, enviada: false, id_banco: null }] };
+      const nextId = x.series.length > 0 ? Math.max(...x.series.map(s => s.id)) + 1 : 1;
+      return { ...x, series: [...x.series, { id: nextId, reps: u?.reps || 12, carga: u?.carga || 0, enviada: false, id_banco: null }] };
     }))
   , []);
 
@@ -831,7 +833,10 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
           ...x, series: x.series.map(s => s.id === serie.id ? { ...s, salvandoNow: false } : s),
         }));
       } catch {
-        setExercicios(snapshot);
+        // Reverte apenas a série específica (evita stale closure sobrescrever confirmações rápidas)
+        setExercicios(cur => cur.map(x => x.id !== ex.id ? x : {
+          ...x, series: x.series.map(s => s.id === serie.id ? { ...s, enviada: false, salvandoNow: false, id_banco: null } : s),
+        }));
         pararDescanso();
         mostrarToast('Sem conexao. Serie nao salva.', 'erro');
       } finally {
@@ -879,10 +884,48 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
       {showRestEnd && <RestEndBanner onDismiss={() => setShowRestEnd(false)}/>}
       {showConfig  && <ModalConfigDescanso tempoAtual={tempoConfig} onSalvar={salvarConfig} onFechar={() => setShowConfig(false)}/>}
 
+      {/* ── Modal confirmação sair do treino ───────────────────────────── */}
+      {showSairModal && (
+        <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.75)' }} onClick={() => setShowSairModal(false)}>
+          <div className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl px-5 pt-5 pb-10" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-5"/>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-red-500/15 flex items-center justify-center flex-shrink-0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth={2.5} className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+              </div>
+              <div>
+                <p className="text-white font-black text-base">Abandonar treino?</p>
+                <p className="text-zinc-500 text-xs mt-0.5">As séries já confirmadas ficam salvas.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSairModal(false)}
+                className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-semibold rounded-2xl"
+              >
+                Continuar
+              </button>
+              <button
+                onClick={onVoltar}
+                className="btn flex-1 py-4 bg-red-500 active:bg-red-600 text-white font-bold rounded-2xl"
+              >
+                Sair do treino
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="sticky top-0 z-30 bg-[#0a0a0a]/96 backdrop-blur-md border-b border-zinc-900 px-4 pt-12 pb-3">
         <div className="flex items-center gap-3 mb-3">
           <button
-            onClick={onVoltar}
+            onClick={() => {
+              const temSeries = exercicios.some(x => x.series.some(s => s.enviada));
+              if (temSeries) setShowSairModal(true);
+              else onVoltar();
+            }}
             className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0"
           >
             <IconBack/>

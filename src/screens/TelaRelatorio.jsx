@@ -71,7 +71,7 @@ export default function TelaRelatorio({ usuario, onVoltar, mostrarToast }) {
           <IconBack/>
         </button>
         <div className="flex-1">
-          <h1 className="text-xl font-bold text-white">Relatorio Semanal</h1>
+          <h1 className="text-xl font-bold text-white">Relatório Semanal</h1>
           {!loading && semanaAtual && (
             <p className="text-zinc-500 text-xs mt-0.5">{semanaAtual.semana_label}</p>
           )}
@@ -87,7 +87,7 @@ export default function TelaRelatorio({ usuario, onVoltar, mostrarToast }) {
 
           {/* Streak */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">Sequencia</p>
+            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">Sequência</p>
             <div className="grid grid-cols-3 gap-3">
               <div className="text-center">
                 <div className="text-4xl font-black text-[#c8f542]">

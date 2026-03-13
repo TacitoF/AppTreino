@@ -104,6 +104,16 @@ function TelaAuth({ onLogin, mostrarToast }) {
   };
   const senhaValida = Object.values(req).every(Boolean);
 
+  // Requisitos da nova senha no fluxo de reset (mesmas regras do cadastro)
+  const reqNova = {
+    maiuscula: /[A-Z]/.test(senhaNova),
+    minuscula: /[a-z]/.test(senhaNova),
+    numero:    /[0-9]/.test(senhaNova),
+    especial:  /[^A-Za-z0-9]/.test(senhaNova),
+    minimo:    senhaNova.length >= 8,
+  };
+  const senhaNovalida = Object.values(reqNova).every(Boolean);
+
   // ─── Login ────────────────────────────────────────────────────────────────
   const login = async (e) => {
     e.preventDefault();
@@ -125,6 +135,7 @@ function TelaAuth({ onLogin, mostrarToast }) {
   const resetSenha = async (e) => {
     e.preventDefault();
     if (!email || !senhaNova) { mostrarToast('Preencha e-mail e nova senha.', 'erro'); return; }
+    if (!senhaNovalida) { mostrarToast('A nova senha não atende aos requisitos.', 'erro'); return; }
     setLoading(true);
     try {
       await apiFetch(R.resetSenha, { method: 'POST', body: { email, senha_nova: senhaNova } });
@@ -282,7 +293,28 @@ function TelaAuth({ onLogin, mostrarToast }) {
                 value={senhaNova}
                 onChange={e => setSenhaNova(e.target.value)}
                 className={inp}
+                autoComplete="new-password"
               />
+              {senhaNova.length > 0 && (
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex flex-col gap-2">
+                  <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-0.5">Requisitos da senha</p>
+                  {[
+                    [reqNova.minimo,    'Mínimo 8 caracteres'],
+                    [reqNova.maiuscula, '1 letra maiúscula'],
+                    [reqNova.minuscula, '1 letra minúscula'],
+                    [reqNova.numero,    '1 número'],
+                    [reqNova.especial,  '1 caractere especial (!@#$...)'],
+                  ].map(([ok, label]) => (
+                    <div key={label} className="flex items-center gap-2">
+                      {ok
+                        ? <svg viewBox="0 0 24 24" fill="none" stroke="#c8f542" strokeWidth={2.5} className="w-3.5 h-3.5 flex-shrink-0"><path d="M20 6L9 17l-5-5"/></svg>
+                        : <svg viewBox="0 0 24 24" fill="none" stroke="#52525b" strokeWidth={2.5} className="w-3.5 h-3.5 flex-shrink-0"><circle cx="12" cy="12" r="9"/></svg>
+                      }
+                      <span className={`text-xs ${ok ? 'text-[#c8f542]' : 'text-zinc-500'}`}>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <button
                 onClick={resetSenha}
                 disabled={loading}
