@@ -637,6 +637,10 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
 
   useEffect(() => {
     if (!timerAtivo) { clearInterval(intervalRef.current); return; }
+    // Atualiza imediatamente ao iniciar (evita 500ms de delay visual)
+    const r0 = calcRestante();
+    setTimerRestante(r0);
+    if (r0 <= 0) { dispararFim(); return; }
     intervalRef.current = setInterval(() => {
       const r = calcRestante();
       setTimerRestante(r);
@@ -668,7 +672,10 @@ function TelaTreino({ usuario, split, historicoAnterior, onFinalizar, onVoltar, 
     timerFimRef.current = Date.now() + duracao * 1000;
     setTimerRestante(duracao);
     setShowRestEnd(false);
-    setTimerAtivo(true);
+    // Seta false primeiro para garantir que o useEffect do timer
+    // dispare e recrie o interval mesmo que já estivesse ativo
+    setTimerAtivo(false);
+    setTimeout(() => setTimerAtivo(true), 0);
   }, []);
 
   const pararDescanso = useCallback(() => {
