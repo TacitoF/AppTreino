@@ -35,14 +35,13 @@ function Sheet({ open, onClose, children }) {
 }
 
 // ─── Card de posição no ranking ───────────────────────────────────────────────
-function CardRanking({ p, i, meuId }) {
+function CardRanking({ p, i, meuId, maxPontos }) {
   const eu = p.id_usuario === meuId;
   const estilos = [
     'bg-amber-400/8 border-amber-400/25',
     'bg-zinc-900 border-zinc-800',
-    'bg-zinc-900 border-zinc-800',
+    'bg-orange-900/10 border-orange-800/25',
   ];
-  const maxPontos = 30; // referência visual
 
   // SVGs de medalha por posição
   const IconMedal1 = () => (
@@ -178,9 +177,12 @@ function TelaLobby({ lobby, usuario, onVoltar, mostrarToast }) {
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">
-            {ranking.map((p, i) => (
-              <CardRanking key={p.id_usuario} p={p} i={i} meuId={usuario.id}/>
-            ))}
+            {(() => {
+              const maxPts = ranking.length > 0 ? Math.max(...ranking.map(r => r.pontos), 1) : 1;
+              return ranking.map((p, i) => (
+                <CardRanking key={p.id_usuario} p={p} i={i} meuId={usuario.id} maxPontos={maxPts}/>
+              ));
+            })()}
           </div>
         )}
       </div>

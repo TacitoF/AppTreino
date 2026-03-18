@@ -35,7 +35,7 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
 
   useEffect(() => {
     if (cronAtivo) {
-      inicioRef.current = Date.now() - cronSeg * 1000;
+      // inicioRef já definido em iniciarCron antes de setar cronAtivo=true
       intervalRef.current = setInterval(() => {
         const seg = Math.floor((Date.now() - inicioRef.current) / 1000);
         setCronSeg(seg);
@@ -47,8 +47,17 @@ function TelaCardio({ usuario, onVoltar, mostrarToast }) {
     return () => clearInterval(intervalRef.current);
   }, [cronAtivo]);
 
-  const iniciarCron = () => { setCronSeg(0); setMinutos(1); setCronAtivo(true); setEtapa('cronometro'); };
-  const pararCron   = () => { setCronAtivo(false); setEtapa('resultado'); };
+  const iniciarCron = () => {
+    // Zera o ref antes de (re)iniciar — garante que o useEffect dispare
+    // mesmo que cronAtivo já seja true (ex: reiniciar sem parar)
+    clearInterval(intervalRef.current);
+    inicioRef.current = Date.now();
+    setCronSeg(0);
+    setMinutos(1);
+    setCronAtivo(false);
+    setTimeout(() => { setCronAtivo(true); setEtapa('cronometro'); }, 0);
+  };
+  const pararCron = () => { setCronAtivo(false); setEtapa('resultado'); };
 
   const salvar = async () => {
     if (!atividade) return;

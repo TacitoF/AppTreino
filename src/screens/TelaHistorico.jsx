@@ -89,6 +89,8 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
   const [exportando, setExportando] = useState(false);
   const [serieParaDeletar, setSerieParaDeletar] = useState(null);
   const [deletandoSerie, setDeletandoSerie]     = useState(false);
+  const [treinoParaDeletar, setTreinoParaDeletar] = useState(null);
+  const [deletandoTreino, setDeletandoTreino]     = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -127,6 +129,23 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
       }
     } catch { mostrarToast('Erro ao remover série.', 'erro'); }
     finally { setDeletandoSerie(false); }
+  };
+
+  const deletarTreino = async () => {
+    if (!treinoParaDeletar) return;
+    setDeletandoTreino(true);
+    try {
+      await Promise.all(
+        treinoParaDeletar.series
+          .filter(s => s.id_serie)
+          .map(s => apiFetch(`${R.serie}?id=${s.id_serie}`, { method: 'DELETE' }))
+      );
+      mostrarToast('Treino removido.', 'sucesso');
+      setTreinoParaDeletar(null);
+      setAberto(null);
+      await carregar();
+    } catch { mostrarToast('Erro ao remover treino.', 'erro'); }
+    finally { setDeletandoTreino(false); }
   };
 
   const exportarCSV = useCallback(async () => {
@@ -283,6 +302,15 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
                 Gráfico
               </button>
             )}
+            <button
+              onClick={() => setTreinoParaDeletar(t)}
+              className="btn w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600 active:text-red-400 active:bg-red-500/10 flex-shrink-0"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"/>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -353,6 +381,39 @@ function TelaHistorico({ usuario, splits, onVoltar, onVerGraficos, mostrarToast 
             </div>
           ))}
         </div>
+
+        {/* ── modal deletar treino inteiro ── */}
+        {treinoParaDeletar && (
+          <div
+            className="fixed inset-0 z-[70] bg-black/80 flex flex-col justify-end"
+            onClick={() => setTreinoParaDeletar(null)}>
+            <div
+              className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl p-6 pb-10"
+              onClick={e => e.stopPropagation()}>
+              <div className="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto mb-6"/>
+              <h3 className="text-white font-black text-xl mb-2 text-center">Remover treino?</h3>
+              <p className="text-zinc-400 text-sm mb-2 text-center">
+                <strong className="text-white">{treinoParaDeletar.split}</strong> — {fmtDataCurta(treinoParaDeletar.data)}
+              </p>
+              <p className="text-zinc-600 text-xs mb-8 text-center">
+                Todas as {treinoParaDeletar.totalSeries} séries serão removidas permanentemente.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setTreinoParaDeletar(null)}
+                  className="btn flex-1 py-4 bg-zinc-800 active:bg-zinc-700 text-white font-bold rounded-2xl">
+                  Cancelar
+                </button>
+                <button
+                  onClick={deletarTreino}
+                  disabled={deletandoTreino}
+                  className="btn flex-1 py-4 bg-red-500/10 text-red-400 active:bg-red-500/20 font-bold rounded-2xl disabled:opacity-50">
+                  {deletandoTreino ? 'Removendo...' : 'Sim, remover'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── modal deletar série ── */}
         {serieParaDeletar && (

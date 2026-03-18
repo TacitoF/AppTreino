@@ -65,7 +65,13 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, 
           <IconBack/>
         </button>
         <h1 className="text-xl font-bold text-white">Editar Perfil</h1>
-        <div className="w-12 h-12"/>
+        <button
+          onClick={onToggleTema}
+          className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 active:bg-zinc-800 flex-shrink-0"
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+        >
+          {tema === 'claro' ? <IconMoon/> : <IconSun/>}
+        </button>
       </div>
 
       <div className="px-5 pt-6 flex flex-col gap-4">

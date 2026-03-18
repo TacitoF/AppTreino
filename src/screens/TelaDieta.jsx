@@ -259,9 +259,11 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
     setAlimentoSelecionado(null);
     setTermoBusca('');
     setGramas(100);
+    setAbaAtiva(recentes.length > 0 ? 'recentes' : 'proteinas');
   };
 
   // preview calculado a partir do state `gramas`
+  // declarado ANTES de renderizarAlimento para evitar acesso antes da definição
   const preview = alimentoSelecionado && gramas > 0 ? {
     kcal:  Math.round(alimentoSelecionado.kcal    * (gramas / 100)),
     prot:  Math.round(alimentoSelecionado.proteina * (gramas / 100) * 10) / 10,
@@ -580,7 +582,7 @@ export default function TelaDieta({ usuario, onVoltar, mostrarToast }) {
                 className="flex-1 bg-transparent text-white px-3 py-3 outline-none text-base placeholder-zinc-600"
               />
               {termoBusca && (
-                <button onClick={() => setTermoBusca('')} className="text-zinc-500 active:text-white p-2 -mr-2">
+                <button onClick={() => { setTermoBusca(''); setAbaAtiva(recentes.length > 0 ? 'recentes' : 'proteinas'); }} className="text-zinc-500 active:text-white p-2 -mr-2">
                   <IconX/>
                 </button>
               )}
