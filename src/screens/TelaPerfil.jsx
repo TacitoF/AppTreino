@@ -1,15 +1,15 @@
 import React, { useState, useMemo } from 'react';
+import { createAvatar } from '@dicebear/core';
+import { avataaars } from '@dicebear/collection';
 import { apiFetch } from '../auth';
 import { R } from '../config';
 
-// ── ÍCONES ────────────────────────────────────────────────────────
 const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
 const IconSave = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>;
 const IconMoon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>;
 const IconSun = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
 const IconUser = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>;
 
-// Função Inteligente que limpa configs velhas/quebradas do banco antes de bater na API
 const getSafeAvatarUrl = (configStr) => {
   try {
     const parsed = JSON.parse(configStr);
@@ -20,7 +20,7 @@ const getSafeAvatarUrl = (configStr) => {
       eyes: parsed.eyes || 'default',
       mouth: parsed.mouth || 'smile',
       clothes: parsed.clothes || parsed.clothing || 'hoodie',
-      clotheColor: parsed.clotheColor || parsed.clothesColor || 'pastelGreen',
+      clotheColor: parsed.clotheColor || parsed.clothingColor || parsed.clothesColor || 'pastelGreen',
       skinColor: parsed.skinColor || 'light',
       hairColor: parsed.hairColor || 'black',
       accessories: parsed.accessories || 'none'
@@ -31,14 +31,22 @@ const getSafeAvatarUrl = (configStr) => {
     if (isHex(safeConfig.skinColor)) safeConfig.skinColor = 'light';
     if (isHex(safeConfig.hairColor)) safeConfig.hairColor = 'black';
 
-    const params = new URLSearchParams();
-    params.append('seed', 'Volt');
-    params.append('backgroundColor', 'transparent');
-    Object.entries(safeConfig).forEach(([key, val]) => {
-      if (val !== 'none') params.append(key, val);
-    });
+    const options = {
+      seed: 'Volt',
+      backgroundColor: ['transparent'],
+    };
+    
+    if (safeConfig.top && safeConfig.top !== 'none') options.top = [safeConfig.top];
+    if (safeConfig.eyes && safeConfig.eyes !== 'none') options.eyes = [safeConfig.eyes];
+    if (safeConfig.mouth && safeConfig.mouth !== 'none') options.mouth = [safeConfig.mouth];
+    if (safeConfig.clothes && safeConfig.clothes !== 'none') options.clothing = [safeConfig.clothes];
+    if (safeConfig.clotheColor && safeConfig.clotheColor !== 'none') options.clothingColor = [safeConfig.clotheColor];
+    if (safeConfig.skinColor && safeConfig.skinColor !== 'none') options.skinColor = [safeConfig.skinColor];
+    if (safeConfig.hairColor && safeConfig.hairColor !== 'none') options.hairColor = [safeConfig.hairColor];
+    if (safeConfig.accessories && safeConfig.accessories !== 'none') options.accessories = [safeConfig.accessories];
 
-    return `https://api.dicebear.com/9.x/avataaars/svg?${params.toString()}`;
+    const avatar = createAvatar(avataaars, options);
+    return avatar.toDataUri();
   } catch (e) {
     return null;
   }

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { createAvatar } from '@dicebear/core';
+import { avataaars } from '@dicebear/collection';
 import { apiFetch } from '../auth';
 import { R } from '../config';
 
 const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
 
-// ─── OS PARÂMETROS EXATOS E MILIMÉTRICOS EXIGIDOS PELO DICEBEAR ──────────────
 const OPCOES = {
   top: ['shortFlat', 'shortRound', 'shortWaved', 'sides', 'straight01', 'bob', 'bun', 'curly', 'dreads', 'fro', 'turban', 'winterHat1', 'shavedHead'],
   eyes: ['default', 'happy', 'wink', 'surprised', 'squint', 'hearts', 'eyeRoll', 'closed'],
@@ -30,15 +31,28 @@ const CORES = {
   ]
 };
 
-// Construtor Blindado de URL
+// Gera a imagem OFFLINE direto no navegador
 const getAvatarUrl = (config) => {
-  const params = new URLSearchParams();
-  params.append('seed', 'Volt');
-  params.append('backgroundColor', 'transparent');
-  Object.entries(config).forEach(([key, val]) => {
-    if (val !== 'none') params.append(key, val);
-  });
-  return `https://api.dicebear.com/9.x/avataaars/svg?${params.toString()}`;
+  try {
+    const options = {
+      seed: 'Volt',
+      backgroundColor: ['transparent'],
+    };
+    
+    if (config.top && config.top !== 'none') options.top = [config.top];
+    if (config.eyes && config.eyes !== 'none') options.eyes = [config.eyes];
+    if (config.mouth && config.mouth !== 'none') options.mouth = [config.mouth];
+    if (config.clothes && config.clothes !== 'none') options.clothing = [config.clothes];
+    if (config.clotheColor && config.clotheColor !== 'none') options.clothingColor = [config.clotheColor];
+    if (config.skinColor && config.skinColor !== 'none') options.skinColor = [config.skinColor];
+    if (config.hairColor && config.hairColor !== 'none') options.hairColor = [config.hairColor];
+    if (config.accessories && config.accessories !== 'none') options.accessories = [config.accessories];
+
+    const avatar = createAvatar(avataaars, options);
+    return avatar.toDataUri(); // Retorna um SVG instantâneo em formato texto
+  } catch (e) {
+    return '';
+  }
 };
 
 export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }) {
@@ -46,20 +60,17 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
     try {
       if (usuario?.avatar_config) {
         const parsed = JSON.parse(usuario.avatar_config);
-        
-        // Auto-Higienização: Converte configs velhas corrompidas para o padrão correto
         const safeConfig = {
           top: parsed.top || 'shortFlat',
           eyes: parsed.eyes || 'default',
           mouth: parsed.mouth || 'smile',
           clothes: parsed.clothes || parsed.clothing || 'hoodie',
-          clotheColor: parsed.clotheColor || parsed.clothesColor || 'pastelGreen',
+          clotheColor: parsed.clotheColor || parsed.clothingColor || parsed.clothesColor || 'pastelGreen',
           skinColor: parsed.skinColor || 'light',
           hairColor: parsed.hairColor || 'black',
           accessories: parsed.accessories || 'none'
         };
 
-        // Regra de Ouro: A API bloqueia códigos HEX. Se tiver HEX nas cores, nós as resetamos.
         const isHex = (str) => /^[0-9A-Fa-f]{6}$/.test(str);
         if (isHex(safeConfig.clotheColor)) safeConfig.clotheColor = 'pastelGreen';
         if (isHex(safeConfig.skinColor)) safeConfig.skinColor = 'light';
@@ -69,7 +80,6 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
       }
     } catch (e) {}
     
-    // Configuração Inicial de Fábrica
     return {
       top: 'shortFlat', hairColor: 'black', skinColor: 'light', clothes: 'hoodie',
       clotheColor: 'pastelGreen', eyes: 'default', mouth: 'smile', accessories: 'none'
@@ -111,7 +121,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
           className={`aspect-square rounded-full border-4 transition-all ${
             config[chave] === cor.id ? 'border-[#c8f542] scale-110 shadow-lg' : 'border-zinc-800'
           }`}
-          style={{ backgroundColor: cor.hex }} // O HEX fica só na UI, o ID limpo vai pro state!
+          style={{ backgroundColor: cor.hex }}
         />
       ))}
     </div>
@@ -135,7 +145,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
                 <span className="text-zinc-500 text-xs font-bold">Nenhum</span>
               ) : (
                 <div className="w-[140%] h-[140%] pointer-events-none mt-4 flex items-center justify-center">
-                  <img src={previewUrl} alt="preview" className="w-full h-full object-contain" loading="lazy" />
+                  {previewUrl && <img src={previewUrl} alt="preview" className="w-full h-full object-contain" loading="lazy" />}
                 </div>
               )}
             </button>
