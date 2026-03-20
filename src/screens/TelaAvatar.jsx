@@ -1,230 +1,89 @@
 import React, { useState, useMemo } from 'react';
-import NiceAvatar, { genConfig as genAvatarConfig } from 'react-nice-avatar';
+import Avatar, { genConfig } from 'react-nice-avatar';
 import { apiFetch } from '../auth';
 import { R } from '../config';
 
-// ─── SISTEMA ANTI-CRASH (ERROR BOUNDARY) ────────────────────────────────
-class AvatarErrorBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { hasError: false }; }
-  static getDerivedStateFromError(error) { return { hasError: true }; }
+const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
+
+// ─── DETECTOR DE ERROS GLOBAIS ──────────────────────────────────────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null, errorInfo: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, errorInfo) { this.setState({ errorInfo }); }
   render() {
-    if (this.state.hasError) {
-      return <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-[10px] text-zinc-500 text-center rounded-full">Erro no Avatar</div>;
+    if (this.state.error) {
+      return (
+        <div className="min-h-screen bg-zinc-900 p-6 flex flex-col items-center justify-center">
+          <h1 className="text-red-500 font-black text-2xl mb-4">O App Crashou!</h1>
+          <p className="text-white mb-2">Por favor, envie o erro abaixo para o Gemini:</p>
+          <div className="bg-black text-red-400 p-4 rounded-xl text-xs font-mono w-full overflow-auto">
+            <p className="font-bold">{this.state.error.toString()}</p>
+            <p className="mt-4 text-zinc-500">{this.state.errorInfo?.componentStack}</p>
+          </div>
+          <button onClick={() => window.location.reload()} className="mt-8 px-6 py-3 bg-white text-black font-bold rounded-xl">
+            Recarregar App
+          </button>
+        </div>
+      );
     }
     return this.props.children;
   }
 }
 
-// Garante que o componente existe (resolve bug do Vite com CommonJS/ESM)
-const AvatarBase = NiceAvatar && typeof NiceAvatar === 'object' && NiceAvatar.default 
-  ? NiceAvatar.default 
-  : NiceAvatar;
-
-const isAvatarValid = typeof AvatarBase === 'function' || (typeof AvatarBase === 'object' && AvatarBase !== null);
-
-const SafeAvatar = (props) => {
-  if (!isAvatarValid) {
-    return <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-[10px] text-zinc-500 rounded-full">Indisponível</div>;
-  }
-  
-  // Limpa as opções "none" que causam erro interno fatal na biblioteca
-  const cleanProps = { ...props };
-  if (cleanProps.hatStyle === 'none') delete cleanProps.hatStyle;
-  if (cleanProps.glassesStyle === 'none') delete cleanProps.glassesStyle;
-
-  return (
-    <AvatarErrorBoundary>
-      <AvatarBase style={{ width: '100%', height: '100%' }} {...cleanProps} />
-    </AvatarErrorBoundary>
-  );
-};
-
-const safeGenConfig = (cfg) => {
-  try {
-    const gen = genAvatarConfig || (NiceAvatar && NiceAvatar.genConfig);
-    return gen ? gen(cfg) : cfg;
-  } catch (e) {
-    return cfg;
-  }
-};
-// ────────────────────────────────────────────────────────────────────────
-
-const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
-
-const OPCOES = {
-  sex: ['man', 'woman'],
-  hairStyle: ['normal', 'thick', 'mohawk', 'womanLong', 'womanShort'],
-  hatStyle: ['none', 'beanie', 'turban'],
-  faceColor: ['#f9c9b6', '#f8b69b', '#e09879', '#ac6651', '#7b3f2f', '#4e2418'],
-  hairColor: ['#000000', '#4a3123', '#d6b370', '#e8e1d3', '#d64d4d', '#71b8e6', '#c8f542'],
-  shirtStyle: ['hoody', 'short', 'polo'],
-  shirtColor: ['#c8f542', '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#000000', '#ffffff'],
-  eyeStyle: ['circle', 'oval', 'smile'],
-  noseStyle: ['short', 'long', 'round'],
-  mouthStyle: ['smile', 'laugh', 'peace'],
-  glassesStyle: ['none', 'round', 'square'],
-};
-
-export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }) {
+// ─── COMPONENTE PRINCIPAL ───────────────────────────────────────────────────
+function TelaAvatarConteudo({ usuario, onVoltar, onSalvar, mostrarToast }) {
   const [config, setConfig] = useState(() => {
     try {
-      if (usuario.avatar_config) return JSON.parse(usuario.avatar_config);
+      if (usuario?.avatar_config) return JSON.parse(usuario.avatar_config);
     } catch (e) {}
     return {
       sex: 'man',
-      faceColor: OPCOES.faceColor[0],
+      faceColor: '#f9c9b6',
       earSize: 'small',
       eyeStyle: 'circle',
       noseStyle: 'short',
       mouthStyle: 'smile',
       shirtStyle: 'hoody',
       glassesStyle: 'none',
-      hairColor: OPCOES.hairColor[0],
+      hairColor: '#000000',
       hairStyle: 'normal',
-      hatStyle: 'none',
-      shirtColor: OPCOES.shirtColor[0],
-      bgColor: 'transparent'
+      shirtColor: '#c8f542',
     };
   });
 
-  const [aba, setAba] = useState('cabelo');
-  const [salvando, setSalvando] = useState(false);
-
-  const avatarSeguro = useMemo(() => safeGenConfig({ ...config, isRandom: false }), [config]);
-
-  const atualizar = (chave, valor) => {
-    setConfig(prev => ({ ...prev, [chave]: valor }));
-  };
-
   const salvar = async () => {
-    setSalvando(true);
-    try {
-      const payload = {
-        id_usuario: usuario.id,
-        nome: usuario.nome, 
-        email: usuario.email,
-        avatar_config: JSON.stringify(config)
-      };
-      await apiFetch(R.editarUsuario || '/api/usuario/editar', { method: 'POST', body: payload });
-      const usrAtualizado = { ...usuario, avatar_config: JSON.stringify(config) };
-      if (onSalvar) onSalvar(usrAtualizado);
-      mostrarToast('Avatar atualizado!', 'sucesso');
-      onVoltar();
-    } catch {
-      mostrarToast('Erro ao salvar avatar.', 'erro');
-    } finally {
-      setSalvando(false);
-    }
+    mostrarToast('Simulação de salvamento', 'info');
+    onVoltar();
   };
-
-  const renderCores = (chave) => (
-    <div className="grid grid-cols-6 gap-3 mt-3 mb-6">
-      {OPCOES[chave].map(cor => (
-        <button
-          key={cor}
-          onClick={() => atualizar(chave, cor)}
-          className={`aspect-square rounded-full border-4 transition-all ${
-            config[chave] === cor ? 'border-[#c8f542] scale-110 shadow-lg' : 'border-zinc-800'
-          }`}
-          style={{ backgroundColor: cor }}
-        />
-      ))}
-    </div>
-  );
-
-  const renderPreviews = (chave, label) => (
-    <div className="mb-6">
-      <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3">{label}</p>
-      <div className="grid grid-cols-4 gap-3">
-        {OPCOES[chave].map(estilo => {
-          const previewConfig = safeGenConfig({ ...config, [chave]: estilo, isRandom: false });
-          
-          return (
-            <button
-              key={estilo}
-              onClick={() => atualizar(chave, estilo)}
-              className={`relative aspect-square rounded-2xl overflow-hidden transition-all flex items-center justify-center bg-zinc-900 border-2 ${
-                config[chave] === estilo
-                  ? 'border-[#c8f542] bg-[#c8f542]/10 scale-105 z-10'
-                  : 'border-zinc-800 opacity-70 hover:opacity-100'
-              }`}
-            >
-              {estilo === 'none' && chave !== 'hatStyle' ? (
-                <span className="text-zinc-500 text-xs font-bold">Nenhum</span>
-              ) : (
-                <div className="w-[140%] h-[140%] pointer-events-none mt-4 flex items-center justify-center">
-                  <SafeAvatar {...previewConfig} />
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
-      <div className="px-4 pt-12 pb-3 flex items-center justify-between bg-[#0a0a0a]/95 backdrop-blur-md z-10 sticky top-0 border-b border-zinc-900">
-        <button onClick={onVoltar} disabled={salvando} className="btn w-11 h-11 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800">
+      <div className="px-4 pt-12 pb-3 flex items-center justify-between border-b border-zinc-900">
+        <button onClick={onVoltar} className="btn w-11 h-11 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white">
           <IconBack />
         </button>
-        <h1 className="text-lg font-black text-white">Seu Personagem</h1>
-        <button onClick={salvar} disabled={salvando} className="text-[#c8f542] font-bold text-sm bg-[#c8f542]/10 px-4 py-2 rounded-xl active:bg-[#c8f542]/20 transition-colors">
-          {salvando ? '...' : 'Salvar'}
-        </button>
+        <h1 className="text-lg font-black text-white">Modo Debug</h1>
+        <button onClick={salvar} className="text-[#c8f542] font-bold text-sm">Salvar</button>
       </div>
 
-      <div className="flex justify-center items-center py-6 bg-gradient-to-b from-zinc-900/50 to-transparent">
-        <div className="w-40 h-40 rounded-full shadow-[0_0_40px_rgba(200,245,66,0.1)] border-4 border-zinc-800/80 overflow-hidden relative bg-zinc-900 flex items-center justify-center">
-          <SafeAvatar {...avatarSeguro} />
+      <div className="flex justify-center items-center py-10 bg-zinc-900/50">
+        <div className="w-48 h-48 rounded-full border-4 border-zinc-800 shadow-xl overflow-hidden flex items-center justify-center">
+          {/* A renderização direta do Avatar que pode estar causando o crash */}
+          <Avatar style={{ width: '100%', height: '100%' }} {...config} />
         </div>
       </div>
-
-      <div className="flex px-4 border-b border-zinc-900">
-        {['cabelo', 'rosto', 'roupa', 'cores'].map(a => (
-          <button
-            key={a}
-            onClick={() => setAba(a)}
-            className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${
-              aba === a ? 'text-[#c8f542] border-[#c8f542]' : 'text-zinc-600 border-transparent active:text-zinc-400'
-            }`}
-          >
-            {a}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 pb-20">
-        {aba === 'cabelo' && (
-          <div>
-            {renderPreviews('sex', 'Base do Corpo')}
-            {renderPreviews('hairStyle', 'Corte de Cabelo')}
-            {renderPreviews('hatStyle', 'Acessórios de Cabeça')}
-          </div>
-        )}
-        {aba === 'rosto' && (
-          <div>
-            {renderPreviews('eyeStyle', 'Olhos')}
-            {renderPreviews('noseStyle', 'Nariz')}
-            {renderPreviews('mouthStyle', 'Boca')}
-            {renderPreviews('glassesStyle', 'Óculos')}
-          </div>
-        )}
-        {aba === 'roupa' && <div>{renderPreviews('shirtStyle', 'Estilo da Roupa')}</div>}
-        {aba === 'cores' && (
-          <div>
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mt-2">Tom de Pele</p>
-            {renderCores('faceColor')}
-            <div className="h-px bg-zinc-900 my-4" />
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Cor do Cabelo</p>
-            {renderCores('hairColor')}
-            <div className="h-px bg-zinc-900 my-4" />
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Cor da Roupa</p>
-            {renderCores('shirtColor')}
-          </div>
-        )}
+      
+      <div className="p-5 text-center text-zinc-500">
+        Se você está vendo esta tela inteira, a biblioteca carregou com sucesso!
       </div>
     </div>
+  );
+}
+
+export default function TelaAvatar(props) {
+  return (
+    <ErrorBoundary>
+      <TelaAvatarConteudo {...props} />
+    </ErrorBoundary>
   );
 }
