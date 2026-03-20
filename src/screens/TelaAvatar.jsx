@@ -4,28 +4,37 @@ import { R } from '../config';
 
 const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
 
-// ─── OPÇÕES DO DICEBEAR AVATAAARS 9.x ─────────────────────────────────────────
-// A API exige os nomes exatos para as chaves e códigos HEX (sem #) para as cores.
+// ─── OS PARÂMETROS EXATOS E MILIMÉTRICOS EXIGIDOS PELO DICEBEAR ──────────────
 const OPCOES = {
-  top: ['shortFlat', 'shortRound', 'shortWaved', 'sides', 'straight01', 'bob', 'bun', 'curly', 'dreads', 'fro', 'turban', 'winterHat1'],
-  eyes: ['default', 'happy', 'wink', 'surprised', 'squint', 'hearts', 'eyeRoll'],
+  top: ['shortFlat', 'shortRound', 'shortWaved', 'sides', 'straight01', 'bob', 'bun', 'curly', 'dreads', 'fro', 'turban', 'winterHat1', 'shavedHead'],
+  eyes: ['default', 'happy', 'wink', 'surprised', 'squint', 'hearts', 'eyeRoll', 'closed'],
   mouth: ['default', 'smile', 'twinkle', 'serious', 'grimace', 'sad'],
-  clothing: ['hoodie', 'shirtCrewNeck', 'shirtVNeck', 'collarAndSweater', 'blazerAndShirt', 'overall'],
+  clothes: ['hoodie', 'shirtCrewNeck', 'shirtVNeck', 'collarAndSweater', 'blazerAndShirt', 'overall', 'graphicShirt'],
   accessories: ['none', 'prescription01', 'prescription02', 'round', 'sunglasses', 'wayfarers'],
 };
 
 const CORES = {
-  skinColor: ['ffdbb4', 'edb98a', 'f2c811', 'fd9841', 'd08b5b', 'ae5d29', '614335'],
-  hairColor: ['262e33', '4a3123', '724133', 'a55728', 'd6b370', 'c93305', 'e8e1e1', 'f59797'],
-  clothesColor: ['262e33', '929598', 'ffffff', '65c9ff', 'b1e2ff', 'a7ffc4', 'ffa7a7', 'ff488e', 'ff5c5c']
+  skinColor: [
+    { id: 'pale', hex: '#FFDBB4' }, { id: 'light', hex: '#EDB98A' }, { id: 'yellow', hex: '#F2C811' },
+    { id: 'tanned', hex: '#FD9841' }, { id: 'brown', hex: '#D08B5B' }, { id: 'darkBrown', hex: '#AE5D29' }, { id: 'black', hex: '#614335' }
+  ],
+  hairColor: [
+    { id: 'black', hex: '#262E33' }, { id: 'brownDark', hex: '#4A3123' }, { id: 'brown', hex: '#724133' },
+    { id: 'auburn', hex: '#A55728' }, { id: 'blonde', hex: '#D6B370' }, { id: 'red', hex: '#C93305' },
+    { id: 'silverGray', hex: '#E8E1E1' }, { id: 'pastelPink', hex: '#F59797' }
+  ],
+  clotheColor: [
+    { id: 'black', hex: '#262E33' }, { id: 'gray02', hex: '#929598' }, { id: 'white', hex: '#FFFFFF' },
+    { id: 'blue02', hex: '#65C9FF' }, { id: 'pastelBlue', hex: '#B1E2FF' }, { id: 'pastelGreen', hex: '#A7FFC4' },
+    { id: 'pastelRed', hex: '#FFA7A7' }, { id: 'pink', hex: '#FF488E' }, { id: 'red', hex: '#FF5C5C' }
+  ]
 };
 
-// Constrói a URL exata que a API espera
+// Construtor Blindado de URL
 const getAvatarUrl = (config) => {
   const params = new URLSearchParams();
-  params.append('seed', 'Volt'); // Seed fixo para manter consistência
+  params.append('seed', 'Volt');
   params.append('backgroundColor', 'transparent');
-  
   Object.entries(config).forEach(([key, val]) => {
     if (val !== 'none') params.append(key, val);
   });
@@ -37,21 +46,33 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
     try {
       if (usuario?.avatar_config) {
         const parsed = JSON.parse(usuario.avatar_config);
-        // Só recupera do banco se for do formato novo corrigido (ignora configurações corrompidas)
-        if (parsed.clothing) return parsed;
+        
+        // Auto-Higienização: Converte configs velhas corrompidas para o padrão correto
+        const safeConfig = {
+          top: parsed.top || 'shortFlat',
+          eyes: parsed.eyes || 'default',
+          mouth: parsed.mouth || 'smile',
+          clothes: parsed.clothes || parsed.clothing || 'hoodie',
+          clotheColor: parsed.clotheColor || parsed.clothesColor || 'pastelGreen',
+          skinColor: parsed.skinColor || 'light',
+          hairColor: parsed.hairColor || 'black',
+          accessories: parsed.accessories || 'none'
+        };
+
+        // Regra de Ouro: A API bloqueia códigos HEX. Se tiver HEX nas cores, nós as resetamos.
+        const isHex = (str) => /^[0-9A-Fa-f]{6}$/.test(str);
+        if (isHex(safeConfig.clotheColor)) safeConfig.clotheColor = 'pastelGreen';
+        if (isHex(safeConfig.skinColor)) safeConfig.skinColor = 'light';
+        if (isHex(safeConfig.hairColor)) safeConfig.hairColor = 'black';
+
+        return safeConfig;
       }
     } catch (e) {}
     
-    // Configuração inicial válida (códigos hex sem o '#')
+    // Configuração Inicial de Fábrica
     return {
-      top: 'shortFlat',
-      hairColor: '262e33',
-      skinColor: 'edb98a',
-      clothing: 'hoodie',
-      clothesColor: 'a7ffc4',
-      eyes: 'default',
-      mouth: 'smile',
-      accessories: 'none'
+      top: 'shortFlat', hairColor: 'black', skinColor: 'light', clothes: 'hoodie',
+      clotheColor: 'pastelGreen', eyes: 'default', mouth: 'smile', accessories: 'none'
     };
   });
 
@@ -72,7 +93,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
       await apiFetch(R.editarUsuario || '/api/usuario/editar', { method: 'POST', body: payload });
       const usrAtualizado = { ...usuario, avatar_config: JSON.stringify(config) };
       if (onSalvar) onSalvar(usrAtualizado);
-      mostrarToast('Avatar atualizado no estilo!', 'sucesso');
+      mostrarToast('Avatar atualizado!', 'sucesso');
       onVoltar();
     } catch {
       mostrarToast('Erro ao salvar avatar.', 'erro');
@@ -85,12 +106,12 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
     <div className="grid grid-cols-6 gap-3 mt-3 mb-6">
       {CORES[chave].map(cor => (
         <button
-          key={cor}
-          onClick={() => atualizar(chave, cor)}
+          key={cor.id}
+          onClick={() => atualizar(chave, cor.id)}
           className={`aspect-square rounded-full border-4 transition-all ${
-            config[chave] === cor ? 'border-[#c8f542] scale-110 shadow-lg' : 'border-zinc-800'
+            config[chave] === cor.id ? 'border-[#c8f542] scale-110 shadow-lg' : 'border-zinc-800'
           }`}
-          style={{ backgroundColor: `#${cor}` }} // CSS precisa da # para renderizar a bolinha na tela
+          style={{ backgroundColor: cor.hex }} // O HEX fica só na UI, o ID limpo vai pro state!
         />
       ))}
     </div>
@@ -157,11 +178,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 pb-20">
-        {aba === 'cabelo' && (
-          <div>
-            {renderPreviews('top', 'Corte de Cabelo')}
-          </div>
-        )}
+        {aba === 'cabelo' && <div>{renderPreviews('top', 'Corte de Cabelo')}</div>}
         {aba === 'rosto' && (
           <div>
             {renderPreviews('eyes', 'Olhos')}
@@ -169,7 +186,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
             {renderPreviews('accessories', 'Óculos')}
           </div>
         )}
-        {aba === 'roupa' && <div>{renderPreviews('clothing', 'Estilo da Roupa')}</div>}
+        {aba === 'roupa' && <div>{renderPreviews('clothes', 'Estilo da Roupa')}</div>}
         {aba === 'cores' && (
           <div>
             <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mt-2">Tom de Pele</p>
@@ -179,7 +196,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
             {renderCores('hairColor')}
             <div className="h-px bg-zinc-900 my-4" />
             <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Cor da Roupa</p>
-            {renderCores('clothesColor')}
+            {renderCores('clotheColor')}
           </div>
         )}
       </div>

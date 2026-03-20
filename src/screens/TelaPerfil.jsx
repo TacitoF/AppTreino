@@ -9,18 +9,35 @@ const IconMoon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const IconSun = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
 const IconUser = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>;
 
-// Função que reconstrói a URL limpa do avatar
-const getAvatarUrl = (configStr) => {
+// Função Inteligente que limpa configs velhas/quebradas do banco antes de bater na API
+const getSafeAvatarUrl = (configStr) => {
   try {
-    const config = JSON.parse(configStr);
-    if (!config.clothing) return null; // Previne tentar ler o formato corrompido anterior
-    
+    const parsed = JSON.parse(configStr);
+    if (!parsed) return null;
+
+    const safeConfig = {
+      top: parsed.top || 'shortFlat',
+      eyes: parsed.eyes || 'default',
+      mouth: parsed.mouth || 'smile',
+      clothes: parsed.clothes || parsed.clothing || 'hoodie',
+      clotheColor: parsed.clotheColor || parsed.clothesColor || 'pastelGreen',
+      skinColor: parsed.skinColor || 'light',
+      hairColor: parsed.hairColor || 'black',
+      accessories: parsed.accessories || 'none'
+    };
+
+    const isHex = (str) => /^[0-9A-Fa-f]{6}$/.test(str);
+    if (isHex(safeConfig.clotheColor)) safeConfig.clotheColor = 'pastelGreen';
+    if (isHex(safeConfig.skinColor)) safeConfig.skinColor = 'light';
+    if (isHex(safeConfig.hairColor)) safeConfig.hairColor = 'black';
+
     const params = new URLSearchParams();
     params.append('seed', 'Volt');
     params.append('backgroundColor', 'transparent');
-    Object.entries(config).forEach(([key, val]) => {
+    Object.entries(safeConfig).forEach(([key, val]) => {
       if (val !== 'none') params.append(key, val);
     });
+
     return `https://api.dicebear.com/9.x/avataaars/svg?${params.toString()}`;
   } catch (e) {
     return null;
@@ -43,7 +60,7 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, 
 
   const avatarUrl = useMemo(() => {
     if (!usuario.avatar_config) return null;
-    return getAvatarUrl(usuario.avatar_config);
+    return getSafeAvatarUrl(usuario.avatar_config);
   }, [usuario.avatar_config]);
 
   const salvar = async () => {
