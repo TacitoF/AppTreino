@@ -3,14 +3,54 @@ import NiceAvatar, { genConfig as genAvatarConfig } from 'react-nice-avatar';
 import { apiFetch } from '../auth';
 import { R } from '../config';
 
-// ─── RESOLUÇÃO DO BUG DO VITE ───────────────────────────────────────────────
-// Garante que o componente seja extraído corretamente, independente do formato (CJS/ESM)
-const AvatarComponent = NiceAvatar?.default || NiceAvatar;
-const genConfig = genAvatarConfig || NiceAvatar?.genConfig;
+// ─── SISTEMA ANTI-CRASH (ERROR BOUNDARY) ────────────────────────────────
+class AvatarErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError(error) { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-[10px] text-zinc-500 text-center rounded-full">Erro no Avatar</div>;
+    }
+    return this.props.children;
+  }
+}
+
+// Garante que o componente existe (resolve bug do Vite com CommonJS/ESM)
+const AvatarBase = NiceAvatar && typeof NiceAvatar === 'object' && NiceAvatar.default 
+  ? NiceAvatar.default 
+  : NiceAvatar;
+
+const isAvatarValid = typeof AvatarBase === 'function' || (typeof AvatarBase === 'object' && AvatarBase !== null);
+
+const SafeAvatar = (props) => {
+  if (!isAvatarValid) {
+    return <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-[10px] text-zinc-500 rounded-full">Indisponível</div>;
+  }
+  
+  // Limpa as opções "none" que causam erro interno fatal na biblioteca
+  const cleanProps = { ...props };
+  if (cleanProps.hatStyle === 'none') delete cleanProps.hatStyle;
+  if (cleanProps.glassesStyle === 'none') delete cleanProps.glassesStyle;
+
+  return (
+    <AvatarErrorBoundary>
+      <AvatarBase style={{ width: '100%', height: '100%' }} {...cleanProps} />
+    </AvatarErrorBoundary>
+  );
+};
+
+const safeGenConfig = (cfg) => {
+  try {
+    const gen = genAvatarConfig || (NiceAvatar && NiceAvatar.genConfig);
+    return gen ? gen(cfg) : cfg;
+  } catch (e) {
+    return cfg;
+  }
+};
+// ────────────────────────────────────────────────────────────────────────
 
 const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
 
-// ─── OPÇÕES DA BIBLIOTECA ───────────────────────────────────────────────────
 const OPCOES = {
   sex: ['man', 'woman'],
   hairStyle: ['normal', 'thick', 'mohawk', 'womanLong', 'womanShort'],
@@ -50,8 +90,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
   const [aba, setAba] = useState('cabelo');
   const [salvando, setSalvando] = useState(false);
 
-  // Se genConfig for undefined por erro da lib, retorna config vazia para não quebrar
-  const avatarSeguro = useMemo(() => genConfig ? genConfig({ ...config, isRandom: false }) : config, [config]);
+  const avatarSeguro = useMemo(() => safeGenConfig({ ...config, isRandom: false }), [config]);
 
   const atualizar = (chave, valor) => {
     setConfig(prev => ({ ...prev, [chave]: valor }));
@@ -98,7 +137,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
       <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3">{label}</p>
       <div className="grid grid-cols-4 gap-3">
         {OPCOES[chave].map(estilo => {
-          const previewConfig = genConfig ? genConfig({ ...config, [chave]: estilo, isRandom: false }) : { ...config, [chave]: estilo };
+          const previewConfig = safeGenConfig({ ...config, [chave]: estilo, isRandom: false });
           
           return (
             <button
@@ -114,8 +153,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
                 <span className="text-zinc-500 text-xs font-bold">Nenhum</span>
               ) : (
                 <div className="w-[140%] h-[140%] pointer-events-none mt-4 flex items-center justify-center">
-                  {/* TRAVA: Só renderiza se o componente existir, evitando a tela preta */}
-                  {AvatarComponent ? <AvatarComponent style={{ width: '100%', height: '100%' }} {...previewConfig} /> : null}
+                  <SafeAvatar {...previewConfig} />
                 </div>
               )}
             </button>
@@ -139,11 +177,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
 
       <div className="flex justify-center items-center py-6 bg-gradient-to-b from-zinc-900/50 to-transparent">
         <div className="w-40 h-40 rounded-full shadow-[0_0_40px_rgba(200,245,66,0.1)] border-4 border-zinc-800/80 overflow-hidden relative bg-zinc-900 flex items-center justify-center">
-          {AvatarComponent ? (
-             <AvatarComponent style={{ width: '100%', height: '100%' }} {...avatarSeguro} />
-          ) : (
-             <span className="text-zinc-500 text-xs text-center px-4">Erro ao carregar Avatar</span>
-          )}
+          <SafeAvatar {...avatarSeguro} />
         </div>
       </div>
 

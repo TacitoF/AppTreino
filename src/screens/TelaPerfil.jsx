@@ -1,9 +1,41 @@
 import React, { useState, useMemo } from 'react';
 import { apiFetch } from '../auth';
 import { R } from '../config';
-import Avatar, { genConfig } from 'react-nice-avatar';
+import NiceAvatar, { genConfig as genAvatarConfig } from 'react-nice-avatar';
 
-// ── ÍCONES ────────────────────────────────────────────────────────
+// ─── SISTEMA ANTI-CRASH (ERROR BOUNDARY) ────────────────────────────────
+class AvatarErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError(error) { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) return <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-[10px] text-zinc-500 text-center rounded-full">Erro</div>;
+    return this.props.children;
+  }
+}
+
+const AvatarBase = NiceAvatar && typeof NiceAvatar === 'object' && NiceAvatar.default ? NiceAvatar.default : NiceAvatar;
+const isAvatarValid = typeof AvatarBase === 'function' || (typeof AvatarBase === 'object' && AvatarBase !== null);
+
+const SafeAvatar = (props) => {
+  if (!isAvatarValid) return <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-xs text-zinc-500 rounded-full">...</div>;
+  const cleanProps = { ...props };
+  if (cleanProps.hatStyle === 'none') delete cleanProps.hatStyle;
+  if (cleanProps.glassesStyle === 'none') delete cleanProps.glassesStyle;
+  return (
+    <AvatarErrorBoundary>
+      <AvatarBase style={{ width: '100%', height: '100%' }} {...cleanProps} />
+    </AvatarErrorBoundary>
+  );
+};
+
+const safeGenConfig = (cfg) => {
+  try {
+    const gen = genAvatarConfig || (NiceAvatar && NiceAvatar.genConfig);
+    return gen ? gen(cfg) : cfg;
+  } catch (e) { return cfg; }
+};
+// ────────────────────────────────────────────────────────────────────────
+
 const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
 const IconSave = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>;
 const IconMoon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>;
@@ -26,7 +58,7 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, 
 
   const avatarConfig = useMemo(() => {
     try {
-      if (usuario.avatar_config) return genConfig(JSON.parse(usuario.avatar_config));
+      if (usuario.avatar_config) return safeGenConfig(JSON.parse(usuario.avatar_config));
     } catch (e) {}
     return null;
   }, [usuario.avatar_config]);
@@ -52,7 +84,6 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, 
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col pb-10">
-      {/* ── HEADER ── */}
       <div className="px-5 pt-14 pb-4 flex items-center justify-between border-b border-zinc-900">
         <button onClick={onVoltar} className="btn w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800 flex-shrink-0">
           <IconBack/>
@@ -65,11 +96,10 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, 
 
       <div className="px-5 pt-6 flex flex-col gap-4">
         
-        {/* ── SEÇÃO DO AVATAR ── */}
         <div className="flex flex-col items-center justify-center mb-4">
           <div className="w-24 h-24 rounded-full border-4 border-zinc-800 bg-zinc-900 overflow-hidden mb-3 relative flex items-center justify-center shadow-lg">
             {avatarConfig ? (
-              <Avatar style={{ width: '100%', height: '100%' }} {...avatarConfig} />
+              <SafeAvatar {...avatarConfig} />
             ) : (
               <div className="text-zinc-600"><IconUser /></div>
             )}
@@ -82,7 +112,6 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, 
           </button>
         </div>
 
-        {/* ── FORMULÁRIO EXISTENTE ── */}
         <div>
           <label className="text-zinc-500 text-xs font-bold uppercase ml-1 mb-1 block">Nome</label>
           <input type="text" value={nome} onChange={e => setNome(e.target.value)} className={inp}/>
