@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { apiFetch } from '../auth';
 import { R } from '../config';
-import Avatar from 'react-nice-avatar';
+import Avatar, { genConfig } from 'react-nice-avatar';
 
+// ── ÍCONES ────────────────────────────────────────────────────────
 const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
 const IconSave = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>;
 const IconMoon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>;
@@ -23,10 +24,9 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, 
 
   const inp = "w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base placeholder-zinc-600";
 
-  // Carrega as configurações do avatar de forma segura
   const avatarConfig = useMemo(() => {
     try {
-      if (usuario.avatar_config) return JSON.parse(usuario.avatar_config);
+      if (usuario.avatar_config) return genConfig(JSON.parse(usuario.avatar_config));
     } catch (e) {}
     return null;
   }, [usuario.avatar_config]);
@@ -37,7 +37,7 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, 
       const payload = {
         id_usuario: usuario.id,
         nome, email, senha, peso_atual: peso, altura, idade, genero, objetivo: obj, atividade,
-        avatar_config: usuario.avatar_config // Mantém o avatar atual na edição de perfil
+        avatar_config: usuario.avatar_config
       };
       await apiFetch(R.editarUsuario || '/api/usuario/editar', { method: 'POST', body: payload });
       const usrAtualizado = { ...usuario, nome, email, peso_atual: peso, altura, idade, genero, objetivo: obj, atividade };
@@ -69,7 +69,7 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, 
         <div className="flex flex-col items-center justify-center mb-4">
           <div className="w-24 h-24 rounded-full border-4 border-zinc-800 bg-zinc-900 overflow-hidden mb-3 relative flex items-center justify-center shadow-lg">
             {avatarConfig ? (
-              <Avatar className="w-full h-full" {...avatarConfig} />
+              <Avatar style={{ width: '100%', height: '100%' }} {...avatarConfig} />
             ) : (
               <div className="text-zinc-600"><IconUser /></div>
             )}

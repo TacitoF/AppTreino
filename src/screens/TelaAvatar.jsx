@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import Avatar from 'react-nice-avatar';
+import React, { useState, useMemo } from 'react';
+import Avatar, { genConfig } from 'react-nice-avatar';
 import { apiFetch } from '../auth';
 import { R } from '../config';
-import { IconBack } from '../components/icons';
+
+// ─── ÍCONES INLINE (Evita o crash de tela preta por import não encontrado) ───
+const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
 
 // ─── OPÇÕES DE CUSTOMIZAÇÃO ─────────────────────────────────────────────────
 const OPCOES = {
@@ -17,7 +19,6 @@ const OPCOES = {
 };
 
 export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }) {
-  // Inicializa com o avatar salvo ou um padrão
   const [config, setConfig] = useState(() => {
     try {
       if (usuario.avatar_config) return JSON.parse(usuario.avatar_config);
@@ -40,6 +41,9 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
   const [aba, setAba] = useState('cabelo');
   const [salvando, setSalvando] = useState(false);
 
+  // O pulo do gato: genConfig preenche qualquer dado que falte, impedindo a tela preta!
+  const avatarSeguro = useMemo(() => genConfig(config), [config]);
+
   const atualizar = (chave, valor) => {
     setConfig(prev => ({ ...prev, [chave]: valor }));
   };
@@ -49,10 +53,9 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
     try {
       const payload = {
         id_usuario: usuario.id,
-        // Mantemos os dados originais para a rota genérica de edição
         nome: usuario.nome, 
         email: usuario.email,
-        avatar_config: JSON.stringify(config) // Novo campo
+        avatar_config: JSON.stringify(config)
       };
       
       await apiFetch(R.editarUsuario || '/api/usuario/editar', { method: 'POST', body: payload });
@@ -60,7 +63,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
       const usrAtualizado = { ...usuario, avatar_config: JSON.stringify(config) };
       if (onSalvar) onSalvar(usrAtualizado);
       
-      mostrarToast('Avatar atualizado no estilo!', 'sucesso');
+      mostrarToast('Avatar atualizado!', 'sucesso');
       onVoltar();
     } catch {
       mostrarToast('Erro ao salvar avatar.', 'erro');
@@ -69,7 +72,6 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
     }
   };
 
-  // ─── COMPONENTES DE GRID ──────────────────────────────────────────────────
   const renderCores = (chave) => (
     <div className="grid grid-cols-5 gap-3 mt-4">
       {OPCOES[chave].map(cor => (
@@ -108,7 +110,6 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
-      {/* ── HEADER ── */}
       <div className="px-4 pt-12 pb-3 flex items-center justify-between bg-[#0a0a0a]/95 backdrop-blur-md z-10 sticky top-0 border-b border-zinc-900">
         <button onClick={onVoltar} disabled={salvando} className="btn w-11 h-11 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800">
           <IconBack />
@@ -119,14 +120,12 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
         </button>
       </div>
 
-      {/* ── PREVIEW (Fixo no topo) ── */}
       <div className="flex justify-center items-center py-8 bg-gradient-to-b from-zinc-900/50 to-transparent">
         <div className="w-48 h-48 rounded-full shadow-[0_0_40px_rgba(200,245,66,0.1)] border-4 border-zinc-800/80 overflow-hidden relative">
-          <Avatar className="w-full h-full" {...config} />
+          <Avatar style={{ width: '100%', height: '100%' }} {...avatarSeguro} />
         </div>
       </div>
 
-      {/* ── ABAS DE NAVEGAÇÃO ── */}
       <div className="flex px-4 border-b border-zinc-900">
         {['cabelo', 'rosto', 'roupa', 'cores'].map(a => (
           <button
@@ -141,14 +140,8 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
         ))}
       </div>
 
-      {/* ── CONTEÚDO DAS ABAS ── */}
       <div className="flex-1 overflow-y-auto p-4 pb-20">
-        {aba === 'cabelo' && (
-          <div>
-            {renderEstilos('hairStyle', 'Corte de Cabelo')}
-          </div>
-        )}
-
+        {aba === 'cabelo' && <div>{renderEstilos('hairStyle', 'Corte de Cabelo')}</div>}
         {aba === 'rosto' && (
           <div>
             {renderEstilos('eyeStyle', 'Olhos')}
@@ -156,25 +149,15 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
             {renderEstilos('glassesStyle', 'Óculos')}
           </div>
         )}
-
-        {aba === 'roupa' && (
-          <div>
-            {renderEstilos('shirtStyle', 'Estilo da Roupa')}
-          </div>
-        )}
-
+        {aba === 'roupa' && <div>{renderEstilos('shirtStyle', 'Estilo da Roupa')}</div>}
         {aba === 'cores' && (
           <div>
             <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mt-2">Tom de Pele</p>
             {renderCores('faceColor')}
-            
             <div className="h-px bg-zinc-900 my-6" />
-            
             <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Cor do Cabelo</p>
             {renderCores('hairColor')}
-            
             <div className="h-px bg-zinc-900 my-6" />
-            
             <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Cor da Roupa</p>
             {renderCores('shirtColor')}
           </div>
