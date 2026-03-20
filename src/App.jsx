@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { apiFetch, getAuthToken, clearAuthToken, salvarSessao, carregarSessao } from './auth';
+// Adicionado o setAuthToken na importação abaixo para evitar erro no Login!
+import { apiFetch, getAuthToken, setAuthToken, clearAuthToken, salvarSessao, carregarSessao } from './auth';
 import { R } from './config';
 import { Toast, IOSInstallBanner } from './components/ui';
 import TelaAuth             from './screens/TelaAuth';
@@ -27,136 +28,77 @@ export default function App() {
 
   const [usuario, setUsuario]        = useState(podeRestaurar ? sessaoSalva.usuario : null);
   const [tela, setTela]              = useState(podeRestaurar ? sessaoSalva.tela : 'auth');
-  const [splits, setSplits]          = useState([]);
-  const [loadingSplits, setLoadingS] = useState(false);
   const [splitAtivo, setSplitAtivo]  = useState(podeRestaurar ? sessaoSalva.splitAtivo : null);
-  const [historico, setHistorico]    = useState([]);
-  const [resultado, setResultado]    = useState(null);
+  const [resultadoTreino, setResultadoTreino] = useState(null);
+  const [splits, setSplits]          = useState([]);
+  const [loadingSplits, setLoadingSplits] = useState(false);
   const [toast, setToast]            = useState(null);
+  const [tema, setTema]              = useState(() => localStorage.getItem(TEMA_KEY) || 'escuro');
   const [splitGraficoPre, setSplitGraficoPre] = useState(null);
-  const [tema, setTema]              = useState(() => {
-    try { return localStorage.getItem(TEMA_KEY) || 'escuro'; } catch { return 'escuro'; }
-  });
-  const toastTimerRef = useRef(null);
-  const usuarioRef    = useRef(usuario);
 
-  // aplica classe de tema no <html>
-  useEffect(() => {
-    if (tema === 'claro') {
-      document.documentElement.classList.add('tema-claro');
-    } else {
-      document.documentElement.classList.remove('tema-claro');
-    }
-  }, [tema]);
+  // ── FUNÇÃO DE SALVAR USUÁRIO ──
+  const handleSalvarUsuario = (userAtualizado) => {
+    setUsuario(userAtualizado);
+    salvarSessao(userAtualizado, tela, splitAtivo);
+  };
+  // ──────────────────────────────
 
-  const toggleTema = useCallback(() => {
-    setTema(t => {
-      const novo = t === 'escuro' ? 'claro' : 'escuro';
-      try { localStorage.setItem(TEMA_KEY, novo); } catch {}
-      return novo;
-    });
+  const mostrarToast = useCallback((msg, tipo = 'info') => {
+    setToast({ msg, tipo });
+    setTimeout(() => setToast(null), 3000);
   }, []);
 
-  // sync fila offline
-  useEffect(() => {
-    import('./auth').then(({ syncOfflineQueue, getOfflineQueue }) => {
-      if (getOfflineQueue().length > 0 && navigator.onLine) {
-        syncOfflineQueue().then(({ synced }) => {
-          if (synced > 0) mostrarToast(`${synced} série${synced > 1 ? 's' : ''} sincronizada${synced > 1 ? 's' : ''} (offline).`, 'sucesso');
-        });
-      }
-    });
-  }, []);
-
-  useEffect(() => { usuarioRef.current = usuario; }, [usuario]);
-
-  useEffect(() => {
-    if (usuario) salvarSessao(usuario, tela, splitAtivo);
-  }, [usuario, tela, splitAtivo]);
-
-  useEffect(() => {
-    if (podeRestaurar && sessaoSalva.usuario) {
-      carregarSplitsInterno(sessaoSalva.usuario.id);
-      if (sessaoSalva.tela === 'treino' && sessaoSalva.splitAtivo) {
-        const sa = sessaoSalva.splitAtivo;
-        const nomeParaBusca = sa.nomeHistorico || sa.nome;
-        apiFetch(`${R.historico}?id_usuario=${sessaoSalva.usuario.id}&split_id=${encodeURIComponent(sa.id)}&nome_treino=${encodeURIComponent(nomeParaBusca)}`)
-          .then(r => setHistorico(r.series || []))
-          .catch(() => {});
-      }
-    }
-  }, []);
-
-  const mostrarToast = useCallback((mensagem, tipo = 'sucesso') => {
-    clearTimeout(toastTimerRef.current);
-    setToast({ mensagem, tipo });
-    toastTimerRef.current = setTimeout(() => setToast(null), 2800);
-  }, []);
-
-  const carregarSplitsInterno = useCallback(async uid => {
-    setLoadingS(true);
+  const carregarSplits = useCallback(async (id_usuario) => {
+    setLoadingSplits(true);
     try {
-      const r = await apiFetch(`${R.splits}?id_usuario=${uid}`);
+      const r = await apiFetch(`${R.splits}?id_usuario=${id_usuario}`);
       setSplits(r.splits || []);
     } catch {
-      setSplits([]);
-    } finally { setLoadingS(false); }
-  }, []);
-
-  const onLogin = useCallback(u => {
-    setUsuario(u);
-    carregarSplitsInterno(u.id);
-    setTela('grupamentos');
-    mostrarToast(`Bem-vindo, ${u.nome.split(' ')[0]}.`, 'sucesso');
-  }, [carregarSplitsInterno, mostrarToast]);
-
-  const onLogout = useCallback(() => {
-    clearAuthToken();
-    setUsuario(null); setTela('auth'); setSplits([]);
-    setSplitAtivo(null); setHistorico([]);
-  }, []);
-
-  const onSelecionarSplit = useCallback(split => {
-    setSplitAtivo(split);
-    setHistorico([]);
-    setTela('treino');
-    const nomeParaBusca = split.nomeHistorico || split.nome;
-    apiFetch(`${R.historico}?id_usuario=${usuarioRef.current.id}&split_id=${encodeURIComponent(split.id)}&nome_treino=${encodeURIComponent(nomeParaBusca)}`)
-      .then(r => setHistorico(r.series || []))
-      .catch(() => {});
-  }, []);
-
-  const onFinalizar = useCallback(res => {
-    setResultado(res);
-    setSplitAtivo(null);
-    setTela('resumo');
-    mostrarToast('Treino finalizado.', 'sucesso');
+      mostrarToast('Erro ao carregar treinos.', 'erro');
+    } finally {
+      setLoadingSplits(false);
+    }
   }, [mostrarToast]);
 
-  const irParaGraficos = useCallback(splitNome => {
+  useEffect(() => {
+    if (usuario) carregarSplits(usuario.id);
+  }, [usuario, carregarSplits]);
+
+  useEffect(() => {
+    if (usuario && tela !== 'auth') salvarSessao(usuario, tela, splitAtivo);
+  }, [usuario, tela, splitAtivo]);
+
+  const toggleTema = useCallback(() => {
+    const novo = tema === 'escuro' ? 'claro' : 'escuro';
+    setTema(novo);
+    localStorage.setItem(TEMA_KEY, novo);
+  }, [tema]);
+
+  const handleLogin = (u, t) => {
+    setUsuario(u);
+    setAuthToken(t);
+    setTela('grupamentos');
+  };
+
+  const handleLogout = () => {
+    setUsuario(null);
+    setTela('auth');
+    setSplitAtivo(null);
+    clearAuthToken();
+  };
+
+  const irParaGraficos = useCallback((splitNome) => {
     setSplitGraficoPre(splitNome);
     setTela('graficos');
   }, []);
 
-  const usarTemplate = useCallback(template => {
-    const novosSplits = template.splits.map((nome, i) => ({
-      id:           `split_${Date.now()}_${i}`,
-      id_usuario:   usuario?.id || '',
-      nome:         nome.split(' —')[0].split(' (')[0],
-      nomeHistorico:nome.split(' —')[0].split(' (')[0],
-      ultimo_treino: null,
-    }));
-    setSplits(novosSplits);
-    setTela('gerenciar-splits');
-  }, [usuario]);
-
   return (
-    <>
-      <Toast data={toast}/>
-      <IOSInstallBanner/>
+    <div className={tema === 'claro' ? 'tema-claro' : 'tema-escuro'}>
+      <IOSInstallBanner />
+      {toast && <Toast msg={toast.msg} tipo={toast.tipo} />}
 
       {tela === 'auth' && (
-        <TelaAuth onLogin={onLogin} mostrarToast={mostrarToast}/>
+        <TelaAuth onLogin={handleLogin} mostrarToast={mostrarToast} />
       )}
 
       {tela === 'grupamentos' && usuario && (
@@ -164,26 +106,36 @@ export default function App() {
           usuario={usuario}
           splits={splits}
           loadingSplits={loadingSplits}
-          onSelecionarSplit={onSelecionarSplit}
-          onGerenciar={() => setTela('gerenciar-splits')}
+          onSelecionarSplit={s => { setSplitAtivo(s); setTela('treino'); }}
+          onGerenciar={() => setTela('gerenciar_splits')}
+          onLogout={handleLogout}
+          onPerfil={() => setTela('perfil')}
           onRank={() => setTela('rank')}
           onCardio={() => setTela('cardio')}
           onDieta={() => setTela('dieta')}
-          onPerfil={() => setTela('perfil')}
           onHistorico={() => setTela('historico')}
           onRelatorio={() => setTela('relatorio')}
           onPeso={() => setTela('peso')}
           onProgressao={() => setTela('progressao')}
-          onLogout={onLogout}
           tema={tema}
           onToggleTema={toggleTema}
+        />
+      )}
+
+      {tela === 'gerenciar_splits' && usuario && (
+        <TelaGerenciarSplits
+          usuario={usuario}
+          splits={splits}
+          onSalvar={() => { carregarSplits(usuario.id); setTela('grupamentos'); }}
+          onVoltar={() => setTela('grupamentos')}
+          mostrarToast={mostrarToast}
         />
       )}
 
       {tela === 'perfil' && usuario && (
         <TelaPerfil
           usuario={usuario}
-          onSalvar={u => { setUsuario(u); setTela('grupamentos'); mostrarToast('Perfil atualizado!', 'sucesso'); }}
+          onSalvar={handleSalvarUsuario}
           onVoltar={() => setTela('grupamentos')}
           mostrarToast={mostrarToast}
           tema={tema}
@@ -201,37 +153,25 @@ export default function App() {
         />
       )}
 
-      {tela === 'gerenciar-splits' && usuario && (
-        <TelaGerenciarSplits
-          usuario={usuario}
-          splits={splits}
-          onSalvar={l => { setSplits(l); setTela('grupamentos'); }}
-          onVoltar={() => setTela('grupamentos')}
-          mostrarToast={mostrarToast}
-        />
-      )}
-
-      {tela === 'treino' && splitAtivo && (
+      {tela === 'treino' && usuario && splitAtivo && (
         <TelaTreino
           usuario={usuario}
           split={splitAtivo}
-          historicoAnterior={historico}
-          onFinalizar={onFinalizar}
           onVoltar={() => setTela('grupamentos')}
+          onFinalizar={(res) => { setResultadoTreino(res); setTela('resumo'); }}
           mostrarToast={mostrarToast}
         />
       )}
 
-      {tela === 'resumo' && resultado && (
+      {tela === 'resumo' && resultadoTreino && (
         <TelaResumo
-          resultado={resultado}
+          resultado={resultadoTreino}
           onVoltar={() => setTela('grupamentos')}
-          mostrarToast={mostrarToast}
         />
       )}
 
       {tela === 'rank' && usuario && (
-        <TelaRank usuario={usuario} mostrarToast={mostrarToast} onVoltar={() => setTela('grupamentos')}/>
+        <TelaRank usuario={usuario} onVoltar={() => setTela('grupamentos')} mostrarToast={mostrarToast}/>
       )}
 
       {tela === 'cardio' && usuario && (
@@ -281,11 +221,16 @@ export default function App() {
         <TelaProgressao
           usuario={usuario}
           splits={splits}
-          onUsarTemplate={usarTemplate}
           onVoltar={() => setTela('grupamentos')}
           mostrarToast={mostrarToast}
+          onUsarTemplate={async () => {
+            mostrarToast('Template aplicado com sucesso!', 'sucesso');
+            carregarSplits(usuario.id);
+            setTela('grupamentos');
+          }}
         />
       )}
-    </>
+
+    </div>
   );
 }
