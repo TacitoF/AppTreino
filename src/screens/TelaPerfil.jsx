@@ -1,18 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { apiFetch } from '../auth';
 import { R } from '../config';
-import * as NiceAvatarModule from 'react-nice-avatar';
-
-// 🔥 A MÁGICA PARA O VITE PARAR DE DAR CRASH 🔥
-const Avatar = NiceAvatarModule.default?.default || NiceAvatarModule.default || NiceAvatarModule;
-const genConfig = NiceAvatarModule.genConfig || NiceAvatarModule.default?.genConfig || ((c) => c);
-
-const gerarPropsSeguras = (cfg) => {
-  const clean = { ...cfg, isRandom: false };
-  if (clean.hatStyle === 'none') delete clean.hatStyle;
-  if (clean.glassesStyle === 'none') delete clean.glassesStyle;
-  return genConfig(clean);
-};
 
 // ── ÍCONES ────────────────────────────────────────────────────────
 const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
@@ -20,6 +8,23 @@ const IconSave = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const IconMoon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>;
 const IconSun = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
 const IconUser = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>;
+
+// Função que reconstrói a URL do avatar com base no JSON salvo no banco
+const getAvatarUrl = (configStr) => {
+  try {
+    const config = JSON.parse(configStr);
+    if (!config.top) return null; // Previne erro de formato antigo
+    
+    const params = new URLSearchParams();
+    params.append('backgroundColor', 'transparent');
+    Object.entries(config).forEach(([key, val]) => {
+      if (val !== 'none') params.append(key, val);
+    });
+    return `https://api.dicebear.com/9.x/avataaars/svg?${params.toString()}`;
+  } catch (e) {
+    return null;
+  }
+};
 
 export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, tema, onToggleTema, onEditAvatar }) {
   const [nome, setNome]         = useState(usuario.nome || '');
@@ -35,11 +40,9 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, 
 
   const inp = "w-full bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800 outline-none focus:border-[#c8f542] transition-colors text-base placeholder-zinc-600";
 
-  const avatarConfig = useMemo(() => {
-    try {
-      if (usuario.avatar_config) return gerarPropsSeguras(JSON.parse(usuario.avatar_config));
-    } catch (e) {}
-    return null;
+  const avatarUrl = useMemo(() => {
+    if (!usuario.avatar_config) return null;
+    return getAvatarUrl(usuario.avatar_config);
   }, [usuario.avatar_config]);
 
   const salvar = async () => {
@@ -77,8 +80,8 @@ export default function TelaPerfil({ usuario, onSalvar, onVoltar, mostrarToast, 
         
         <div className="flex flex-col items-center justify-center mb-4">
           <div className="w-24 h-24 rounded-full border-4 border-zinc-800 bg-zinc-900 overflow-hidden mb-3 relative flex items-center justify-center shadow-lg">
-            {avatarConfig && (typeof Avatar === 'function' || typeof Avatar === 'object') ? (
-              <Avatar style={{ width: '100%', height: '100%' }} {...avatarConfig} />
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Avatar" className="w-[115%] h-[115%] object-contain mt-4" />
             ) : (
               <div className="text-zinc-600"><IconUser /></div>
             )}
