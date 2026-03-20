@@ -2,3 +2,4 @@ fastapi
 pydantic
 gspread
 google-auth
+uvicorn

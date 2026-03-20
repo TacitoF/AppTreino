@@ -4,36 +4,28 @@ import { R } from '../config';
 
 const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
 
-// ─── OPÇÕES DO DICEBEAR (API EXTERNA) ─────────────────────────────────────────
+// ─── OPÇÕES DO DICEBEAR AVATAAARS 9.x ─────────────────────────────────────────
+// A API exige os nomes exatos para as chaves e códigos HEX (sem #) para as cores.
 const OPCOES = {
-  top: ['shavedHead', 'shortFlat', 'shortRound', 'shortWaved', 'sides', 'straight01', 'bob', 'bun', 'curly', 'dreads', 'fro', 'turban', 'winterHat1'],
+  top: ['shortFlat', 'shortRound', 'shortWaved', 'sides', 'straight01', 'bob', 'bun', 'curly', 'dreads', 'fro', 'turban', 'winterHat1'],
   eyes: ['default', 'happy', 'wink', 'surprised', 'squint', 'hearts', 'eyeRoll'],
   mouth: ['default', 'smile', 'twinkle', 'serious', 'grimace', 'sad'],
-  clothes: ['hoodie', 'shirtCrewNeck', 'shirtVNeck', 'collarAndSweater', 'blazerAndShirt', 'overall'],
+  clothing: ['hoodie', 'shirtCrewNeck', 'shirtVNeck', 'collarAndSweater', 'blazerAndShirt', 'overall'],
   accessories: ['none', 'prescription01', 'prescription02', 'round', 'sunglasses', 'wayfarers'],
 };
 
 const CORES = {
-  skinColor: [
-    { id: 'pale', hex: '#FFDBB4' }, { id: 'light', hex: '#EDB98A' }, { id: 'yellow', hex: '#F2C811' },
-    { id: 'tanned', hex: '#FD9841' }, { id: 'brown', hex: '#D08B5B' }, { id: 'darkBrown', hex: '#AE5D29' }, { id: 'black', hex: '#614335' }
-  ],
-  hairColor: [
-    { id: 'black', hex: '#262E33' }, { id: 'brownDark', hex: '#4A3123' }, { id: 'brown', hex: '#724133' },
-    { id: 'auburn', hex: '#A55728' }, { id: 'blonde', hex: '#D6B370' }, { id: 'red', hex: '#C93305' },
-    { id: 'silverGray', hex: '#E8E1E1' }, { id: 'pastelPink', hex: '#F59797' }
-  ],
-  clothesColor: [
-    { id: 'black', hex: '#262E33' }, { id: 'gray02', hex: '#929598' }, { id: 'white', hex: '#FFFFFF' },
-    { id: 'blue02', hex: '#65C9FF' }, { id: 'pastelBlue', hex: '#B1E2FF' }, { id: 'pastelGreen', hex: '#A7FFC4' },
-    { id: 'pastelRed', hex: '#FFA7A7' }, { id: 'pink', hex: '#FF488E' }, { id: 'red', hex: '#FF5C5C' }
-  ]
+  skinColor: ['ffdbb4', 'edb98a', 'f2c811', 'fd9841', 'd08b5b', 'ae5d29', '614335'],
+  hairColor: ['262e33', '4a3123', '724133', 'a55728', 'd6b370', 'c93305', 'e8e1e1', 'f59797'],
+  clothesColor: ['262e33', '929598', 'ffffff', '65c9ff', 'b1e2ff', 'a7ffc4', 'ffa7a7', 'ff488e', 'ff5c5c']
 };
 
-// Transforma a configuração numa imagem instantânea gerada por CDN!
+// Constrói a URL exata que a API espera
 const getAvatarUrl = (config) => {
   const params = new URLSearchParams();
+  params.append('seed', 'Volt'); // Seed fixo para manter consistência
   params.append('backgroundColor', 'transparent');
+  
   Object.entries(config).forEach(([key, val]) => {
     if (val !== 'none') params.append(key, val);
   });
@@ -45,18 +37,18 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
     try {
       if (usuario?.avatar_config) {
         const parsed = JSON.parse(usuario.avatar_config);
-        // Só recupera se for do formato novo (impede de carregar o formato quebrado da lib antiga)
-        if (parsed.top) return parsed;
+        // Só recupera do banco se for do formato novo corrigido (ignora configurações corrompidas)
+        if (parsed.clothing) return parsed;
       }
     } catch (e) {}
     
-    // Boneco padrão estilo Volt
+    // Configuração inicial válida (códigos hex sem o '#')
     return {
       top: 'shortFlat',
-      hairColor: 'black',
-      skinColor: 'light',
-      clothes: 'hoodie',
-      clothesColor: 'pastelGreen',
+      hairColor: '262e33',
+      skinColor: 'edb98a',
+      clothing: 'hoodie',
+      clothesColor: 'a7ffc4',
       eyes: 'default',
       mouth: 'smile',
       accessories: 'none'
@@ -93,12 +85,12 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
     <div className="grid grid-cols-6 gap-3 mt-3 mb-6">
       {CORES[chave].map(cor => (
         <button
-          key={cor.id}
-          onClick={() => atualizar(chave, cor.id)}
+          key={cor}
+          onClick={() => atualizar(chave, cor)}
           className={`aspect-square rounded-full border-4 transition-all ${
-            config[chave] === cor.id ? 'border-[#c8f542] scale-110 shadow-lg' : 'border-zinc-800'
+            config[chave] === cor ? 'border-[#c8f542] scale-110 shadow-lg' : 'border-zinc-800'
           }`}
-          style={{ backgroundColor: cor.hex }}
+          style={{ backgroundColor: `#${cor}` }} // CSS precisa da # para renderizar a bolinha na tela
         />
       ))}
     </div>
@@ -118,7 +110,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
                 config[chave] === estilo ? 'border-[#c8f542] bg-[#c8f542]/10 scale-105 z-10' : 'border-zinc-800 opacity-70 hover:opacity-100'
               }`}
             >
-              {estilo === 'none' && chave !== 'hatStyle' ? (
+              {estilo === 'none' ? (
                 <span className="text-zinc-500 text-xs font-bold">Nenhum</span>
               ) : (
                 <div className="w-[140%] h-[140%] pointer-events-none mt-4 flex items-center justify-center">
@@ -146,7 +138,6 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
 
       <div className="flex justify-center items-center py-6 bg-gradient-to-b from-zinc-900/50 to-transparent">
         <div className="w-40 h-40 rounded-full shadow-[0_0_40px_rgba(200,245,66,0.1)] border-4 border-zinc-800/80 overflow-hidden relative bg-zinc-900 flex items-center justify-center">
-          {/* UMA SIMPLES E INDESTRUTÍVEL TAG DE IMAGEM */}
           <img src={getAvatarUrl(config)} alt="Avatar" className="w-[115%] h-[115%] object-contain mt-4" />
         </div>
       </div>
@@ -168,7 +159,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
       <div className="flex-1 overflow-y-auto p-4 pb-20">
         {aba === 'cabelo' && (
           <div>
-            {renderPreviews('top', 'Corte de Cabelo / Chapéu')}
+            {renderPreviews('top', 'Corte de Cabelo')}
           </div>
         )}
         {aba === 'rosto' && (
@@ -178,7 +169,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
             {renderPreviews('accessories', 'Óculos')}
           </div>
         )}
-        {aba === 'roupa' && <div>{renderPreviews('clothes', 'Estilo da Roupa')}</div>}
+        {aba === 'roupa' && <div>{renderPreviews('clothing', 'Estilo da Roupa')}</div>}
         {aba === 'cores' && (
           <div>
             <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mt-2">Tom de Pele</p>
