@@ -16,6 +16,7 @@ import TelaGraficos         from './screens/TelaGraficos';
 import TelaRelatorio        from './screens/TelaRelatorio';
 import TelaPeso             from './screens/TelaPeso';
 import TelaProgressao       from './screens/TelaProgressao';
+import TelaAvatar           from './screens/TelaAvatar';
 
 const TEMA_KEY = 'volt_tema';
 
@@ -187,6 +188,16 @@ export default function App() {
           mostrarToast={mostrarToast}
           tema={tema}
           onToggleTema={toggleTema}
+          onEditAvatar={() => setTela('avatar')}
+        />
+      )}
+
+      {tela === 'avatar' && usuario && (
+        <TelaAvatar
+          usuario={usuario}
+          onSalvar={handleSalvarUsuario}
+          onVoltar={() => setTela('perfil')}
+          mostrarToast={mostrarToast}
         />
       )}
 
