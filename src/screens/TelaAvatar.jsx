@@ -1,11 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import Avatar, { genConfig } from 'react-nice-avatar';
+import NiceAvatar, { genConfig as genAvatarConfig } from 'react-nice-avatar';
 import { apiFetch } from '../auth';
 import { R } from '../config';
 
+// ─── RESOLUÇÃO DO BUG DO VITE ───────────────────────────────────────────────
+// Garante que o componente seja extraído corretamente, independente do formato (CJS/ESM)
+const AvatarComponent = NiceAvatar?.default || NiceAvatar;
+const genConfig = genAvatarConfig || NiceAvatar?.genConfig;
+
 const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
 
-// ─── TODAS AS OPÇÕES DISPONÍVEIS NA BIBLIOTECA ──────────────────────────────
+// ─── OPÇÕES DA BIBLIOTECA ───────────────────────────────────────────────────
 const OPCOES = {
   sex: ['man', 'woman'],
   hairStyle: ['normal', 'thick', 'mohawk', 'womanLong', 'womanShort'],
@@ -38,15 +43,15 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
       hairStyle: 'normal',
       hatStyle: 'none',
       shirtColor: OPCOES.shirtColor[0],
-      bgColor: 'transparent' // Fundo transparente para não bugar o preview
+      bgColor: 'transparent'
     };
   });
 
   const [aba, setAba] = useState('cabelo');
   const [salvando, setSalvando] = useState(false);
 
-  // Trava a configuração para não gerar traços aleatórios sozinhos
-  const avatarSeguro = useMemo(() => genConfig({ ...config, isRandom: false }), [config]);
+  // Se genConfig for undefined por erro da lib, retorna config vazia para não quebrar
+  const avatarSeguro = useMemo(() => genConfig ? genConfig({ ...config, isRandom: false }) : config, [config]);
 
   const atualizar = (chave, valor) => {
     setConfig(prev => ({ ...prev, [chave]: valor }));
@@ -73,9 +78,6 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
     }
   };
 
-  // ─── RENDERIZADORES VISUAIS ───────────────────────────────────────────────
-  
-  // Renderiza bolinhas de cor
   const renderCores = (chave) => (
     <div className="grid grid-cols-6 gap-3 mt-3 mb-6">
       {OPCOES[chave].map(cor => (
@@ -91,14 +93,12 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
     </div>
   );
 
-  // Renderiza botões com MINIATURAS do avatar (O pulo do gato!)
   const renderPreviews = (chave, label) => (
     <div className="mb-6">
       <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3">{label}</p>
       <div className="grid grid-cols-4 gap-3">
         {OPCOES[chave].map(estilo => {
-          // Criamos uma config temporária só para mostrar como o boneco ficaria com essa peça
-          const previewConfig = genConfig({ ...config, [chave]: estilo, isRandom: false });
+          const previewConfig = genConfig ? genConfig({ ...config, [chave]: estilo, isRandom: false }) : { ...config, [chave]: estilo };
           
           return (
             <button
@@ -113,8 +113,9 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
               {estilo === 'none' && chave !== 'hatStyle' ? (
                 <span className="text-zinc-500 text-xs font-bold">Nenhum</span>
               ) : (
-                <div className="w-[140%] h-[140%] pointer-events-none mt-4">
-                  <Avatar style={{ width: '100%', height: '100%' }} {...previewConfig} />
+                <div className="w-[140%] h-[140%] pointer-events-none mt-4 flex items-center justify-center">
+                  {/* TRAVA: Só renderiza se o componente existir, evitando a tela preta */}
+                  {AvatarComponent ? <AvatarComponent style={{ width: '100%', height: '100%' }} {...previewConfig} /> : null}
                 </div>
               )}
             </button>
@@ -137,8 +138,12 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
       </div>
 
       <div className="flex justify-center items-center py-6 bg-gradient-to-b from-zinc-900/50 to-transparent">
-        <div className="w-40 h-40 rounded-full shadow-[0_0_40px_rgba(200,245,66,0.1)] border-4 border-zinc-800/80 overflow-hidden relative bg-zinc-900">
-          <Avatar style={{ width: '100%', height: '100%' }} {...avatarSeguro} />
+        <div className="w-40 h-40 rounded-full shadow-[0_0_40px_rgba(200,245,66,0.1)] border-4 border-zinc-800/80 overflow-hidden relative bg-zinc-900 flex items-center justify-center">
+          {AvatarComponent ? (
+             <AvatarComponent style={{ width: '100%', height: '100%' }} {...avatarSeguro} />
+          ) : (
+             <span className="text-zinc-500 text-xs text-center px-4">Erro ao carregar Avatar</span>
+          )}
         </div>
       </div>
 
@@ -159,7 +164,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
       <div className="flex-1 overflow-y-auto p-4 pb-20">
         {aba === 'cabelo' && (
           <div>
-            {renderPreviews('sex', 'Base do Corpo (Resolve bugs de cabelo)')}
+            {renderPreviews('sex', 'Base do Corpo')}
             {renderPreviews('hairStyle', 'Corte de Cabelo')}
             {renderPreviews('hatStyle', 'Acessórios de Cabeça')}
           </div>
