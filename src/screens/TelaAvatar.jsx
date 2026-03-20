@@ -10,120 +10,168 @@ const IconBack = () => (
   </svg>
 );
 
+// ─── OPÇÕES VÁLIDAS DO DICEBEAR AVATAAARS ────────────────────────────────────
 const OPCOES = {
-  top: ['shortFlat','shortRound','shortWaved','sides','straight01','bob','bun','curly','dreads','fro','turban','winterHat1','shavedHead'],
+  top: [
+    'shortFlat','shortRound','shortWaved','sides','straight01',
+    'bob','bun','curly','dreads','fro','turban','winterHat1','shavedHead',
+  ],
   eyes: ['default','happy','wink','surprised','squint','hearts','eyeRoll','closed'],
+  eyebrows: ['default','defaultNatural','flatNatural','frownNatural','raised','sadConcerned','upDown','unibrow'],
   mouth: ['default','smile','twinkle','serious','grimace','sad'],
-  clothes: ['hoodie','shirtCrewNeck','shirtVNeck','collarAndSweater','blazerAndShirt','overall','graphicShirt'],
-  accessories: ['none','prescription01','prescription02','round','sunglasses','wayfarers'],
+  clothing: [
+    'hoodie','shirtCrewNeck','shirtVNeck',
+    'collarAndSweater','blazerAndShirt','overall','graphicShirt',
+  ],
+  accessories: ['prescription01','prescription02','round','sunglasses','wayfarers'],
 };
 
 const LABELS = {
-  top: { shortFlat:'Curto liso', shortRound:'Curto redondo', shortWaved:'Curto ondulado', sides:'Lateral', straight01:'Liso', bob:'Bob', bun:'Coque', curly:'Cacheado', dreads:'Dreads', fro:'Afro', turban:'Turbante', winterHat1:'Gorro', shavedHead:'Careca' },
-  eyes: { default:'Normal', happy:'Feliz', wink:'Piscando', surprised:'Surpreso', squint:'Franzido', hearts:'Coração', eyeRoll:'Revirando', closed:'Fechado' },
-  mouth: { default:'Normal', smile:'Sorriso', twinkle:'Brilho', serious:'Sério', grimace:'Careta', sad:'Triste' },
-  clothes: { hoodie:'Moletom', shirtCrewNeck:'Camiseta', shirtVNeck:'Decote V', collarAndSweater:'Suéter', blazerAndShirt:'Blazer', overall:'Macacão', graphicShirt:'Estampada' },
-  accessories: { none:'Nenhum', prescription01:'Óculos 1', prescription02:'Óculos 2', round:'Redondo', sunglasses:'Sol', wayfarers:'Wayfarer' },
+  top: {
+    shortFlat:'Curto liso', shortRound:'Curto redondo', shortWaved:'Curto ondulado',
+    sides:'Lateral', straight01:'Liso', bob:'Bob', bun:'Coque', curly:'Cacheado',
+    dreads:'Dreads', fro:'Afro', turban:'Turbante', winterHat1:'Gorro', shavedHead:'Careca',
+  },
+  eyes: {
+    default:'Normal', happy:'Feliz', wink:'Piscando', surprised:'Surpreso',
+    squint:'Franzido', hearts:'Coração', eyeRoll:'Revirando', closed:'Fechado',
+  },
+  eyebrows: {
+    default:'Normal', defaultNatural:'Natural', flatNatural:'Reto', frownNatural:'Franzido',
+    raised:'Levantado', sadConcerned:'Triste', upDown:'Assimétrico', unibrow:'Unibrow',
+  },
+  mouth: { default:'Normal', smile:'Sorriso', twinkle:'Tímido', serious:'Sério', grimace:'Careta', sad:'Triste' },
+  clothing: {
+    hoodie:'Moletom', shirtCrewNeck:'Camiseta', shirtVNeck:'Decote V',
+    collarAndSweater:'Suéter', blazerAndShirt:'Blazer', overall:'Macacão', graphicShirt:'Estampada',
+  },
+  accessories: {
+    prescription01:'Óculos 1', prescription02:'Óculos 2',
+    round:'Redondo', sunglasses:'Sol', wayfarers:'Wayfarer',
+  },
 };
 
 const CORES = {
   skinColor: [
-    { id:'pale', hex:'#FFDBB4' }, { id:'light', hex:'#EDB98A' }, { id:'yellow', hex:'#F2C811' },
-    { id:'tanned', hex:'#FD9841' }, { id:'brown', hex:'#D08B5B' }, { id:'darkBrown', hex:'#AE5D29' }, { id:'black', hex:'#614335' },
+    { id:'pale',      hex:'#FFDBB4' },
+    { id:'light',     hex:'#EDB98A' },
+    { id:'yellow',    hex:'#F2C811' },
+    { id:'tanned',    hex:'#FD9841' },
+    { id:'brown',     hex:'#D08B5B' },
+    { id:'darkBrown', hex:'#AE5D29' },
+    { id:'black',     hex:'#614335' },
   ],
   hairColor: [
-    { id:'black', hex:'#262E33' }, { id:'brownDark', hex:'#4A3123' }, { id:'brown', hex:'#724133' },
-    { id:'auburn', hex:'#A55728' }, { id:'blonde', hex:'#D6B370' }, { id:'red', hex:'#C93305' },
-    { id:'silverGray', hex:'#E8E1E1' }, { id:'pastelPink', hex:'#F59797' },
+    { id:'black',      hex:'#262E33' },
+    { id:'brownDark',  hex:'#4A3123' },
+    { id:'brown',      hex:'#724133' },
+    { id:'auburn',     hex:'#A55728' },
+    { id:'blonde',     hex:'#D6B370' },
+    { id:'red',        hex:'#C93305' },
+    { id:'silverGray', hex:'#E8E1E1' },
+    { id:'pastelPink', hex:'#F59797' },
   ],
-  clotheColor: [
-    { id:'black', hex:'#262E33' }, { id:'gray02', hex:'#929598' }, { id:'white', hex:'#FFFFFF' },
-    { id:'blue02', hex:'#65C9FF' }, { id:'pastelBlue', hex:'#B1E2FF' }, { id:'pastelGreen', hex:'#A7FFC4' },
-    { id:'pastelRed', hex:'#FFA7A7' }, { id:'pink', hex:'#FF488E' }, { id:'red', hex:'#FF5C5C' },
+  clothingColor: [
+    { id:'black',       hex:'#262E33' },
+    { id:'gray02',      hex:'#929598' },
+    { id:'white',       hex:'#FFFFFF' },
+    { id:'blue02',      hex:'#65C9FF' },
+    { id:'pastelBlue',  hex:'#B1E2FF' },
+    { id:'pastelGreen', hex:'#A7FFC4' },
+    { id:'pastelRed',   hex:'#FFA7A7' },
+    { id:'pink',        hex:'#FF488E' },
+    { id:'red',         hex:'#FF5C5C' },
   ],
 };
 
-// ─── CORE: gera o dataUri do avatar ──────────────────────────────────────────
-// CORREÇÃO PRINCIPAL:
-//   1. seed = string única por combinação (não fixo 'Volt') → força o PRNG a
-//      respeitar os parâmetros passados como único valor possível no array.
-//   2. randomizeIds: true → evita colisão de IDs entre múltiplos SVGs na página.
-//   3. Todos os campos são sempre passados como array de 1 item → probabilidade
-//      100%, o PRNG não tem outra opção para sortear.
-const buildAvatarUrl = (cfg, seedSuffix = '') => {
+// ─── GERADOR DE AVATAR ────────────────────────────────────────────────────────
+// CORREÇÕES APLICADAS:
+//  1. seed FIXO 'volt' — o PRNG não muda nunca; só os parâmetros explícitos definem o visual
+//  2. Cada campo passado como array de 1 item → probabilidade 100%, sem sorteio pelo PRNG
+//  3. accessories: quando "none", usar accessoriesProbability:0 (não passar array vazio)
+//  4. facialHair: sempre 'blank' + probability 0 → evita barba sorteada pelo PRNG
+//  5. randomizeIds:true → evita colisão de IDs entre múltiplos SVGs na mesma página
+const buildUrl = (cfg) => {
   try {
-    const seed = `volt_${cfg.top}_${cfg.eyes}_${cfg.mouth}_${cfg.clothes}_${cfg.skinColor}_${cfg.hairColor}_${cfg.clotheColor}_${cfg.accessories}${seedSuffix}`;
-
-    const avatar = createAvatar(avataaars, {
-      seed,
-      randomizeIds: true,
+    return createAvatar(avataaars, {
+      seed:          'volt',   // FIXO — nunca muda
+      randomizeIds:  true,
       backgroundColor: ['transparent'],
-      // Cada campo como array de 1 elemento = seleção determinística garantida
-      top:           cfg.top           !== 'none' ? [cfg.top]           : undefined,
-      eyes:          cfg.eyes          !== 'none' ? [cfg.eyes]          : undefined,
-      mouth:         cfg.mouth         !== 'none' ? [cfg.mouth]         : undefined,
-      clothing:      cfg.clothes       !== 'none' ? [cfg.clothes]       : undefined,
-      clothingColor: cfg.clotheColor   !== 'none' ? [cfg.clotheColor]   : undefined,
-      skinColor:     cfg.skinColor     !== 'none' ? [cfg.skinColor]     : undefined,
-      hairColor:     cfg.hairColor     !== 'none' ? [cfg.hairColor]     : undefined,
-      accessories:   cfg.accessories   !== 'none' ? [cfg.accessories]   : ['blank'],
-      accessoriesColor: ['262e33'],
-    });
 
-    return avatar.toDataUri();
+      // Todos os campos obrigatórios como array de 1 item
+      top:           [cfg.top],
+      hairColor:     [cfg.hairColor],
+      skinColor:     [cfg.skinColor],
+      eyes:          [cfg.eyes],
+      eyebrows:      [cfg.eyebrows],
+      mouth:         [cfg.mouth],
+      clothing:      [cfg.clothing],
+      clothingColor: [cfg.clothingColor],
+
+      // Barba sempre desligada
+      facialHair:            ['blank'],
+      facialHairProbability: 0,
+
+      // Acessórios: probability 0 = sem óculos; 100 = mostra o modelo escolhido
+      accessoriesProbability: cfg.accessories === 'none' ? 0 : 100,
+      ...(cfg.accessories !== 'none' && { accessories: [cfg.accessories] }),
+    }).toDataUri();
   } catch {
     return '';
   }
 };
 
-// Preview de um estilo específico (sobrescreve só a chave relevante)
-const buildPreviewUrl = (baseConfig, chave, valor) =>
-  buildAvatarUrl({ ...baseConfig, [chave]: valor }, `_prev_${chave}_${valor}`);
+// Preview: estado atual com apenas UM campo diferente
+const buildPreview = (cfg, campo, valor) => buildUrl({ ...cfg, [campo]: valor });
 
-// ─── ESTADO PADRÃO / PARSE SEGURO ────────────────────────────────────────────
-const DEFAULT_CONFIG = {
+// ─── CONFIG PADRÃO / PARSE SEGURO ────────────────────────────────────────────
+const DEFAULT = {
   top: 'shortFlat', hairColor: 'black', skinColor: 'light',
-  clothes: 'hoodie', clotheColor: 'pastelGreen',
-  eyes: 'default', mouth: 'smile', accessories: 'none',
+  clothing: 'hoodie', clothingColor: 'pastelGreen',
+  eyes: 'default', eyebrows: 'default', mouth: 'smile', accessories: 'none',
 };
 
 const parseConfig = (raw) => {
   try {
-    if (!raw) return { ...DEFAULT_CONFIG };
-    const p = JSON.parse(raw);
-    const isHex = (s) => /^[0-9A-Fa-f]{6}$/.test(s);
+    if (!raw) return { ...DEFAULT };
+    const p   = JSON.parse(raw);
+    const hex = (s) => /^[0-9A-Fa-f]{6}$/.test(s ?? '');
     return {
-      top:         p.top         || DEFAULT_CONFIG.top,
-      eyes:        p.eyes        || DEFAULT_CONFIG.eyes,
-      mouth:       p.mouth       || DEFAULT_CONFIG.mouth,
-      clothes:     p.clothes     || p.clothing    || DEFAULT_CONFIG.clothes,
-      clotheColor: isHex(p.clotheColor || '') ? DEFAULT_CONFIG.clotheColor : (p.clotheColor || p.clothingColor || DEFAULT_CONFIG.clotheColor),
-      skinColor:   isHex(p.skinColor   || '') ? DEFAULT_CONFIG.skinColor   : (p.skinColor   || DEFAULT_CONFIG.skinColor),
-      hairColor:   isHex(p.hairColor   || '') ? DEFAULT_CONFIG.hairColor   : (p.hairColor   || DEFAULT_CONFIG.hairColor),
-      accessories: p.accessories || DEFAULT_CONFIG.accessories,
+      top:           p.top                                          || DEFAULT.top,
+      hairColor:     hex(p.hairColor)     ? DEFAULT.hairColor      : (p.hairColor     || DEFAULT.hairColor),
+      skinColor:     hex(p.skinColor)     ? DEFAULT.skinColor      : (p.skinColor     || DEFAULT.skinColor),
+      clothing:      p.clothing           || p.clothes             || DEFAULT.clothing,
+      clothingColor: hex(p.clothingColor) ? DEFAULT.clothingColor  : (p.clothingColor || p.clotheColor || DEFAULT.clothingColor),
+      eyes:          p.eyes                                         || DEFAULT.eyes,
+      eyebrows:      p.eyebrows                                     || DEFAULT.eyebrows,
+      mouth:         p.mouth                                        || DEFAULT.mouth,
+      accessories:   p.accessories                                  || DEFAULT.accessories,
     };
   } catch {
-    return { ...DEFAULT_CONFIG };
+    return { ...DEFAULT };
   }
 };
 
 // ─── COMPONENTE ───────────────────────────────────────────────────────────────
 export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }) {
-  const [config, setConfig]   = useState(() => parseConfig(usuario?.avatar_config));
-  const [aba, setAba]         = useState('cabelo');
+  const [config, setConfig]     = useState(() => parseConfig(usuario?.avatar_config));
+  const [aba, setAba]           = useState('cabelo');
   const [salvando, setSalvando] = useState(false);
 
-  // Avatar principal — recalculado toda vez que config muda
-  const avatarUrl = useMemo(() => buildAvatarUrl(config), [config]);
-
-  const atualizar = (chave, valor) => setConfig(prev => ({ ...prev, [chave]: valor }));
+  const avatarUrl = useMemo(() => buildUrl(config), [config]);
+  const set = (campo, valor) => setConfig(prev => ({ ...prev, [campo]: valor }));
 
   const salvar = async () => {
     setSalvando(true);
     try {
       await apiFetch(R.editarUsuario || '/api/usuario/editar', {
         method: 'POST',
-        body: { id_usuario: usuario.id, nome: usuario.nome, email: usuario.email, avatar_config: JSON.stringify(config) },
+        body: {
+          id_usuario: usuario.id,
+          nome: usuario.nome,
+          email: usuario.email,
+          avatar_config: JSON.stringify(config),
+        },
       });
       onSalvar?.({ ...usuario, avatar_config: JSON.stringify(config) });
       mostrarToast('Avatar atualizado!', 'sucesso');
@@ -135,38 +183,51 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
     }
   };
 
-  // ── Renders ─────────────────────────────────────────────────────────────────
-  const renderPreviews = (chave, label) => (
-    <div className="mb-6">
+  // ── Grid de previews de estilo ────────────────────────────────────────────
+  const renderPreviews = (campo, label, opcoes, exibirNenhum = false) => (
+    <div className="mb-7">
       <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3">{label}</p>
       <div className="grid grid-cols-4 gap-3">
-        {OPCOES[chave].map(estilo => {
-          const selecionado = config[chave] === estilo;
-          // Gera preview com seed único → cabelo/olhos/boca aparecem corretamente
-          const url = buildPreviewUrl(config, chave, estilo);
+
+        {exibirNenhum && (
+          <button
+            onClick={() => set(campo, 'none')}
+            className={[
+              'aspect-square rounded-2xl flex items-center justify-center border-2 transition-all bg-zinc-900',
+              config[campo] === 'none'
+                ? 'border-[#c8f542] bg-[#c8f542]/10 scale-105'
+                : 'border-zinc-800 opacity-70',
+            ].join(' ')}
+          >
+            <span className="text-zinc-500 text-xs font-bold">Nenhum</span>
+          </button>
+        )}
+
+        {opcoes.map(valor => {
+          const selecionado = config[campo] === valor;
+          const url = buildPreview(config, campo, valor);
           return (
             <button
-              key={estilo}
-              onClick={() => atualizar(chave, estilo)}
+              key={valor}
+              onClick={() => set(campo, valor)}
               className={[
-                'relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center bg-zinc-900 border-2 transition-all',
+                'relative aspect-square rounded-2xl overflow-hidden flex flex-col items-end bg-zinc-900 border-2 transition-all',
                 selecionado
                   ? 'border-[#c8f542] bg-[#c8f542]/10 scale-105 z-10'
-                  : 'border-zinc-800 opacity-70 active:opacity-100',
+                  : 'border-zinc-800 opacity-60 active:opacity-100',
               ].join(' ')}
             >
-              {estilo === 'none' ? (
-                <span className="text-zinc-500 text-xs font-bold">Nenhum</span>
-              ) : (
-                <>
-                  <div className="w-[150%] h-[150%] pointer-events-none flex items-center justify-center mt-3 flex-shrink-0">
-                    {url && <img src={url} alt={estilo} className="w-full h-full object-contain" loading="lazy"/>}
-                  </div>
-                  <span className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-bold text-zinc-600 px-1 truncate">
-                    {LABELS[chave]?.[estilo] || estilo}
-                  </span>
-                </>
+              {url && (
+                <img
+                  src={url}
+                  alt={valor}
+                  className="absolute inset-0 w-full h-full object-contain scale-[1.4] translate-y-3 pointer-events-none"
+                  loading="lazy"
+                />
               )}
+              <span className="relative z-10 text-[9px] font-bold text-zinc-400 py-1 px-1 truncate w-full text-center bg-zinc-900/75 mt-auto">
+                {LABELS[campo]?.[valor] ?? valor}
+              </span>
             </button>
           );
         })}
@@ -174,27 +235,28 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
     </div>
   );
 
-  const renderCores = (chave, label) => (
+  // ── Swatches de cor ────────────────────────────────────────────────────────
+  const renderCores = (campo, label) => (
     <div className="mb-5">
       <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-3">{label}</p>
       <div className="flex flex-wrap gap-3">
-        {CORES[chave].map(cor => (
+        {CORES[campo].map(cor => (
           <button
             key={cor.id}
-            onClick={() => atualizar(chave, cor.id)}
+            onClick={() => set(campo, cor.id)}
+            title={cor.id}
             className={[
               'w-10 h-10 rounded-full border-4 transition-all active:scale-90',
-              config[chave] === cor.id ? 'border-[#c8f542] scale-110' : 'border-zinc-800',
+              config[campo] === cor.id ? 'border-[#c8f542] scale-110' : 'border-zinc-800',
             ].join(' ')}
             style={{ backgroundColor: cor.hex }}
-            title={cor.id}
           />
         ))}
       </div>
     </div>
   );
 
-  // ── JSX ──────────────────────────────────────────────────────────────────────
+  // ─── RENDER ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
 
@@ -205,7 +267,7 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
           disabled={salvando}
           className="btn w-11 h-11 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white active:bg-zinc-800"
         >
-          <IconBack/>
+          <IconBack />
         </button>
         <h1 className="text-lg font-black text-white">Seu Personagem</h1>
         <button
@@ -221,8 +283,8 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
       <div className="flex justify-center items-center py-6 bg-gradient-to-b from-zinc-900/50 to-transparent">
         <div className="w-40 h-40 rounded-full shadow-[0_0_40px_rgba(200,245,66,0.1)] border-4 border-zinc-800/80 overflow-hidden bg-zinc-900 flex items-center justify-center">
           {avatarUrl
-            ? <img src={avatarUrl} alt="Avatar" className="w-[115%] h-[115%] object-contain mt-4"/>
-            : <div className="w-8 h-8 rounded-full border-2 border-zinc-700 border-t-[#c8f542] animate-spin"/>
+            ? <img src={avatarUrl} alt="Avatar" className="w-[115%] h-[115%] object-contain mt-4" />
+            : <div className="w-8 h-8 rounded-full border-2 border-zinc-700 border-t-[#c8f542] animate-spin" />
           }
         </div>
       </div>
@@ -230,17 +292,19 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
       {/* Tabs */}
       <div className="flex px-4 border-b border-zinc-900">
         {[
-          { id:'cabelo', label:'Cabelo'  },
-          { id:'rosto',  label:'Rosto'   },
-          { id:'roupa',  label:'Roupa'   },
-          { id:'cores',  label:'Cores'   },
+          { id:'cabelo', label:'Cabelo' },
+          { id:'rosto',  label:'Rosto'  },
+          { id:'roupa',  label:'Roupa'  },
+          { id:'cores',  label:'Cores'  },
         ].map(({ id, label }) => (
           <button
             key={id}
             onClick={() => setAba(id)}
             className={[
               'flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-all border-b-2',
-              aba === id ? 'text-[#c8f542] border-[#c8f542]' : 'text-zinc-600 border-transparent active:text-zinc-400',
+              aba === id
+                ? 'text-[#c8f542] border-[#c8f542]'
+                : 'text-zinc-600 border-transparent active:text-zinc-400',
             ].join(' ')}
           >
             {label}
@@ -250,27 +314,30 @@ export default function TelaAvatar({ usuario, onVoltar, onSalvar, mostrarToast }
 
       {/* Conteúdo */}
       <div className="flex-1 overflow-y-auto p-4 pb-24">
-        {aba === 'cabelo' && renderPreviews('top', 'Corte de Cabelo')}
+
+        {aba === 'cabelo' && renderPreviews('top', 'Corte de Cabelo', OPCOES.top)}
 
         {aba === 'rosto' && (
           <>
-            {renderPreviews('eyes', 'Olhos')}
-            {renderPreviews('mouth', 'Boca')}
-            {renderPreviews('accessories', 'Óculos / Acessórios')}
+            {renderPreviews('eyes',        'Olhos',                  OPCOES.eyes)}
+            {renderPreviews('eyebrows',    'Sobrancelhas',           OPCOES.eyebrows)}
+            {renderPreviews('mouth',       'Boca',                   OPCOES.mouth)}
+            {renderPreviews('accessories', 'Óculos / Acessórios',    OPCOES.accessories, true)}
           </>
         )}
 
-        {aba === 'roupa' && renderPreviews('clothes', 'Estilo da Roupa')}
+        {aba === 'roupa' && renderPreviews('clothing', 'Estilo da Roupa', OPCOES.clothing)}
 
         {aba === 'cores' && (
           <>
-            {renderCores('skinColor', 'Tom de Pele')}
-            <div className="h-px bg-zinc-900 my-2"/>
-            {renderCores('hairColor', 'Cor do Cabelo')}
-            <div className="h-px bg-zinc-900 my-2"/>
-            {renderCores('clotheColor', 'Cor da Roupa')}
+            {renderCores('skinColor',     'Tom de Pele'  )}
+            <div className="h-px bg-zinc-900 my-2" />
+            {renderCores('hairColor',     'Cor do Cabelo')}
+            <div className="h-px bg-zinc-900 my-2" />
+            {renderCores('clothingColor', 'Cor da Roupa' )}
           </>
         )}
+
       </div>
     </div>
   );
